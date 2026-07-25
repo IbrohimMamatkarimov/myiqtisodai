@@ -39,7 +39,7 @@ setError(typeof detail === 'string' ? detail : 'Please check your information an
       <AuthShell title={t('createAccountTitle')} subtitle={t('createAccountSubtitle')}>
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <CheckCircle2 className="text-emerald-500" size={40} />
-          <p className="font-medium">Account created! Check your email to verify, redirecting to login…</p>
+          <p className="font-medium">Ro'yxatdan o'tganingiz uchun rahmat! Kirish sahifasiga yo'naltirilmoqda…</p>
         </div>
       </AuthShell>
     );
