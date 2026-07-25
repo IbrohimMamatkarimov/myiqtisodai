@@ -48,9 +48,15 @@ def get_dashboard_summary(
         return round((current - previous) / previous * 100, 1)
 
     # Category breakdown for this month's expenses
+# Category breakdown for this month's expenses (including uncategorized)
     rows = (
-        db.query(Category.id, Category.name, func.sum(Expense.amount))
-        .join(Expense, Expense.category_id == Category.id)
+        db.query(
+            Category.id,
+            func.coalesce(Category.name, "Uncategorized"),
+            func.sum(Expense.amount),
+        )
+        .select_from(Expense)
+        .outerjoin(Category, Expense.category_id == Category.id)
         .filter(Expense.user_id == current_user.id, Expense.expense_date >= month_start)
         .group_by(Category.id, Category.name)
         .order_by(func.sum(Expense.amount).desc())
