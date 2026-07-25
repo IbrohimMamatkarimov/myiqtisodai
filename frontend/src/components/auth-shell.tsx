@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { LanguageSwitcher } from './language-switcher';
+import { Send } from 'lucide-react';
 
 export function AuthShell({
   title,
@@ -29,7 +30,16 @@ export function AuthShell({
         <p className="mt-6 text-center text-sm font-medium bg-gradient-to-r from-gold-500 via-emerald-500 to-gold-500 bg-clip-text text-transparent">
            Created by Ibrohim Mamatkarimov 
         </p>
-      </div>
+</div>
+      
+        href="https://t.me/ibrohimmamatkarimov"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-glass hover:opacity-90 transition-opacity"
+      >
+        <Send size={18} />
+        <span className="text-sm font-medium">Support</span>
+      </a>
     </div>
   );
 }
