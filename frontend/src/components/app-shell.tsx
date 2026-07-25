@@ -14,6 +14,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useTheme } from './theme-provider';
+import { Send } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { LanguageSwitcher } from './language-switcher';
 
@@ -92,7 +93,16 @@ const navItems = [
           </header>
           <div className="p-6">{children}</div>
         </main>
-      </div>
+</div>
+      
+        href="https://t.me/ibrohimmamatkarimov"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-glass hover:opacity-90 transition-opacity"
+      >
+        <Send size={18} />
+        <span className="text-sm font-medium">Support</span>
+      </a>
     </div>
   );
 }
