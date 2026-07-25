@@ -1,3 +1,4 @@
+cat > frontend/src/components/auth-shell.tsx << 'ENDOFFILE'
 'use client';
 
 import { ReactNode } from 'react';
@@ -12,45 +13,30 @@ function HappySaverIllustration() {
       <circle cx="300" cy="60" r="9" fill="currentColor" className="text-emerald-400" />
       <circle cx="330" cy="150" r="7" fill="currentColor" className="text-gold-400" />
       <circle cx="70" cy="180" r="8" fill="currentColor" className="text-emerald-400" />
-
       <ellipse cx="200" cy="380" rx="120" ry="16" fill="currentColor" className="text-ink-900/10" />
-
       <ellipse cx="140" cy="300" rx="55" ry="60" fill="currentColor" className="text-gold-500" />
       <circle cx="185" cy="255" r="10" fill="currentColor" className="text-gold-500" />
-
       <circle cx="200" cy="170" r="58" fill="currentColor" className="text-gold-400" />
-      <path d="M155 160 Q170 130 200 130 Q230 130 245 160 Q248 185 235 200 L165 200 Q152 185 155 160 Z" fill="currentColor" className="text-ink-950" />
       <circle cx="178" cy="172" r="6" fill="currentColor" className="text-ink-950" />
       <circle cx="222" cy="172" r="6" fill="currentColor" className="text-ink-950" />
       <path d="M175 195 Q200 215 225 195" stroke="currentColor" strokeWidth="5" fill="none" strokeLinecap="round" className="text-ink-950" />
-
       <rect x="160" y="222" width="80" height="70" rx="20" fill="currentColor" className="text-emerald-500" />
       <path d="M120 260 Q100 230 110 200" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" className="text-emerald-500" />
       <path d="M280 260 Q300 220 290 195" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" className="text-emerald-500" />
       <rect x="85" y="185" width="30" height="12" rx="6" fill="currentColor" className="text-gold-600" />
       <rect x="270" y="180" width="30" height="12" rx="6" fill="currentColor" className="text-gold-600" />
-
       <circle cx="270" cy="330" r="14" fill="currentColor" className="text-gold-500" />
       <circle cx="300" cy="345" r="10" fill="currentColor" className="text-gold-400" />
     </svg>
   );
 }
 
-export function AuthShell({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: ReactNode;
-}) {
+export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-cream-50 via-cream-100 to-cream-50 dark:from-ink-950 dark:via-ink-900 dark:to-ink-950">
       <div className="absolute top-6 right-6">
         <LanguageSwitcher />
       </div>
-
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center animate-fade-up">
         <div className="hidden md:flex flex-col items-center justify-center">
           <HappySaverIllustration />
@@ -58,7 +44,6 @@ export function AuthShell({
             Track your money, reach your goals, and grow your savings with confidence.
           </p>
         </div>
-
         <div className="w-full max-w-md mx-auto">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-ink-900 dark:bg-gold-500 flex items-center justify-center">
@@ -69,11 +54,10 @@ export function AuthShell({
           </div>
           <div className="glass-card p-8">{children}</div>
           <p className="mt-6 text-center text-sm font-medium bg-gradient-to-r from-gold-500 via-emerald-500 to-gold-500 bg-clip-text text-transparent">
-             Created by Ibrohim Mamatkarimov 
+            Created by Ibrohim Mamatkarimov
           </p>
         </div>
       </div>
-
       
         href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
@@ -86,3 +70,4 @@ export function AuthShell({
     </div>
   );
 }
+ENDOFFILE

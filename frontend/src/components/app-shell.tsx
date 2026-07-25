@@ -1,3 +1,4 @@
+cat > frontend/src/components/app-shell.tsx << 'ENDOFFILE'
 'use client';
 
 import { ReactNode } from 'react';
@@ -57,11 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-ink-900 text-cream-50 dark:bg-gold-500 dark:text-ink-950'
-                      : 'text-ink-700/70 dark:text-cream-100/70 hover:bg-ink-900/5 dark:hover:bg-cream-100/5'
-                  }`}
+                  className={active ? 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-ink-900 text-cream-50 dark:bg-gold-500 dark:text-ink-950' : 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-ink-700/70 dark:text-cream-100/70 hover:bg-ink-900/5 dark:hover:bg-cream-100/5'}
                 >
                   <Icon size={18} />
                   {label}
@@ -107,5 +104,4 @@ export function AppShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
-  );
-}
+ENDOFFILE
