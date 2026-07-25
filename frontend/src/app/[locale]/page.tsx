@@ -1,5 +1,7 @@
+tsx
 import { redirect } from 'next/navigation';
+import { defaultLocale } from '@/i18n/config';
 
-export default function LocaleRootPage({ params }: { params: { locale: string } }) {
-  redirect(`/${params.locale}/login`);
+export default function RootPage() {
+  redirect(`/${defaultLocale}/login`);
 }
