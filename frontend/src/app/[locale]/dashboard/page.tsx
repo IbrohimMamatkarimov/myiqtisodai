@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Wallet, TrendingDown, PiggyBank, HeartPulse, Sparkles, Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
@@ -13,9 +13,22 @@ import type { DashboardSummary } from '@/types/finance';
 
 const COLORS = ['#D4A93F', '#22B573', '#E15B4E', '#3B82F6', '#8B5CF6'];
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  uz: 'Uzbek',
+  en: 'English',
+  ru: 'Russian',
+};
+
+function moodEmoji(score: number) {
+  if (score >= 70) return '😊';
+  if (score >= 40) return '😐';
+  return '😟';
+}
+
 export default function DashboardPage() {
   const checked = useRequireAuth();
   const t = useTranslations('dashboard');
+  const locale = useLocale();
   const user = useAuthStore((s) => s.user);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,15 +42,15 @@ export default function DashboardPage() {
       .then(({ data }) => setSummary(data))
       .finally(() => setLoading(false));
 
+    const languageName = LANGUAGE_NAMES[locale] || 'English';
     api
       .post('/ai/ask', {
-        question:
-          'Summarize my current financial situation in 2-3 sentences, then give me 2-3 short, specific pieces of advice or predictions based on my actual numbers. Keep it concise and encouraging.',
+        question: `Respond only in ${languageName}, regardless of any other instruction. Summarize my current financial situation in 2-3 sentences, then give me 2-3 short, specific pieces of advice or predictions based on my actual numbers. Keep it concise and encouraging.`,
       })
       .then(({ data }) => setInsight(data.answer))
       .catch(() => setInsight(null))
       .finally(() => setInsightLoading(false));
-  }, [checked]);
+  }, [checked, locale]);
 
   if (!checked) return null;
 
@@ -81,7 +94,7 @@ export default function DashboardPage() {
             />
             <StatCard
               label={t('financialHealth')}
-              value={`${summary.financial_health_score}/100`}
+              value={`${moodEmoji(summary.financial_health_score)} ${Math.round(summary.financial_health_score / 10)}/10`}
               icon={<HeartPulse size={18} />}
             />
           </div>
