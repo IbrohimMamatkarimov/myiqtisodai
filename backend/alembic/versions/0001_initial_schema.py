@@ -16,14 +16,14 @@ down_revision: Union[str, None] = None
 branch_labels = None
 depends_on = None
 
-language_enum = postgresql.ENUM("uz", "en", "ru", name="language")
-theme_enum = postgresql.ENUM("light", "dark", name="theme")
-currency_enum = postgresql.ENUM("UZS", "USD", "EUR", name="currency")
-category_type_enum = postgresql.ENUM("income", "expense", name="categorytype")
-recurrence_enum = postgresql.ENUM("none", "daily", "weekly", "monthly", "yearly", name="recurrenceinterval")
-budget_period_enum = postgresql.ENUM("weekly", "monthly", "yearly", name="budgetperiod")
+language_enum = postgresql.ENUM("uz", "en", "ru", name="language", create_type=False)
+theme_enum = postgresql.ENUM("light", "dark", name="theme", create_type=False)
+currency_enum = postgresql.ENUM("UZS", "USD", "EUR", name="currency", create_type=False)
+category_type_enum = postgresql.ENUM("income", "expense", name="categorytype", create_type=False)
+recurrence_enum = postgresql.ENUM("none", "daily", "weekly", "monthly", "yearly", name="recurrenceinterval", create_type=False)
+budget_period_enum = postgresql.ENUM("weekly", "monthly", "yearly", name="budgetperiod", create_type=False)
 notification_type_enum = postgresql.ENUM(
-    "budget_alert", "overspending", "goal_reminder", "monthly_summary", "system", name="notificationtype"
+    "budget_alert", "overspending", "goal_reminder", "monthly_summary", "system", name="notificationtype", create_type=False
 )
 
 
