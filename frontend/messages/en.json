@@ -58,7 +58,9 @@
     "recentTransactions": "Recent transactions",
     "goals": "Goals",
     "aiRecommendations": "AI recommendations",
-    "vsLastMonth": "vs last month"
+    "vsLastMonth": "vs last month",
+    "topExpenseCategories": "Top expense categories",
+    "distribution": "Distribution"
   },
   "expenses": {
     "title": "Expenses",
