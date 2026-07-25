@@ -27,7 +27,8 @@ export default function RegisterPage() {
       setDone(true);
       setTimeout(() => router.push('/login'), 2000);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Registration failed. Please try again.');
+      const detail = err?.response?.data?.detail;
+setError(typeof detail === 'string' ? detail : 'Please check your information and try again.');
     } finally {
       setLoading(false);
     }
