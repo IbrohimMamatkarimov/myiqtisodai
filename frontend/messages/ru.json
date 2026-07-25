@@ -58,7 +58,9 @@
     "recentTransactions": "Недавние операции",
     "goals": "Цели",
     "aiRecommendations": "Рекомендации AI",
-    "vsLastMonth": "по сравнению с прошлым месяцем"
+    "vsLastMonth": "по сравнению с прошлым месяцем",
+    "topExpenseCategories": "Основные категории расходов",
+    "distribution": "Распределение"
   },
   "expenses": {
     "title": "Расходы",
