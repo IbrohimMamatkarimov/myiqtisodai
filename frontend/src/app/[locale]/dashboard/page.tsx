@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { Wallet, TrendingDown, PiggyBank, HeartPulse } from 'lucide-react';
+import { Wallet, TrendingDown, PiggyBank, HeartPulse, Sparkles, Loader2 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { StatCard } from '@/components/stat-card';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -19,6 +19,8 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [insight, setInsight] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(true);
 
   useEffect(() => {
     if (!checked) return;
@@ -26,6 +28,15 @@ export default function DashboardPage() {
       .get<DashboardSummary>('/dashboard/summary')
       .then(({ data }) => setSummary(data))
       .finally(() => setLoading(false));
+
+    api
+      .post('/ai/ask', {
+        question:
+          'Summarize my current financial situation in 2-3 sentences, then give me 2-3 short, specific pieces of advice or predictions based on my actual numbers. Keep it concise and encouraging.',
+      })
+      .then(({ data }) => setInsight(data.answer))
+      .catch(() => setInsight(null))
+      .finally(() => setInsightLoading(false));
   }, [checked]);
 
   if (!checked) return null;
@@ -125,6 +136,24 @@ export default function DashboardPage() {
                 </ResponsiveContainer>
               )}
             </div>
+          </div>
+
+          <div className="glass-card p-5 mt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles size={16} className="text-gold-600 dark:text-gold-400" />
+              <h2 className="font-display font-semibold">{t('aiRecommendations')}</h2>
+            </div>
+            {insightLoading ? (
+              <div className="flex items-center gap-2 text-sm text-ink-700/60 dark:text-cream-100/60">
+                <Loader2 size={14} className="animate-spin" /> Analyzing your finances…
+              </div>
+            ) : insight ? (
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{insight}</p>
+            ) : (
+              <p className="text-sm text-ink-700/60 dark:text-cream-100/60">
+                Add some income and expenses, then check back here for personalized insights.
+              </p>
+            )}
           </div>
         </>
       )}
