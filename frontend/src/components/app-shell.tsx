@@ -12,9 +12,9 @@ import {
   LogOut,
   Sun,
   Moon,
+  Send,
 } from 'lucide-react';
 import { useTheme } from './theme-provider';
-import { Send } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { LanguageSwitcher } from './language-switcher';
 
@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
 
-const navItems = [
+  const navItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { href: '/expenses', label: t('expenses'), icon: Receipt },
     { href: '/income', label: t('income'), icon: Wallet },
@@ -93,7 +93,8 @@ const navItems = [
           </header>
           <div className="p-6">{children}</div>
         </main>
-</div>
+      </div>
+
       
         href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
@@ -104,5 +105,7 @@ const navItems = [
         <span className="text-sm font-medium">Support</span>
       </a>
     </div>
+  );
+}
   );
 }
