@@ -6,6 +6,7 @@ import { Link, usePathname, useRouter } from '@/navigation';
 import {
   LayoutDashboard,
   Receipt,
+  Wallet,
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
@@ -24,9 +25,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
 
-  const navItems = [
+const navItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { href: '/expenses', label: t('expenses'), icon: Receipt },
+    { href: '/income', label: t('income'), icon: Wallet },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
   ];
