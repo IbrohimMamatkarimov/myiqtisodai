@@ -58,7 +58,9 @@
     "recentTransactions": "So'nggi tranzaksiyalar",
     "goals": "Maqsadlar",
     "aiRecommendations": "AI tavsiyalari",
-    "vsLastMonth": "o'tgan oyga nisbatan"
+    "vsLastMonth": "o'tgan oyga nisbatan",
+    "topExpenseCategories": "Eng ko'p xarajat toifalari",
+    "distribution": "Taqsimot"
   },
   "expenses": {
     "title": "Xarajatlar",
