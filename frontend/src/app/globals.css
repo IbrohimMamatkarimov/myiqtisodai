@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: 'Manrope', ui-sans-serif, system-ui;
+  --font-body: 'Inter', ui-sans-serif, system-ui;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100 font-body transition-colors duration-300;
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/70 dark:bg-ink-800/60 backdrop-blur-md border border-white/40 dark:border-ink-600/40 shadow-glass dark:shadow-glass-dark rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 dark:bg-gold-500 text-cream-50 dark:text-ink-950 font-medium px-4 py-2.5 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-700/15 dark:border-cream-100/20 px-4 py-2.5 font-medium transition-all hover:bg-ink-900/5 dark:hover:bg-cream-100/5 active:scale-[0.98];
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-ink-700/15 dark:border-cream-100/20 bg-white/60 dark:bg-ink-900/50 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-gold-500/50 transition-all;
+  }
+
+  .label-text {
+    @apply text-xs font-medium uppercase tracking-wide text-ink-700/60 dark:text-cream-100/60;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "common": {
+    "appName": "MyIqtisod",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "delete": "O'chirish",
+    "edit": "Tahrirlash",
+    "add": "Qo'shish",
+    "search": "Qidirish",
+    "loading": "Yuklanmoqda...",
+    "confirm": "Tasdiqlash",
+    "back": "Orqaga",
+    "close": "Yopish",
+    "currencyUZS": "so'm"
+  },
+  "nav": {
+    "dashboard": "Boshqaruv paneli",
+    "expenses": "Xarajatlar",
+    "income": "Daromadlar",
+    "budgets": "Byudjetlar",
+    "goals": "Maqsadlar",
+    "reports": "Hisobotlar",
+    "assistant": "AI Yordamchi",
+    "settings": "Sozlamalar",
+    "logout": "Chiqish"
+  },
+  "auth": {
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "email": "Elektron pochta",
+    "password": "Parol",
+    "fullName": "To'liq ism",
+    "forgotPassword": "Parolni unutdingizmi?",
+    "noAccount": "Hisobingiz yo'qmi?",
+    "haveAccount": "Hisobingiz bormi?",
+    "signUp": "Ro'yxatdan o'tish",
+    "signIn": "Kirish",
+    "welcomeBack": "Xush kelibsiz",
+    "welcomeBackSubtitle": "Moliyangizni kuzatish uchun tizimga kiring.",
+    "createAccountTitle": "Hisob yarating",
+    "createAccountSubtitle": "Moliyangizni aqlliroq boshqarishni boshlang.",
+    "resetPassword": "Parolni tiklash",
+    "newPassword": "Yangi parol",
+    "sendResetLink": "Havola yuborish",
+    "verifyEmail": "Emailni tasdiqlash",
+    "changePassword": "Parolni o'zgartirish",
+    "currentPassword": "Joriy parol"
+  },
+  "dashboard": {
+    "greeting": "Salom, {name}",
+    "subtitle": "Bu oy uchun moliyaviy holatingiz.",
+    "income": "Daromad",
+    "expenses": "Xarajat",
+    "remaining": "Qolgan mablag'",
+    "savings": "Jamg'arma",
+    "financialHealth": "Moliyaviy salomatlik ko'rsatkichi",
+    "budgetProgress": "Byudjet bajarilishi",
+    "recentTransactions": "So'nggi tranzaksiyalar",
+    "goals": "Maqsadlar",
+    "aiRecommendations": "AI tavsiyalari",
+    "vsLastMonth": "o'tgan oyga nisbatan"
+  },
+  "expenses": {
+    "title": "Xarajatlar",
+    "addExpense": "Xarajat qo'shish",
+    "amount": "Summa",
+    "category": "Toifa",
+    "description": "Izoh",
+    "date": "Sana",
+    "recurring": "Takrorlanuvchi",
+    "noResults": "Xarajatlar topilmadi."
+  },
+  "income": {
+    "title": "Daromadlar",
+    "addIncome": "Daromad qo'shish",
+    "source": "Manba"
+  },
+  "goals": {
+    "title": "Jamg'arma maqsadlari",
+    "addGoal": "Maqsad qo'shish",
+    "target": "Maqsad summasi",
+    "current": "Joriy summa",
+    "deadline": "Muddat",
+    "progress": "Bajarilish"
+  },
+  "assistant": {
+    "title": "AI Moliyaviy Yordamchi",
+    "subtitle": "Moliyangiz haqida istalgan savolni bering.",
+    "placeholder": "Bu oy 500$ lik xarid qila olamanmi?",
+    "send": "Yuborish",
+    "marketTitle": "Bozor narxi yordamchisi",
+    "marketPlaceholder": "Guruch narxi qancha?"
+  },
+  "settings": {
+    "title": "Sozlamalar",
+    "profile": "Profil",
+    "language": "Til",
+    "theme": "Mavzu",
+    "currency": "Valyuta",
+    "notifications": "Bildirishnomalar",
+    "security": "Xavfsizlik",
+    "deleteAccount": "Hisobni o'chirish",
+    "lightMode": "Yorug'",
+    "darkMode": "Qorong'i"
+  }
+}

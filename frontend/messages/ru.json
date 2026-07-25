@@ -1,0 +1,106 @@
+{
+  "common": {
+    "appName": "MyIqtisod",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "add": "Добавить",
+    "search": "Поиск",
+    "loading": "Загрузка...",
+    "confirm": "Подтвердить",
+    "back": "Назад",
+    "close": "Закрыть",
+    "currencyUZS": "сум"
+  },
+  "nav": {
+    "dashboard": "Панель управления",
+    "expenses": "Расходы",
+    "income": "Доходы",
+    "budgets": "Бюджеты",
+    "goals": "Цели",
+    "reports": "Отчёты",
+    "assistant": "AI Помощник",
+    "settings": "Настройки",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "login": "Вход",
+    "register": "Регистрация",
+    "email": "Эл. почта",
+    "password": "Пароль",
+    "fullName": "Полное имя",
+    "forgotPassword": "Забыли пароль?",
+    "noAccount": "Нет аккаунта?",
+    "haveAccount": "Уже есть аккаунт?",
+    "signUp": "Зарегистрироваться",
+    "signIn": "Войти",
+    "welcomeBack": "С возвращением",
+    "welcomeBackSubtitle": "Войдите, чтобы отслеживать свои финансы.",
+    "createAccountTitle": "Создайте аккаунт",
+    "createAccountSubtitle": "Начните управлять финансами разумнее.",
+    "resetPassword": "Сброс пароля",
+    "newPassword": "Новый пароль",
+    "sendResetLink": "Отправить ссылку",
+    "verifyEmail": "Подтвердить email",
+    "changePassword": "Изменить пароль",
+    "currentPassword": "Текущий пароль"
+  },
+  "dashboard": {
+    "greeting": "Привет, {name}",
+    "subtitle": "Ваш финансовый обзор за этот месяц.",
+    "income": "Доход",
+    "expenses": "Расход",
+    "remaining": "Остаток",
+    "savings": "Накопления",
+    "financialHealth": "Индекс финансового здоровья",
+    "budgetProgress": "Выполнение бюджета",
+    "recentTransactions": "Недавние операции",
+    "goals": "Цели",
+    "aiRecommendations": "Рекомендации AI",
+    "vsLastMonth": "по сравнению с прошлым месяцем"
+  },
+  "expenses": {
+    "title": "Расходы",
+    "addExpense": "Добавить расход",
+    "amount": "Сумма",
+    "category": "Категория",
+    "description": "Описание",
+    "date": "Дата",
+    "recurring": "Повторяющийся",
+    "noResults": "Расходы не найдены."
+  },
+  "income": {
+    "title": "Доходы",
+    "addIncome": "Добавить доход",
+    "source": "Источник"
+  },
+  "goals": {
+    "title": "Цели накоплений",
+    "addGoal": "Добавить цель",
+    "target": "Целевая сумма",
+    "current": "Текущая сумма",
+    "deadline": "Срок",
+    "progress": "Прогресс"
+  },
+  "assistant": {
+    "title": "AI Финансовый Помощник",
+    "subtitle": "Задайте любой вопрос о своих финансах.",
+    "placeholder": "Могу ли я позволить себе покупку за 500$ в этом месяце?",
+    "send": "Отправить",
+    "marketTitle": "Помощник по рыночным ценам",
+    "marketPlaceholder": "Сколько сейчас стоит рис?"
+  },
+  "settings": {
+    "title": "Настройки",
+    "profile": "Профиль",
+    "language": "Язык",
+    "theme": "Тема",
+    "currency": "Валюта",
+    "notifications": "Уведомления",
+    "security": "Безопасность",
+    "deleteAccount": "Удалить аккаунт",
+    "lightMode": "Светлая",
+    "darkMode": "Тёмная"
+  }
+}

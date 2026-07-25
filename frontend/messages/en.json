@@ -1,0 +1,106 @@
+{
+  "common": {
+    "appName": "MyIqtisod",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "back": "Back",
+    "close": "Close",
+    "currencyUZS": "UZS"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "expenses": "Expenses",
+    "income": "Income",
+    "budgets": "Budgets",
+    "goals": "Goals",
+    "reports": "Reports",
+    "assistant": "AI Assistant",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "signUp": "Sign up",
+    "signIn": "Sign in",
+    "welcomeBack": "Welcome back",
+    "welcomeBackSubtitle": "Log in to keep track of your money.",
+    "createAccountTitle": "Create your account",
+    "createAccountSubtitle": "Start managing your finances smarter.",
+    "resetPassword": "Reset password",
+    "newPassword": "New password",
+    "sendResetLink": "Send reset link",
+    "verifyEmail": "Verify email",
+    "changePassword": "Change password",
+    "currentPassword": "Current password"
+  },
+  "dashboard": {
+    "greeting": "Hello, {name}",
+    "subtitle": "Here's your financial snapshot for this month.",
+    "income": "Income",
+    "expenses": "Expenses",
+    "remaining": "Remaining balance",
+    "savings": "Savings",
+    "financialHealth": "Financial Health Score",
+    "budgetProgress": "Budget progress",
+    "recentTransactions": "Recent transactions",
+    "goals": "Goals",
+    "aiRecommendations": "AI recommendations",
+    "vsLastMonth": "vs last month"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "addExpense": "Add expense",
+    "amount": "Amount",
+    "category": "Category",
+    "description": "Description",
+    "date": "Date",
+    "recurring": "Recurring",
+    "noResults": "No expenses found."
+  },
+  "income": {
+    "title": "Income",
+    "addIncome": "Add income",
+    "source": "Source"
+  },
+  "goals": {
+    "title": "Savings goals",
+    "addGoal": "Add goal",
+    "target": "Target amount",
+    "current": "Current amount",
+    "deadline": "Deadline",
+    "progress": "Progress"
+  },
+  "assistant": {
+    "title": "AI Financial Assistant",
+    "subtitle": "Ask anything about your finances.",
+    "placeholder": "Can I afford a $500 purchase this month?",
+    "send": "Send",
+    "marketTitle": "Market Price Assistant",
+    "marketPlaceholder": "How much is rice right now?"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "language": "Language",
+    "theme": "Theme",
+    "currency": "Currency",
+    "notifications": "Notifications",
+    "security": "Security",
+    "deleteAccount": "Delete account",
+    "lightMode": "Light",
+    "darkMode": "Dark"
+  }
+}
