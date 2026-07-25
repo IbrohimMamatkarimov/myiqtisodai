@@ -4,22 +4,34 @@ import { ReactNode } from 'react';
 import { LanguageSwitcher } from './language-switcher';
 import { Send } from 'lucide-react';
 
-function SavingsIllustration() {
+function HappySaverIllustration() {
   return (
-    <svg viewBox="0 0 400 400" className="w-full max-w-sm mx-auto">
-      <circle cx="200" cy="200" r="180" fill="currentColor" className="text-gold-500/10" />
-      <circle cx="120" cy="90" r="14" fill="currentColor" className="text-gold-400" />
-      <circle cx="290" cy="70" r="10" fill="currentColor" className="text-emerald-400" />
-      <circle cx="320" cy="160" r="8" fill="currentColor" className="text-gold-400" />
-      <ellipse cx="200" cy="250" rx="110" ry="90" fill="currentColor" className="text-gold-500" />
-      <circle cx="270" cy="190" r="18" fill="currentColor" className="text-gold-500" />
-      <ellipse cx="150" cy="230" rx="8" ry="12" fill="currentColor" className="text-ink-950/70" />
-      <ellipse cx="230" cy="230" rx="8" ry="12" fill="currentColor" className="text-ink-950/70" />
-      <path d="M150 270 Q190 300 230 270" stroke="currentColor" strokeWidth="6" fill="none" strokeLinecap="round" className="text-ink-950/70" />
-      <rect x="185" y="140" width="30" height="14" rx="7" fill="currentColor" className="text-gold-600" />
-      <ellipse cx="140" cy="330" rx="90" ry="14" fill="currentColor" className="text-ink-900/10" />
-      <circle cx="80" cy="300" r="16" fill="currentColor" className="text-emerald-400" />
-      <circle cx="320" cy="300" r="12" fill="currentColor" className="text-gold-400" />
+    <svg viewBox="0 0 400 420" className="w-full max-w-sm mx-auto">
+      <circle cx="200" cy="210" r="190" fill="currentColor" className="text-gold-500/10" />
+      <circle cx="110" cy="80" r="12" fill="currentColor" className="text-gold-400" />
+      <circle cx="300" cy="60" r="9" fill="currentColor" className="text-emerald-400" />
+      <circle cx="330" cy="150" r="7" fill="currentColor" className="text-gold-400" />
+      <circle cx="70" cy="180" r="8" fill="currentColor" className="text-emerald-400" />
+
+      <ellipse cx="200" cy="380" rx="120" ry="16" fill="currentColor" className="text-ink-900/10" />
+
+      <ellipse cx="140" cy="300" rx="55" ry="60" fill="currentColor" className="text-gold-500" />
+      <circle cx="185" cy="255" r="10" fill="currentColor" className="text-gold-500" />
+
+      <circle cx="200" cy="170" r="58" fill="currentColor" className="text-gold-400" />
+      <path d="M155 160 Q170 130 200 130 Q230 130 245 160 Q248 185 235 200 L165 200 Q152 185 155 160 Z" fill="currentColor" className="text-ink-950" />
+      <circle cx="178" cy="172" r="6" fill="currentColor" className="text-ink-950" />
+      <circle cx="222" cy="172" r="6" fill="currentColor" className="text-ink-950" />
+      <path d="M175 195 Q200 215 225 195" stroke="currentColor" strokeWidth="5" fill="none" strokeLinecap="round" className="text-ink-950" />
+
+      <rect x="160" y="222" width="80" height="70" rx="20" fill="currentColor" className="text-emerald-500" />
+      <path d="M120 260 Q100 230 110 200" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" className="text-emerald-500" />
+      <path d="M280 260 Q300 220 290 195" stroke="currentColor" strokeWidth="10" fill="none" strokeLinecap="round" className="text-emerald-500" />
+      <rect x="85" y="185" width="30" height="12" rx="6" fill="currentColor" className="text-gold-600" />
+      <rect x="270" y="180" width="30" height="12" rx="6" fill="currentColor" className="text-gold-600" />
+
+      <circle cx="270" cy="330" r="14" fill="currentColor" className="text-gold-500" />
+      <circle cx="300" cy="345" r="10" fill="currentColor" className="text-gold-400" />
     </svg>
   );
 }
@@ -41,7 +53,7 @@ export function AuthShell({
 
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center animate-fade-up">
         <div className="hidden md:flex flex-col items-center justify-center">
-          <SavingsIllustration />
+          <HappySaverIllustration />
           <p className="mt-4 text-center text-sm text-ink-700/60 dark:text-cream-100/60 max-w-xs">
             Track your money, reach your goals, and grow your savings with confidence.
           </p>
