@@ -1,4 +1,3 @@
-cat > frontend/src/components/auth-shell.tsx << 'ENDOFFILE'
 'use client';
 
 import { ReactNode } from 'react';
@@ -70,4 +69,3 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
     </div>
   );
 }
-ENDOFFILE
