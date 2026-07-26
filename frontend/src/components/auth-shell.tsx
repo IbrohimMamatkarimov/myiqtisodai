@@ -38,9 +38,9 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       </div>
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center animate-fade-up">
         <div className="hidden md:flex flex-col items-center justify-center">
-          <img src="/iqtisod-photo.png" alt="Save money" className="w-full max-w-sm mx-auto" />
+          <img src="/iqtisod photo.png" alt="Save money" className="w-full max-w-sm mx-auto" />
           <p className="mt-4 text-center text-sm text-ink-700/60 dark:text-cream-100/60 max-w-xs">
-            Track your money, reach your goals, and grow your savings with confidence.
+            Track your money, and grow your savings with confidence.
           </p>
         </div>
         <div className="w-full max-w-md mx-auto">
