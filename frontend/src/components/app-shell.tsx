@@ -93,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       
-        href="https://t.me/ibrohimmamatkarimov"
+        <a href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-glass hover:opacity-90 transition-opacity"
