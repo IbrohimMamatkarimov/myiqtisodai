@@ -1,4 +1,3 @@
-cat > frontend/src/components/app-shell.tsx << 'ENDOFFILE'
 'use client';
 
 import { ReactNode } from 'react';
