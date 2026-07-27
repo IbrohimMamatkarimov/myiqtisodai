@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="glass-card p-5 lg:col-span-2">
-              <h2 className="font-display font-semibold mb-4">{t('distribution')}</h2>
+             <h2 className="font-display font-semibold mb-4">{t('topExpenseCategories')}</h2>
               {summary.top_expense_categories.length === 0 ? (
                 <p className="text-sm text-ink-700/60 dark:text-cream-100/60">
                   No expenses recorded yet this month.
