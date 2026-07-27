@@ -61,16 +61,7 @@ export function AuthShell({
             {t('illustrationText')}
           </p>
         </div>
-
-        {/* Right side */}
-        <div className="w-full max-w-md mx-auto">
-          <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-ink-900 dark:bg-gold-500 flex items-center justify-center">
-              <span className="font-display font-bold text-lg text-gold-400 dark:text-ink-950">
-                M
-              </span>
-            </div>
-
+        
             <h1 className="font-display text-2xl font-bold">{title}</h1>
 
             <p className="mt-1 text-sm text-ink-700/60 dark:text-cream-100/60">
