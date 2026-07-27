@@ -39,9 +39,7 @@ export function AuthShell({ title, subtitle, children }: { title: string; subtit
       <div className="w-full max-w-4xl grid md:grid-cols-2 gap-8 items-center animate-fade-up">
         <div className="hidden md:flex flex-col items-center justify-center">
           <img src="/iqtisodai2.png" alt="Save money" className="w-full max-w-sm mx-auto" />
-          <p className="mt-4 text-center text-sm text-ink-700/60 dark:text-cream-100/60 max-w-xs">
-            Track your money, and grow your savings with confidence.
-          </p>
+          import { useTranslations } from "next-intl";
         </div>
         <div className="w-full max-w-md mx-auto">
           <div className="mb-8 text-center">
