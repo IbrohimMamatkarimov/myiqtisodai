@@ -25,7 +25,7 @@
     "logout": "Chiqish"
   },
   "auth": {
-    "authTagline": "Pulingizni kuzating, maqsadlaringizga erishing va jamg'armangizni ishonch bilan oshiring."
+    "authTagline": "Pulingizni kuzating, maqsadlaringizga erishing va jamg'armangizni ishonch bilan oshiring.",
     "login": "Kirish",
     "register": "Ro'yxatdan o'tish",
     "email": "Elektron pochta",
