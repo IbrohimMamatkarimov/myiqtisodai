@@ -25,6 +25,7 @@
     "logout": "Log out"
   },
   "auth": {
+    "authTagline": "Track your money, reach your goals, and grow your savings with confidence."
     "login": "Log in",
     "register": "Create account",
     "email": "Email",
