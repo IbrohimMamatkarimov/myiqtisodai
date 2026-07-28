@@ -23,50 +23,38 @@ export function AuthShell({
       {/* Header */}
       <div className="absolute top-6 left-8 right-8 flex items-center justify-between z-50">
 
-        {/* Brand */}
-        <div className="flex flex-col leading-none select-none">
+        {/* Logo */}
+        <h2 className="text-3xl font-extrabold tracking-tight select-none">
+          <span className="text-slate-900">Iqtisod</span>
+          <span className="text-emerald-500">AI</span>
+        </h2>
 
-          <h2 className="text-3xl font-extrabold tracking-tight">
-            <span className="text-slate-900">
-              Iqtisod
-            </span>
-            <span className="text-emerald-500">
-              AI
-            </span>
-          </h2>
-
-
-
-        </div>
-
-
-        {/* Language */}
         <LanguageSwitcher />
-
       </div>
 
+      <div className="w-full max-w-7xl grid md:grid-cols-2 gap-12 items-center">
 
-      <div className="w-full max-w-7xl grid md:grid-cols-2 gap-20 items-center">
+        {/* LEFT */}
+        <div className="hidden md:flex justify-center">
 
+          <div className="flex flex-col items-center">
 
-        {/* Left Side */}
-        <div className="hidden md:flex flex-col items-center justify-center">
+            <img
+              src="/iqtisodai5.png"
+              alt="IqtisodAI"
+              draggable={false}
+              className="w-full max-w-md select-none"
+            />
 
-          <img
-            src="/iqtisodai5.png"
-            alt="IqtisodAI"
-            className="w-full max-w-lg drop-shadow-xl select-none"
-            draggable={false}
-          />
+            <p className="mt-5 max-w-sm text-center text-lg leading-8 text-slate-600">
+              {t('illustrationText')}
+            </p>
 
-          <p className="mt-8 max-w-sm text-center text-lg leading-8 text-slate-600">
-            {t('illustrationText')}
-          </p>
+          </div>
 
         </div>
 
-
-        {/* Right Side */}
+        {/* RIGHT */}
         <div className="w-full max-w-lg mx-auto">
 
           <div className="mb-8 text-center">
@@ -75,17 +63,15 @@ export function AuthShell({
               {title}
             </h1>
 
-            <p className="mt-3 text-lg leading-7 text-slate-500">
+            <p className="mt-3 text-lg text-slate-500">
               {subtitle}
             </p>
 
           </div>
 
-
           <div className="rounded-[32px] bg-white border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)] p-10">
             {children}
           </div>
-
 
           <p className="mt-8 text-center text-sm font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 bg-clip-text text-transparent">
             {common('createdBy')}
@@ -94,7 +80,6 @@ export function AuthShell({
         </div>
 
       </div>
-
 
       {/* Telegram Support */}
       <a
@@ -108,7 +93,6 @@ export function AuthShell({
         <span className="text-sm font-semibold">
           {common('support')}
         </span>
-
       </a>
 
     </div>
