@@ -18,62 +18,68 @@ export function AuthShell({
   const common = useTranslations('common');
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-white via-[#F8FBF9] to-[#EDF7F1]">
-      
+    <div className="min-h-screen bg-gradient-to-br from-[#FFFFFF] via-[#F9FCFA] to-[#ECFDF5] flex items-center justify-center px-6 py-12">
+
       {/* Language Switcher */}
       <div className="absolute top-6 right-6">
         <LanguageSwitcher />
       </div>
 
-      <div className="w-full max-w-6xl grid md:grid-cols-2 gap-16 items-center">
+      <div className="w-full max-w-7xl grid md:grid-cols-2 gap-20 items-center">
 
         {/* Left Side */}
         <div className="hidden md:flex flex-col items-center justify-center">
+
           <img
             src="/iqtisodai2.png"
             alt="Iqtisod AI"
-            className="w-full max-w-md"
+            className="w-full max-w-lg drop-shadow-2xl select-none"
+            draggable={false}
           />
 
-          <p className="mt-6 text-center text-lg text-gray-600 max-w-sm leading-8">
+          <p className="mt-8 max-w-sm text-center text-lg leading-8 text-slate-600">
             {t('illustrationText')}
           </p>
+
         </div>
 
         {/* Right Side */}
         <div className="w-full max-w-lg mx-auto">
 
           <div className="mb-8 text-center">
-            <h1 className="font-display text-5xl font-bold text-gray-900">
+
+            <h1 className="font-display text-5xl font-bold text-slate-900">
               {title}
             </h1>
 
-            <p className="mt-3 text-lg text-gray-500">
+            <p className="mt-3 text-lg leading-7 text-slate-500">
               {subtitle}
             </p>
+
           </div>
 
-          <div className="rounded-3xl bg-white border border-gray-100 shadow-2xl p-10">
+          <div className="rounded-[32px] bg-white border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)] p-10">
             {children}
           </div>
 
-          <p className="mt-8 text-center text-sm font-medium text-emerald-600">
+          <p className="mt-8 text-center text-sm font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 bg-clip-text text-transparent">
             {common('createdBy')}
           </p>
 
         </div>
+
       </div>
 
-      {/* Telegram Support */}
+      {/* Telegram */}
       <a
         href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 shadow-lg transition-all duration-300"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-3 shadow-xl transition-all duration-300 hover:scale-105"
       >
         <Send size={18} />
-        <span className="text-sm font-medium">
-          Support
+        <span className="text-sm font-semibold">
+          {common('support')}
         </span>
       </a>
 
