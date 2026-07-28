@@ -35,9 +35,7 @@ export function AuthShell({
             </span>
           </h2>
 
-          <p className="mt-1 text-xs font-medium text-slate-500 tracking-wide">
-            AI Personal Finance
-          </p>
+
 
         </div>
 
