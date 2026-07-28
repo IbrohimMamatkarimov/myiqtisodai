@@ -32,10 +32,12 @@ export function AuthShell({
         <LanguageSwitcher />
       </div>
 
-      <div className="w-full max-w-7xl grid md:grid-cols-2 gap-12 items-center">
+      {/* CHANGED: gap-12 -> gap-10 */}
+      <div className="w-full max-w-7xl grid md:grid-cols-2 gap-10 items-center">
 
         {/* LEFT */}
-        <div className="hidden md:flex justify-center">
+        {/* CHANGED: moved illustration slightly upward */}
+        <div className="hidden md:flex justify-center -mt-10">
 
           <div className="flex flex-col items-center">
 
@@ -43,10 +45,12 @@ export function AuthShell({
               src="/iqtisodai5.png"
               alt="IqtisodAI"
               draggable={false}
-              className="w-full max-w-md select-none"
+              /* CHANGED */
+              className="w-full max-w-sm select-none"
             />
 
-            <p className="mt-5 max-w-sm text-center text-lg leading-8 text-slate-600">
+            {/* CHANGED */}
+            <p className="mt-3 max-w-xs text-center text-lg leading-7 text-slate-600">
               {t('illustrationText')}
             </p>
 
@@ -57,7 +61,8 @@ export function AuthShell({
         {/* RIGHT */}
         <div className="w-full max-w-lg mx-auto">
 
-          <div className="mb-8 text-center">
+          {/* CHANGED */}
+          <div className="mb-6 text-center">
 
             <h1 className="font-display text-5xl font-bold text-slate-900">
               {title}
@@ -95,6 +100,9 @@ export function AuthShell({
         </span>
       </a>
 
+    </div>
+  );
+}
     </div>
   );
 }
