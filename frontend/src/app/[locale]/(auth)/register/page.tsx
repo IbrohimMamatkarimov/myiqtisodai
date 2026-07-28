@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { api } from '@/lib/api-client';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
@@ -14,42 +14,49 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+
     setLoading(true);
+    setError(null);
+
     try {
-      await api.post('/auth/register', { email, password, full_name: fullName });
-      setDone(true);
-      setTimeout(() => router.push('/login'), 2000);
+      await api.post('/auth/register', {
+        email,
+        password,
+        full_name: fullName,
+      });
+
+      router.push('/onboarding');
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
-setError(typeof detail === 'string' ? detail : 'Please check your information and try again.');
+
+      setError(
+        typeof detail === 'string'
+          ? detail
+          : 'Please check your information and try again.'
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  if (done) {
-    return (
-      <AuthShell title={t('createAccountTitle')} subtitle={t('createAccountSubtitle')}>
-        <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <CheckCircle2 className="text-emerald-500" size={40} />
-          <p className="font-medium">Ro'yxatdan o'tganingiz uchun rahmat! Kirish sahifasiga yo'naltirilmoqda…</p>
-        </div>
-      </AuthShell>
-    );
-  }
-
   return (
-    <AuthShell title={t('createAccountTitle')} subtitle={t('createAccountSubtitle')}>
+    <AuthShell
+      title={t('createAccountTitle')}
+      subtitle={t('createAccountSubtitle')}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
+
         <div>
-          <label className="label-text">{t('fullName')}</label>
+          <label className="label-text">
+            {t('fullName')}
+          </label>
+
           <input
             required
             value={fullName}
@@ -58,8 +65,12 @@ setError(typeof detail === 'string' ? detail : 'Please check your information an
             placeholder="Aziz Karimov"
           />
         </div>
+
         <div>
-          <label className="label-text">{t('email')}</label>
+          <label className="label-text">
+            {t('email')}
+          </label>
+
           <input
             type="email"
             required
@@ -69,8 +80,12 @@ setError(typeof detail === 'string' ? detail : 'Please check your information an
             placeholder="you@example.com"
           />
         </div>
+
         <div>
-          <label className="label-text">{t('password')}</label>
+          <label className="label-text">
+            {t('password')}
+          </label>
+
           <input
             type="password"
             required
@@ -82,18 +97,32 @@ setError(typeof detail === 'string' ? detail : 'Please check your information an
           />
         </div>
 
-        {error && <p className="text-sm text-coral-500">{error}</p>}
+        {error && (
+          <p className="text-sm text-coral-500">
+            {error}
+          </p>
+        )}
 
-        <button type="submit" disabled={loading} className="btn-primary w-full">
-          {loading ? <Loader2 className="animate-spin" size={18} /> : t('signUp')}
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary w-full"
+        >
+          {loading
+            ? <Loader2 className="animate-spin" size={18} />
+            : t('signUp')}
         </button>
 
-        <p className="text-center text-sm text-ink-700/60 dark:text-cream-100/60 pt-2">
+        <p className="text-center text-sm text-ink-700/60 pt-2">
           {t('haveAccount')}{' '}
-          <Link href="/login" className="font-medium text-gold-600 dark:text-gold-400 hover:underline">
+          <Link
+            href="/login"
+            className="font-medium text-emerald-600 hover:underline"
+          >
             {t('signIn')}
           </Link>
         </p>
+
       </form>
     </AuthShell>
   );
