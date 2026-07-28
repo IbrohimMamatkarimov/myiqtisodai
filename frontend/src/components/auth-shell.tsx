@@ -18,11 +18,34 @@ export function AuthShell({
   const common = useTranslations('common');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFFFFF] via-[#F9FCFA] to-[#ECFDF5] flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-white via-[#F9FCFA] to-[#ECFDF5] flex items-center justify-center px-6 py-12">
 
-      {/* Language Switcher */}
-      <div className="absolute top-6 right-6">
+      {/* Header */}
+      <div className="absolute top-6 left-8 right-8 flex items-center justify-between z-50">
+
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+
+          <img
+            src="/logo.png"
+            alt="IqtisodAI"
+            className="w-14 h-14 rounded-full object-cover"
+          />
+
+          <div>
+            <h2 className="text-3xl font-extrabold text-emerald-600">
+              IqtisodAI
+            </h2>
+
+            <p className="text-sm text-slate-500">
+              AI Personal Finance
+            </p>
+          </div>
+
+        </div>
+
         <LanguageSwitcher />
+
       </div>
 
       <div className="w-full max-w-7xl grid md:grid-cols-2 gap-20 items-center">
@@ -32,7 +55,7 @@ export function AuthShell({
 
           <img
             src="/iqtisodai4.png"
-            alt="Iqtisod AI"
+            alt="IqtisodAI"
             className="w-full max-w-lg drop-shadow-xl select-none"
             draggable={false}
           />
