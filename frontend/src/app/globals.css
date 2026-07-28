@@ -12,34 +12,142 @@ html {
 }
 
 body {
-  @apply bg-cream-50 text-ink-900 dark:bg-ink-950 dark:text-cream-100 font-body transition-colors duration-300;
+  @apply bg-[#F9FCFA] text-slate-900 font-body;
 }
 
 @layer components {
+
+  /* Main Cards */
   .glass-card {
-    @apply bg-white/70 dark:bg-ink-800/60 backdrop-blur-md border border-white/40 dark:border-ink-600/40 shadow-glass dark:shadow-glass-dark rounded-2xl;
+    @apply bg-white rounded-[32px] border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)];
   }
 
+  /* Primary Button */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 dark:bg-gold-500 text-cream-50 dark:text-ink-950 font-medium px-4 py-2.5 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl
+    bg-emerald-500
+    hover:bg-emerald-600
+    text-white
+    font-semibold
+    px-4
+    py-3
+    transition-all
+    duration-300
+    hover:scale-[1.02]
+    active:scale-[0.98]
+    disabled:opacity-50
+    disabled:pointer-events-none
+    shadow-lg;
   }
 
+  /* Secondary Button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-ink-700/15 dark:border-cream-100/20 px-4 py-2.5 font-medium transition-all hover:bg-ink-900/5 dark:hover:bg-cream-100/5 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2
+    rounded-xl
+    border
+    border-emerald-200
+    bg-white
+    text-slate-700
+    px-4
+    py-3
+    font-medium
+    transition-all
+    duration-300
+    hover:bg-emerald-50;
   }
 
+  /* Inputs */
   .input-field {
-    @apply w-full rounded-xl border border-ink-700/15 dark:border-cream-100/20 bg-white/60 dark:bg-ink-900/50 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-gold-500/50 transition-all;
+    @apply w-full
+    rounded-xl
+    border
+    border-gray-300
+    bg-white
+    px-4
+    py-3
+    text-slate-900
+    placeholder:text-gray-400
+    outline-none
+    transition-all
+    duration-300
+    focus:border-emerald-500
+    focus:ring-4
+    focus:ring-emerald-100;
   }
 
+  /* Labels */
   .label-text {
-    @apply text-xs font-medium uppercase tracking-wide text-ink-700/60 dark:text-cream-100/60;
+    @apply text-sm
+    font-semibold
+    text-slate-700;
+  }
+
+  /* Small Card */
+  .card {
+    @apply rounded-3xl
+    bg-white
+    border
+    border-gray-100
+    shadow-lg;
+  }
+
+  /* Dashboard Cards */
+  .dashboard-card {
+    @apply rounded-3xl
+    bg-white
+    border
+    border-gray-100
+    p-6
+    shadow-lg;
+  }
+
+  /* Statistics Cards */
+  .stat-card {
+    @apply rounded-2xl
+    bg-white
+    border
+    border-gray-100
+    p-5
+    shadow-md
+    transition-all
+    duration-300
+    hover:shadow-xl
+    hover:-translate-y-1;
   }
 }
 
-/* Respect reduced motion preference */
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F3F4F6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #10B981;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #059669;
+}
+
+/* Selection */
+
+::selection {
+  background: #10B981;
+  color: white;
+}
+
+/* Reduced Motion */
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
