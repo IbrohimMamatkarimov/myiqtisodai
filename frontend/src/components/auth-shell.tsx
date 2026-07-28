@@ -31,9 +31,9 @@ export function AuthShell({
         <div className="hidden md:flex flex-col items-center justify-center">
 
           <img
-            src="/iqtisodai2.png"
+            src="/iqtisodai4.png"
             alt="Iqtisod AI"
-            className="w-full max-w-lg drop-shadow-2xl select-none"
+            className="w-full max-w-lg drop-shadow-xl select-none"
             draggable={false}
           />
 
