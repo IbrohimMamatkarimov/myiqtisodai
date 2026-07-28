@@ -24,31 +24,32 @@ export function AuthShell({
       <div className="absolute top-6 left-8 right-8 flex items-center justify-between z-50">
 
         {/* Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col leading-none select-none">
 
-          <img
-            src="/logo.png"
-            alt="IqtisodAI"
-            className="w-14 h-14 rounded-full object-cover"
-          />
+          <h2 className="text-3xl font-extrabold tracking-tight">
+            <span className="text-slate-900">
+              Iqtisod
+            </span>
+            <span className="text-emerald-500">
+              AI
+            </span>
+          </h2>
 
-          <div>
-            <h2 className="text-3xl font-extrabold text-emerald-600">
-              IqtisodAI
-            </h2>
-
-            <p className="text-sm text-slate-500">
-              AI Personal Finance
-            </p>
-          </div>
+          <p className="mt-1 text-xs font-medium text-slate-500 tracking-wide">
+            AI Personal Finance
+          </p>
 
         </div>
 
+
+        {/* Language */}
         <LanguageSwitcher />
 
       </div>
 
+
       <div className="w-full max-w-7xl grid md:grid-cols-2 gap-20 items-center">
+
 
         {/* Left Side */}
         <div className="hidden md:flex flex-col items-center justify-center">
@@ -66,6 +67,7 @@ export function AuthShell({
 
         </div>
 
+
         {/* Right Side */}
         <div className="w-full max-w-lg mx-auto">
 
@@ -81,9 +83,11 @@ export function AuthShell({
 
           </div>
 
+
           <div className="rounded-[32px] bg-white border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)] p-10">
             {children}
           </div>
+
 
           <p className="mt-8 text-center text-sm font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 bg-clip-text text-transparent">
             {common('createdBy')}
@@ -93,7 +97,8 @@ export function AuthShell({
 
       </div>
 
-      {/* Telegram */}
+
+      {/* Telegram Support */}
       <a
         href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
@@ -101,9 +106,11 @@ export function AuthShell({
         className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-3 shadow-xl transition-all duration-300 hover:scale-105"
       >
         <Send size={18} />
+
         <span className="text-sm font-semibold">
           {common('support')}
         </span>
+
       </a>
 
     </div>
