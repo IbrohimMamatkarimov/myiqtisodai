@@ -20,13 +20,42 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
         setattr(current_user, field, value)
+
     db.commit()
     db.refresh(current_user)
+
     return current_user
 
 
+# -------------------------------
+# Finish onboarding
+# -------------------------------
+@router.post("/complete-onboarding", response_model=UserOut)
+def complete_onboarding(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    update_data = payload.model_dump(exclude_unset=True)
+
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+
+    current_user.onboarding_completed = True
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
+
+
+# -------------------------------
+# Delete account
+# -------------------------------
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(
     current_user: User = Depends(get_current_user),
@@ -34,4 +63,5 @@ def delete_account(
 ):
     db.delete(current_user)
     db.commit()
+
     return None
