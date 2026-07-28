@@ -14,7 +14,8 @@ export function AuthShell({
   subtitle: string;
   children: ReactNode;
 }) {
-  const t = useTranslations('auth');
+  const t = useTranslations("auth");
+  const common = useTranslations("common");
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-cream-50 via-cream-100 to-cream-50 dark:from-ink-950 dark:via-ink-900 dark:to-ink-950">
