@@ -1,7 +1,6 @@
 import enum
-import uuid
 
-from sqlalchemy import Boolean, Enum, String
+from sqlalchemy import Boolean, Enum, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
@@ -24,27 +23,114 @@ class Currency(str, enum.Enum):
     EUR = "EUR"
 
 
+class FinancialGoal(str, enum.Enum):
+    save_money = "save_money"
+    reduce_spending = "reduce_spending"
+    emergency_fund = "emergency_fund"
+    buy_house = "buy_house"
+    buy_car = "buy_car"
+    travel = "travel"
+    education = "education"
+    invest = "invest"
+    debt_free = "debt_free"
+    other = "other"
+
+
 class User(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "users"
 
+    # Authentication
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    # Permissions
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Preferences
     language: Mapped[Language] = mapped_column(Enum(Language), default=Language.uz)
     theme: Mapped[Theme] = mapped_column(Enum(Theme), default=Theme.light)
     currency: Mapped[Currency] = mapped_column(Enum(Currency), default=Currency.UZS)
 
     notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    expenses = relationship("Expense", back_populates="user", cascade="all, delete-orphan")
-    incomes = relationship("Income", back_populates="user", cascade="all, delete-orphan")
-    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
-    goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
-    budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
-    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-    ai_conversations = relationship("AIConversation", back_populates="user", cascade="all, delete-orphan")
+    # --------------------------
+    # Onboarding Information
+    # --------------------------
+
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    country: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    occupation: Mapped[str | None] = mapped_column(
+        String(150),
+        nullable=True,
+    )
+
+    monthly_income: Mapped[float | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+
+    salary_day: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    financial_goal: Mapped[FinancialGoal | None] = mapped_column(
+        Enum(FinancialGoal),
+        nullable=True,
+    )
+
+    onboarding_completed: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+    )
+
+    # Relationships
+    expenses = relationship(
+        "Expense",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    incomes = relationship(
+        "Income",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    categories = relationship(
+        "Category",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    goals = relationship(
+        "Goal",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    budgets = relationship(
+        "Budget",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    notifications = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    ai_conversations = relationship(
+        "AIConversation",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
