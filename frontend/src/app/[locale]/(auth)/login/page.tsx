@@ -66,7 +66,7 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p className="text-sm text-coral-500">{error}</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? <Loader2 className="animate-spin" size={18} /> : t('signIn')}
