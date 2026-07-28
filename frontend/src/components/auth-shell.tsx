@@ -103,6 +103,4 @@ export function AuthShell({
     </div>
   );
 }
-    </div>
-  );
-}
+
