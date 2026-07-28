@@ -78,7 +78,9 @@ export default function LoginPage() {
           </Link>
           <span className="text-ink-700/60 dark:text-cream-100/60">
             {t('noAccount')}{' '}
-            <Link href="/register" className="font-medium text-gold-600 dark:text-gold-400 hover:underline">
+            <Link   href="/register"
+              className="font-medium text-emerald-600 hover:underline"
+              >
               {t('signUp')}
             </Link>
           </span>
