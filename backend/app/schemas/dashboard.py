@@ -54,6 +54,8 @@ class DashboardSummary(BaseModel):
 
     # Statistics
     top_expense_categories: list[CategoryBreakdown]
+    today_categories: list[CategoryBreakdown]
+    today_total: float
     budgets: list[BudgetStatus]
     weekly_trends: list[WeeklyTrend]
     active_goals: list[GoalProgress]

@@ -1,0 +1,57 @@
+diff --git a/backend/alembic/versions/0003_budgets_fix.py b/backend/alembic/versions/0003_budgets_fix.py
+new file mode 100644
+index 0000000..586fc9f
+--- /dev/null
++++ b/backend/alembic/versions/0003_budgets_fix.py
+@@ -0,0 +1,51 @@
++"""fix budgets table drift
++
++Revision ID: 0003_budgets_fix
++Revises: 0002_onboarding
++Create Date: 2026-07-29
++
++"""
++from typing import Sequence, Union
++
++from alembic import op
++import sqlalchemy as sa
++from sqlalchemy.dialects import postgresql
++
++revision: str = "0003_budgets_fix"
++down_revision: Union[str, None] = "0002_onboarding"
++branch_labels = None
++depends_on = None
++
++budget_status_enum = postgresql.ENUM(
++    "safe", "warning", "exceeded", name="budgetstatus", create_type=False
++)
++
++
++def upgrade() -> None:
++    bind = op.get_bind()
++    budget_status_enum.create(bind, checkfirst=True)
++
++    # These are all declared on the SQLAlchemy Budget model but were
++    # never created by the initial migration.
++    op.add_column("budgets", sa.Column("recommended_amount", sa.Numeric(14, 2), server_default="0"))
++    op.add_column("budgets", sa.Column("spent_amount", sa.Numeric(14, 2), server_default="0"))
++    op.add_column("budgets", sa.Column("remaining_amount", sa.Numeric(14, 2), server_default="0"))
++    op.add_column("budgets", sa.Column("status", budget_status_enum, server_default="safe"))
++    op.add_column("budgets", sa.Column("progress_percent", sa.Integer(), server_default="0"))
++    op.add_column("budgets", sa.Column("color", sa.String(30), server_default="#22B573"))
++    op.add_column("budgets", sa.Column("auto_reset", sa.Boolean(), server_default=sa.true()))
++    op.add_column("budgets", sa.Column("notes", sa.String(300), nullable=True))
++
++
++def downgrade() -> None:
++    op.drop_column("budgets", "notes")
++    op.drop_column("budgets", "auto_reset")
++    op.drop_column("budgets", "color")
++    op.drop_column("budgets", "progress_percent")
++    op.drop_column("budgets", "status")
++    op.drop_column("budgets", "remaining_amount")
++    op.drop_column("budgets", "spent_amount")
++    op.drop_column("budgets", "recommended_amount")
++
++    bind = op.get_bind()
++    budget_status_enum.drop(bind, checkfirst=True)

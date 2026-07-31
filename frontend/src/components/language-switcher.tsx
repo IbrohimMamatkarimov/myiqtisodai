@@ -35,7 +35,7 @@ export function LanguageSwitcher() {
             <button
               key={l}
               onClick={() => switchTo(l)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-ink-900/5 dark:hover:bg-cream-100/5 ${
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-textmain/5 ${
                 l === locale ? 'font-semibold' : ''
               }`}
             >

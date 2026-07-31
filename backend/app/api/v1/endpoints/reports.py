@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.models.category import Category
 from app.models.expense import Expense
 from app.models.user import User
+from app.utils.currency import amount_in_uzs
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -37,7 +38,7 @@ def category_breakdown(
     db: Session = Depends(get_db),
 ):
     rows = (
-        db.query(Category.name, func.sum(Expense.amount).label("total"))
+        db.query(Category.name, func.sum(amount_in_uzs(Expense, Expense.amount)).label("total"))
         .join(Expense, Expense.category_id == Category.id)
         .filter(
             Expense.user_id == current_user.id,
@@ -45,7 +46,7 @@ def category_breakdown(
             Expense.expense_date <= end_date,
         )
         .group_by(Category.name)
-        .order_by(func.sum(Expense.amount).desc())
+        .order_by(func.sum(amount_in_uzs(Expense, Expense.amount)).desc())
         .all()
     )
     return [{"category": name, "total": float(total)} for name, total in rows]

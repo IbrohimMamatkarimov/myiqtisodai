@@ -1,6 +1,6 @@
 import enum
 
-from sqlalchemy import Boolean, Enum, Integer, Numeric, String
+from sqlalchemy import Boolean, Enum, Integer, JSON, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
@@ -15,6 +15,13 @@ class Language(str, enum.Enum):
 class Theme(str, enum.Enum):
     light = "light"
     dark = "dark"
+
+
+class Gender(str, enum.Enum):
+    male = "male"
+    female = "female"
+    other = "other"
+    prefer_not_to_say = "prefer_not_to_say"
 
 
 class Currency(str, enum.Enum):
@@ -62,6 +69,11 @@ class User(UUIDMixin, TimestampMixin, Base):
 
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    gender: Mapped[Gender | None] = mapped_column(
+        Enum(Gender),
+        nullable=True,
+    )
+
     country: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
@@ -73,7 +85,7 @@ class User(UUIDMixin, TimestampMixin, Base):
     )
 
     monthly_income: Mapped[float | None] = mapped_column(
-        Numeric(12, 2),
+        Numeric(14, 2),
         nullable=True,
     )
 
@@ -84,6 +96,15 @@ class User(UUIDMixin, TimestampMixin, Base):
 
     financial_goal: Mapped[FinancialGoal | None] = mapped_column(
         Enum(FinancialGoal),
+        nullable=True,
+    )
+
+    # Rough self-reported monthly spend per habit category, e.g.
+    # {"coffee": 150000, "restaurant": 400000, "taxi": 0, ...}
+    # Collected once at onboarding to give the AI a starting picture
+    # before real expense history exists.
+    spending_habits: Mapped[dict | None] = mapped_column(
+        JSON,
         nullable=True,
     )
 

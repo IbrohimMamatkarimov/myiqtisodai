@@ -35,7 +35,7 @@ from app.utils.seed_categories import seed_default_categories
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(User.email == payload.email))
 
@@ -51,19 +51,6 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         full_name=payload.full_name,
 
         language=payload.language,
-
-        age=payload.age,
-        occupation=payload.occupation,
-        monthly_income=payload.monthly_income,
-        monthly_expense_limit=payload.monthly_expense_limit,
-
-        financial_goal=payload.financial_goal,
-        risk_level=payload.risk_level,
-
-        city=payload.city,
-        family_members=payload.family_members,
-
-        onboarding_completed=payload.onboarding_completed,
     )
 
     db.add(user)
@@ -72,14 +59,19 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 
     seed_default_categories(user.id)
 
-    token = create_email_token(
+    verify_token = create_email_token(
         str(user.id),
         purpose="verify_email",
     )
 
-    send_verification_email(user.email, token)
+    send_verification_email(user.email, verify_token)
 
-    return user
+    # Log the user straight in so they can go directly into onboarding
+    # without a second login step.
+    return Token(
+        access_token=create_access_token(str(user.id)),
+        refresh_token=create_refresh_token(str(user.id)),
+    )
 
 
 @router.post("/login", response_model=Token)

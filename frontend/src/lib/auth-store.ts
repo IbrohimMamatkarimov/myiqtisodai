@@ -14,6 +14,7 @@ export interface AuthUser {
 
   // NEW
   age?: number | null;
+  gender?: string | null;
   occupation?: string | null;
   monthly_income?: number | null;
   monthly_expenses?: number | null;

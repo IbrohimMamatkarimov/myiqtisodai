@@ -5,39 +5,56 @@
 :root {
   --font-display: 'Manrope', ui-sans-serif, system-ui;
   --font-body: 'Inter', ui-sans-serif, system-ui;
+
+  /* Light theme (default) */
+  --color-bgpage: 247 247 247;
+  --color-surface: 255 255 255;
+  --color-textmain: 31 48 68;
+  --color-textmuted: 100 108 121;
+}
+
+.dark {
+  --color-bgpage: 15 23 32;
+  --color-surface: 27 38 52;
+  --color-textmain: 232 236 241;
+  --color-textmuted: 148 160 175;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 body {
-  @apply bg-[#F9FCFA] text-slate-900 font-body;
+  @apply text-textmain font-body bg-bgpage;
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 @layer components {
 
-  /* Main Cards */
+  /* Main Cards - flat white, calm, no blur/gradient/glow */
   .glass-card {
-    @apply bg-white rounded-[32px] border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)];
+    @apply bg-surface rounded-2xl border border-textmain/[0.06] shadow-card;
   }
 
   /* Primary Button */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl
-    bg-emerald-500
-    hover:bg-emerald-600
+    bg-primary
+    hover:brightness-95
     text-white
     font-semibold
     px-4
     py-3
     transition-all
-    duration-300
-    hover:scale-[1.02]
+    duration-150
     active:scale-[0.98]
     disabled:opacity-50
-    disabled:pointer-events-none
-    shadow-lg;
+    disabled:pointer-events-none;
   }
 
   /* Secondary Button */
@@ -45,15 +62,15 @@ body {
     @apply inline-flex items-center justify-center gap-2
     rounded-xl
     border
-    border-emerald-200
-    bg-white
-    text-slate-700
+    border-textmain/10
+    bg-surface
+    text-textmain
     px-4
     py-3
     font-medium
-    transition-all
-    duration-300
-    hover:bg-emerald-50;
+    transition-colors
+    duration-150
+    hover:bg-bgpage;
   }
 
   /* Inputs */
@@ -61,58 +78,54 @@ body {
     @apply w-full
     rounded-xl
     border
-    border-gray-300
-    bg-white
+    border-textmain/10
+    bg-bgpage
     px-4
     py-3
-    text-slate-900
-    placeholder:text-gray-400
+    text-textmain
+    placeholder:text-textmuted
     outline-none
-    transition-all
-    duration-300
-    focus:border-emerald-500
-    focus:ring-4
-    focus:ring-emerald-100;
+    transition-colors
+    duration-150
+    focus:border-primary
+    focus:ring-2
+    focus:ring-primary/20;
   }
 
   /* Labels */
   .label-text {
     @apply text-sm
-    font-semibold
-    text-slate-700;
+    font-medium
+    text-textmuted;
   }
 
   /* Small Card */
   .card {
-    @apply rounded-3xl
-    bg-white
+    @apply rounded-2xl
+    bg-surface
     border
-    border-gray-100
-    shadow-lg;
+    border-textmain/[0.06]
+    shadow-card;
   }
 
   /* Dashboard Cards */
   .dashboard-card {
-    @apply rounded-3xl
-    bg-white
+    @apply rounded-2xl
+    bg-surface
     border
-    border-gray-100
+    border-textmain/[0.06]
     p-6
-    shadow-lg;
+    shadow-card;
   }
 
   /* Statistics Cards */
   .stat-card {
     @apply rounded-2xl
-    bg-white
+    bg-surface
     border
-    border-gray-100
+    border-textmain/[0.06]
     p-5
-    shadow-md
-    transition-all
-    duration-300
-    hover:shadow-xl
-    hover:-translate-y-1;
+    shadow-card;
   }
 }
 
@@ -123,23 +136,23 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: #F7F7F7;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #10B981;
+  background: #7DA2A9;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #059669;
+  background: #6B7280;
 }
 
 /* Selection */
 
 ::selection {
-  background: #10B981;
-  color: white;
+  background: #6B7280;
+  color: #FFFFFF;
 }
 
 /* Reduced Motion */

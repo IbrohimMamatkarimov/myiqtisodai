@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Depends
@@ -13,15 +13,17 @@ from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.income import Income
 from app.models.user import User
-from app.schemas.dashboard import CategoryBreakdown, DashboardSummary
+from app.schemas.dashboard import BudgetStatus, CategoryBreakdown, DashboardSummary, GoalProgress, WeeklyTrend
 from app.services.financial_health import calculate_financial_health_score
+from app.utils.currency import amount_in_uzs
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 def _sum_in_range(db: Session, model, user_id, start: date, end: date, amount_col) -> float:
     date_col = model.expense_date if model is Expense else model.income_date
-    stmt = select(func.coalesce(func.sum(amount_col), 0)).where(
+    uzs_expr = amount_in_uzs(model, amount_col)
+    stmt = select(func.coalesce(func.sum(uzs_expr), 0)).where(
         model.user_id == user_id, date_col >= start, date_col < end
     )
     return float(db.scalar(stmt) or 0)
@@ -53,13 +55,13 @@ def get_dashboard_summary(
         db.query(
             Category.id,
             func.coalesce(Category.name, "Uncategorized"),
-            func.sum(Expense.amount),
+            func.sum(amount_in_uzs(Expense, Expense.amount)),
         )
         .select_from(Expense)
         .outerjoin(Category, Expense.category_id == Category.id)
         .filter(Expense.user_id == current_user.id, Expense.expense_date >= month_start)
         .group_by(Category.id, Category.name)
-        .order_by(func.sum(Expense.amount).desc())
+        .order_by(func.sum(amount_in_uzs(Expense, Expense.amount)).desc())
         .limit(5)
         .all()
     )
@@ -74,12 +76,73 @@ def get_dashboard_summary(
     goals = db.scalars(select(Goal).where(Goal.user_id == current_user.id, Goal.is_completed.is_(False))).all()
     goals_on_track = sum(1 for g in goals if g.progress_percent >= 50)
 
-    budgets = db.scalars(select(Budget).where(Budget.user_id == current_user.id)).all()
+    budgets_rows = db.scalars(select(Budget).where(Budget.user_id == current_user.id)).all()
     budgets_over_limit = 0
-    for b in budgets:
+    budget_statuses: list[BudgetStatus] = []
+    for b in budgets_rows:
         spent = _sum_in_range(db, Expense, current_user.id, month_start, next_month_start, Expense.amount)
-        if spent > float(b.limit_amount):
+        limit = float(b.limit_amount)
+        remaining = max(limit - spent, 0)
+        progress = round((spent / limit * 100), 1) if limit else 0.0
+        status = "over" if spent > limit else ("warning" if progress >= 80 else "ok")
+        if spent > limit:
             budgets_over_limit += 1
+        category_name = "Overall"
+        if getattr(b, "category_id", None):
+            cat = db.get(Category, b.category_id)
+            category_name = cat.name if cat else "Overall"
+        budget_statuses.append(
+            BudgetStatus(
+                category_name=category_name,
+                limit_amount=limit,
+                spent_amount=spent,
+                remaining_amount=remaining,
+                progress_percent=progress,
+                status=status,
+            )
+        )
+
+    # Last 7 days, day by day, for weekly trend charts
+    weekly_trends: list[WeeklyTrend] = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        day_end = day + timedelta(days=1)
+        day_income = _sum_in_range(db, Income, current_user.id, day, day_end, Income.amount)
+        day_expenses = _sum_in_range(db, Expense, current_user.id, day, day_end, Expense.amount)
+        weekly_trends.append(
+            WeeklyTrend(label=day.strftime("%a"), income=day_income, expenses=day_expenses)
+        )
+
+    # Today's spending, broken down by category
+    today_start = today
+    today_end = today + timedelta(days=1)
+    today_rows = (
+        db.query(
+            Category.id,
+            func.coalesce(Category.name, "Uncategorized"),
+            func.sum(amount_in_uzs(Expense, Expense.amount)),
+        )
+        .select_from(Expense)
+        .outerjoin(Category, Expense.category_id == Category.id)
+        .filter(
+            Expense.user_id == current_user.id,
+            Expense.expense_date >= today_start,
+            Expense.expense_date < today_end,
+        )
+        .group_by(Category.id, Category.name)
+        .order_by(func.sum(amount_in_uzs(Expense, Expense.amount)).desc())
+        .all()
+    )
+    today_total = sum(float(r[2]) for r in today_rows)
+    today_categories = [
+        CategoryBreakdown(
+            category_id=str(cid) if cid else None,
+            category_name=cname,
+            total=float(total),
+            percent=round((float(total) / today_total * 100), 1) if today_total else 0,
+        )
+        for cid, cname, total in today_rows
+    ]
 
     total_savings = max(total_income - total_expenses, 0)
 
@@ -90,8 +153,26 @@ def get_dashboard_summary(
         goals_on_track=goals_on_track,
         goals_total=len(goals),
         budgets_over_limit=budgets_over_limit,
-        budgets_total=len(budgets),
+        budgets_total=len(budgets_rows),
     )
+
+    # Real active goals (used to power proactive AI Coach projections on the frontend)
+    active_goals = [
+        GoalProgress(
+            title=g.title,
+            target_amount=float(g.target_amount),
+            current_amount=float(g.current_amount),
+            progress_percent=g.progress_percent,
+            deadline=g.deadline,
+        )
+        for g in goals
+    ]
+
+    budget_alerts = [
+        f"{b.category_name}: {b.progress_percent:.0f}% of budget used"
+        for b in budget_statuses
+        if b.status in ("warning", "over")
+    ]
 
     recent_count = db.scalar(
         select(func.count()).select_from(Expense).where(
@@ -101,13 +182,30 @@ def get_dashboard_summary(
 
     return DashboardSummary(
         total_income=total_income,
-        total_expenses=total_expenses,
-        remaining_balance=total_income - total_expenses,
-        total_savings=total_savings,
-        financial_health_score=score,
-        month_over_month_income_change_percent=pct_change(total_income, prev_income),
-        month_over_month_expense_change_percent=pct_change(total_expenses, prev_expenses),
-        top_expense_categories=top_categories,
-        active_goals_count=len(goals),
-        recent_transactions_count=recent_count or 0,
-    )
+    total_expenses=total_expenses,
+    remaining_balance=total_income - total_expenses,
+    total_savings=total_savings,
+    financial_health_score=score,
+
+    month_over_month_income_change_percent=pct_change(total_income, prev_income),
+    month_over_month_expense_change_percent=pct_change(total_expenses, prev_expenses),
+
+    predicted_month_end_balance=total_income - total_expenses,
+    predicted_month_end_savings=total_savings,
+    safe_to_spend_today=max(0, total_income - total_expenses),
+    recommended_daily_budget=max(0, (total_income - total_expenses) / 30),
+
+    top_expense_categories=top_categories,
+    today_categories=today_categories,
+    today_total=today_total,
+    budgets=budget_statuses,
+    weekly_trends=weekly_trends,
+    active_goals=active_goals,
+
+    active_goals_count=len(goals),
+    recent_transactions_count=recent_count or 0,
+    completed_goals_count=0,
+
+    budget_alerts=budget_alerts,
+    ai_summary="Your financial dashboard is ready.",
+)

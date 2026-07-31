@@ -73,13 +73,13 @@ export default function LoginPage() {
         </button>
 
         <div className="flex items-center justify-between text-sm pt-2">
-          <Link href="/forgot-password" className="text-ink-700/70 dark:text-cream-100/70 hover:underline">
+          <Link href="/forgot-password" className="font-medium text-textmuted hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">
             {t('forgotPassword')}
           </Link>
-          <span className="text-ink-700/60 dark:text-cream-100/60">
+          <span className="text-textmuted">
             {t('noAccount')}{' '}
             <Link   href="/register"
-              className="font-medium text-emerald-600 hover:underline"
+              className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
               >
               {t('signUp')}
             </Link>

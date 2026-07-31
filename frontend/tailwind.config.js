@@ -8,36 +8,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: {
-          950: '#0F172A',
-          900: '#1E293B',
-          800: '#334155',
-          700: '#475569',
-          600: '#64748B',
-        },
+        // Colors that switch between light/dark are driven by CSS variables
+        // (see globals.css :root / .dark) so every bg-X / text-X / border-X/[n]
+        // utility using them automatically reacts to the `dark` class.
+        bgpage: 'rgb(var(--color-bgpage) / <alpha-value>)',
+        surface: 'rgb(var(--color-surface) / <alpha-value>)',
+        textmain: 'rgb(var(--color-textmain) / <alpha-value>)',
+        textmuted: 'rgb(var(--color-textmuted) / <alpha-value>)',
 
-        cream: {
-          50: '#FFFFFF',
-          100: '#F9FCFA',
-          200: '#ECFDF5',
-        },
-
-        emerald: {
-          50: '#ECFDF5',
-          100: '#D1FAE5',
-          200: '#A7F3D0',
-          300: '#6EE7B7',
-          400: '#34D399',
-          500: '#10B981',
-          600: '#059669',
-          700: '#047857',
-        },
-
-        gold: {
-          400: '#34D399',
-          500: '#10B981',
-          600: '#059669',
-        },
+        // Fixed accent/utility colors - intentionally the same in both themes.
+        bgdark: '#1F3044',
+        primary: '#5B6472',
+        secondary: '#7DA2A9',
+        accentx: '#7DA2A9',
+        danger: '#EF4444',
+        warning: '#6B7280',
 
         coral: {
           500: '#EF4444',
@@ -52,45 +37,34 @@ module.exports = {
 
       borderRadius: {
         xl: '1rem',
-        '2xl': '1.5rem',
-        '3xl': '2rem',
+        '2xl': '1.25rem',
+        '3xl': '1.5rem',
       },
 
       boxShadow: {
-        glass: '0 20px 50px rgba(16,185,129,0.12)',
-        'glass-dark': '0 20px 50px rgba(16,185,129,0.20)',
-        card: '0 15px 40px rgba(15,23,42,0.08)',
-      },
-
-      backdropBlur: {
-        xs: '2px',
+        card: '0 1px 3px rgba(31,48,68,0.06), 0 1px 2px rgba(31,48,68,0.04)',
       },
 
       keyframes: {
         'fade-up': {
-          '0%': {
-            opacity: '0',
-            transform: 'translateY(10px)',
-          },
-          '100%': {
-            opacity: '1',
-            transform: 'translateY(0)',
-          },
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-
-        'count-tick': {
-          '0%': {
-            opacity: '0.5',
-          },
-          '100%': {
-            opacity: '1',
-          },
+        'pop-in': {
+          '0%': { opacity: '0', transform: 'scale(0.4)' },
+          '60%': { opacity: '1', transform: 'scale(1.08)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        'progress-fill': {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
         },
       },
 
       animation: {
         'fade-up': 'fade-up .45s ease-out both',
-        'count-tick': 'count-tick .3s ease-out',
+        'pop-in': 'pop-in .7s cubic-bezier(0.34,1.56,0.64,1) both',
+        'progress-fill': 'progress-fill 3.2s linear forwards',
       },
     },
   },

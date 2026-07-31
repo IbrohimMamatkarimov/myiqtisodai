@@ -7,6 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models.expense import RecurrenceInterval
 
 
+class ProductLine(BaseModel):
+    name: str
+    price: Optional[float] = None
+
+
 class ExpenseCreate(BaseModel):
     category_id: Optional[uuid.UUID] = None
 
@@ -33,6 +38,13 @@ class ExpenseCreate(BaseModel):
 
     ai_category: Optional[str] = None
 
+    # ---------- Receipt scanner (Phase 3) ----------
+    receipt_time: Optional[str] = None
+
+    tax_amount: Optional[float] = None
+
+    products: Optional[list[ProductLine]] = None
+
 
 class ExpenseUpdate(BaseModel):
     category_id: Optional[uuid.UUID] = None
@@ -58,6 +70,12 @@ class ExpenseUpdate(BaseModel):
     receipt_image: Optional[str] = None
 
     ai_category: Optional[str] = None
+
+    receipt_time: Optional[str] = None
+
+    tax_amount: Optional[float] = None
+
+    products: Optional[list[ProductLine]] = None
 
 
 class ExpenseOut(BaseModel):
@@ -90,6 +108,13 @@ class ExpenseOut(BaseModel):
 
     ai_category: Optional[str]
 
+    # ---------- Receipt scanner (Phase 3) ----------
+    receipt_time: Optional[str] = None
+
+    tax_amount: Optional[float] = None
+
+    products: Optional[str] = None  # raw JSON string; frontend parses if needed
+
     created_at: datetime
 
 
@@ -103,3 +128,20 @@ class PaginatedExpenses(BaseModel):
     page_size: int
 
     total_pages: int
+
+
+class ReceiptScanResult(BaseModel):
+    """Response from POST /expenses/scan - a prefilled draft, not a saved expense."""
+
+    merchant_name: Optional[str] = None
+    expense_date: Optional[date] = None
+    receipt_time: Optional[str] = None
+    amount: Optional[float] = None
+    currency: Optional[str] = None
+    category_name: Optional[str] = None
+    category_id: Optional[uuid.UUID] = None
+    products: list[ProductLine] = []
+    tax_amount: Optional[float] = None
+    description: Optional[str] = None
+    receipt_image: Optional[str] = None
+    warning: Optional[str] = None

@@ -5,11 +5,14 @@ import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { api } from '@/lib/api-client';
+import { useAuthStore } from '@/lib/auth-store';
 import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
   const router = useRouter();
+  const setTokens = useAuthStore((s) => s.setTokens);
+  const setUser = useAuthStore((s) => s.setUser);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -25,11 +28,18 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      await api.post('/auth/register', {
+      const { data } = await api.post('/auth/register', {
         email,
         password,
         full_name: fullName,
       });
+
+      setTokens(data.access_token, data.refresh_token);
+
+      const me = await api.get('/auth/me', {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      setUser(me.data);
 
       router.push('/onboarding');
     } catch (err: any) {
@@ -113,11 +123,11 @@ export default function RegisterPage() {
             : t('signUp')}
         </button>
 
-        <p className="text-center text-sm text-ink-700/60 pt-2">
+        <p className="text-center text-sm text-textmuted pt-2">
           {t('haveAccount')}{' '}
           <Link
             href="/login"
-            className="font-medium text-emerald-600 hover:underline"
+            className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             {t('signIn')}
           </Link>

@@ -11,13 +11,14 @@ from app.models.budget import Budget
 from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.budget import BudgetCreate, BudgetOut, BudgetUpdate
+from app.utils.currency import amount_in_uzs
 
 router = APIRouter(prefix="/budgets", tags=["Budgets"])
 
 
 def _with_progress(db: Session, budget: Budget) -> BudgetOut:
     month_start = date.today().replace(day=1)
-    stmt = select(func.coalesce(func.sum(Expense.amount), 0)).where(
+    stmt = select(func.coalesce(func.sum(amount_in_uzs(Expense, Expense.amount)), 0)).where(
         Expense.user_id == budget.user_id, Expense.expense_date >= month_start
     )
     if budget.category_id:

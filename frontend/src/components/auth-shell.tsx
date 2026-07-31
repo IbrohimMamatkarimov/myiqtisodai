@@ -3,7 +3,8 @@
 import { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './language-switcher';
-import { Send } from 'lucide-react';
+import { Send, Sun, Moon } from 'lucide-react';
+import { useTheme } from './theme-provider';
 
 export function AuthShell({
   title,
@@ -16,20 +17,31 @@ export function AuthShell({
 }) {
   const t = useTranslations('auth');
   const common = useTranslations('common');
+  const settingsT = useTranslations('settings');
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-[#F9FCFA] to-[#ECFDF5] flex items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-[#E4D9F7] via-[#DCD3F5] to-[#C9E9E4] dark:from-bgpage dark:via-bgpage dark:to-bgdark flex items-center justify-center px-6 py-12">
 
       {/* Header */}
       <div className="absolute top-6 left-8 right-8 flex items-center justify-between z-50">
 
         {/* Logo */}
         <h2 className="text-3xl font-extrabold tracking-tight select-none">
-          <span className="text-slate-900">Iqtisod</span>
+          <span className="text-textmain">Iqtisod</span>
           <span className="text-emerald-500">AI</span>
         </h2>
 
-        <LanguageSwitcher />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 bg-surface text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
+            aria-label={theme === 'dark' ? settingsT('lightMode') : settingsT('darkMode')}
+          >
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <LanguageSwitcher />
+        </div>
       </div>
 
       {/* CHANGED: gap-12 -> gap-10 */}
@@ -50,7 +62,7 @@ export function AuthShell({
             />
 
             {/* CHANGED */}
-            <p className="mt-3 max-w-xs text-center text-lg leading-7 text-slate-600">
+            <p className="mt-3 max-w-xs text-center text-lg leading-7 text-textmuted">
               {t('illustrationText')}
             </p>
 
@@ -64,21 +76,21 @@ export function AuthShell({
           {/* CHANGED */}
           <div className="mb-6 text-center">
 
-            <h1 className="font-display text-5xl font-bold text-slate-900">
+            <h1 className="font-display text-5xl font-bold text-textmain">
               {title}
             </h1>
 
-            <p className="mt-3 text-lg text-slate-500">
+            <p className="mt-3 text-lg text-textmuted">
               {subtitle}
             </p>
 
           </div>
 
-          <div className="rounded-[32px] bg-white border border-emerald-100 shadow-[0_25px_60px_rgba(16,185,129,0.12)] p-10">
+          <div className="rounded-[32px] bg-surface border border-violet-100 dark:border-textmain/10 shadow-[0_25px_60px_rgba(124,58,237,0.10)] dark:shadow-[0_25px_60px_rgba(0,0,0,0.25)] p-10">
             {children}
           </div>
 
-          <p className="mt-8 text-center text-sm font-semibold bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 bg-clip-text text-transparent">
+          <p className="mt-8 text-center text-sm font-semibold bg-gradient-to-r from-violet-500 via-fuchsia-400 to-teal-500 bg-clip-text text-transparent">
             {common('createdBy')}
           </p>
 
@@ -91,7 +103,7 @@ export function AuthShell({
         href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-3 shadow-xl transition-all duration-300 hover:scale-105"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-teal-500 hover:brightness-110 text-white px-5 py-3 shadow-xl transition-all duration-300 hover:scale-105"
       >
         <Send size={18} />
 

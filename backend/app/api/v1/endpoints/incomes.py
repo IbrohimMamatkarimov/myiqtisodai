@@ -3,7 +3,7 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -19,12 +19,17 @@ router = APIRouter(prefix="/incomes", tags=["Income"])
 def list_incomes(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    search: Optional[str] = Query(None, description="Search in source name and description"),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
     stmt = select(Income).where(Income.user_id == current_user.id)
+    if search:
+        stmt = stmt.where(
+            or_(Income.source_name.ilike(f"%{search}%"), Income.description.ilike(f"%{search}%"))
+        )
     if start_date:
         stmt = stmt.where(Income.income_date >= start_date)
     if end_date:

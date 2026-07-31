@@ -1,7 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
+import { ReactNode, useEffect, useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/navigation';
 import {
   LayoutDashboard,
@@ -10,21 +10,31 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
+  Bell,
+  Send,
   Sun,
   Moon,
-  Send,
 } from 'lucide-react';
-import { useTheme } from './theme-provider';
 import { useAuthStore } from '@/lib/auth-store';
+import { useTheme } from '@/components/theme-provider';
 import { LanguageSwitcher } from './language-switcher';
+import { GlobalSearch } from './GlobalSearch';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('nav');
+  const tb = useTranslations('topbar');
+  const ts = useTranslations('settings');
+  const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
+  const { theme, toggleTheme } = useTheme();
+
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
 
   const navItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -39,27 +49,60 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.push('/login');
   }
 
-  return (
-    <div className="min-h-screen bg-cream-50 dark:bg-ink-950">
-      <div className="flex">
-        <aside className="hidden md:flex md:flex-col w-64 shrink-0 border-r border-ink-700/10 dark:border-cream-100/10 min-h-screen p-6">
-          <div className="flex items-center gap-2 mb-10">
-            <div className="h-9 w-9 rounded-xl bg-ink-900 dark:bg-gold-500 flex items-center justify-center">
-              <span className="font-display font-bold text-gold-400 dark:text-ink-950">M</span>
-            </div>
-            <span className="font-display font-bold">MyIqtisod</span>
-          </div>
+  const hour = now?.getHours() ?? 9;
+  const greeting = hour < 12 ? tb('morning') : hour < 18 ? tb('afternoon') : tb('evening');
 
-          <nav className="flex-1 space-y-1">
+  // The browser's own Intl date formatting has spotty/broken Uzbek locale data
+  // (was rendering garbage like "M07 31, Fri"), so we format weekday/month
+  // names ourselves instead of trusting toLocaleDateString for 'uz'.
+  const WEEKDAYS: Record<string, string[]> = {
+    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    ru: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'],
+    uz: ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'],
+  };
+  const MONTHS: Record<string, string[]> = {
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
+    uz: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
+  };
+  const dateStr = now
+    ? `${WEEKDAYS[locale]?.[now.getDay()] ?? WEEKDAYS.en[now.getDay()]}, ${now.getDate()} ${MONTHS[locale]?.[now.getMonth()] ?? MONTHS.en[now.getMonth()]}`
+    : '';
+  const firstName = user?.full_name?.split(' ')[0] || '';
+
+  return (
+    <div className="min-h-screen">
+      <div className="flex">
+        <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-textmain/[0.06] min-h-screen p-5">
+          <Link
+            href="/dashboard"
+            onClick={() => router.refresh()}
+            className="flex items-center gap-2 mb-8 px-1"
+          >
+            <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
+              <img
+                src="/iqtisod-newphoto.png"
+                alt="IqtisodAI"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <span className="font-display font-semibold text-textmain">IqtisodAI</span>
+          </Link>
+
+          <nav className="flex-1 space-y-0.5">
             {navItems.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={active ? 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors bg-ink-900 text-cream-50 dark:bg-gold-500 dark:text-ink-950' : 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-ink-700/70 dark:text-cream-100/70 hover:bg-ink-900/5 dark:hover:bg-cream-100/5'}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    active
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-textmuted hover:bg-textmain/5 hover:text-textmain'
+                  }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={17} />
                   {label}
                 </Link>
               );
@@ -68,34 +111,62 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-coral-500 hover:bg-coral-500/10"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-textmuted hover:bg-danger/10 hover:text-danger transition-colors"
           >
-            <LogOut size={18} />
+            <LogOut size={17} />
             {t('logout')}
           </button>
         </aside>
 
         <main className="flex-1 min-h-screen">
-          <header className="flex items-center justify-between px-6 py-4 border-b border-ink-700/10 dark:border-cream-100/10">
-            <div className="text-sm text-ink-700/60 dark:text-cream-100/60">
-              {user?.full_name ? user.full_name : ''}
+          <header className="flex items-center justify-between gap-4 px-8 py-4 border-b border-textmain/[0.06]">
+            <div>
+              <h1 className="font-display text-base font-semibold text-textmain flex items-center gap-1.5">
+                <span>{greeting}{firstName ? `, ${firstName}` : ''}</span>
+              </h1>
+              <p className="text-xs text-textmuted mt-0.5">{dateStr}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <button onClick={toggleTheme} className="btn-secondary p-2.5" aria-label="Toggle theme">
+
+            <div className="flex items-center gap-2.5">
+              <div className="hidden lg:block">
+                <GlobalSearch />
+              </div>
+
+              <button
+                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
+                aria-label={tb('notifications')}
+              >
+                <Bell size={15} />
+                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+              </button>
+
+              <Link
+                href="/assistant"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary text-white font-semibold text-sm px-3 py-2 hover:brightness-95 transition-all"
+              >
+                <Sparkles size={14} />
+                {tb('askAI')}
+              </Link>
+
+              <LanguageSwitcher />
+
+              <button
+                onClick={toggleTheme}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
+                aria-label={theme === 'dark' ? ts('lightMode') : ts('darkMode')}
+              >
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
-              <LanguageSwitcher />
             </div>
           </header>
-          <div className="p-6">{children}</div>
+          <div className="p-8">{children}</div>
         </main>
       </div>
 
-      
-        <a href="https://t.me/ibrohimmamatkarimov"
+      <a href="https://t.me/ibrohimmamatkarimov"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-glass hover:opacity-90 transition-opacity"
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity"
       >
         <Send size={18} />
         <span className="text-sm font-medium">Support</span>

@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
-from app.models.user import Currency, Language, Theme
+from app.models.user import Currency, Gender, Language, Theme
 
 
 class UserCreate(BaseModel):
@@ -14,18 +14,45 @@ class UserCreate(BaseModel):
 
     language: Language = Language.uz
 
+
+class SpendingHabits(BaseModel):
+    """Rough self-reported monthly spend per habit, collected once at
+    onboarding (Screen 5) to give the AI a starting picture before real
+    expense history exists. Amounts are in the user's chosen currency."""
+
+    coffee: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    restaurant: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    taxi: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    subscriptions: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    shopping: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    gaming: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+    travel: Optional[float] = Field(default=0, ge=0, le=1_000_000_000)
+
+
+class CompleteOnboarding(BaseModel):
+    """Payload for POST /users/complete-onboarding, covering all 5 screens."""
+
+    # Screen 1
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=255)
     age: Optional[int] = Field(default=None, ge=10, le=100)
-    occupation: Optional[str] = Field(default=None, max_length=100)
-    monthly_income: Optional[float] = None
-    monthly_expense_limit: Optional[float] = None
+    gender: Optional[Gender] = None
 
+    # Screen 2
+    country: Optional[str] = Field(default=None, max_length=100)
+    currency: Optional[Currency] = None
+    occupation: Optional[str] = Field(default=None, max_length=150)
+    monthly_income: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
+
+    # Screen 3
     financial_goal: Optional[str] = None
-    risk_level: Optional[str] = "medium"
 
-    city: Optional[str] = None
-    family_members: Optional[int] = Field(default=1, ge=1, le=20)
+    # Screen 4 — monthly_budget becomes an overall Budget row, not a User column
+    monthly_budget: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
+    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
+    language: Optional[Language] = None
 
-    onboarding_completed: bool = False
+    # Screen 5
+    spending_habits: Optional[SpendingHabits] = None
 
 
 class UserLogin(BaseModel):
@@ -49,13 +76,13 @@ class UserOut(BaseModel):
     notifications_enabled: bool
 
     age: Optional[int]
+    gender: Optional[Gender]
+    country: Optional[str]
     occupation: Optional[str]
     monthly_income: Optional[float]
-    monthly_expense_limit: Optional[float]
+    salary_day: Optional[int]
     financial_goal: Optional[str]
-    risk_level: Optional[str]
-    city: Optional[str]
-    family_members: Optional[int]
+    spending_habits: Optional[dict]
     onboarding_completed: bool
 
     created_at: datetime
@@ -71,13 +98,13 @@ class UserUpdate(BaseModel):
     notifications_enabled: Optional[bool] = None
 
     age: Optional[int] = Field(default=None, ge=10, le=100)
+    gender: Optional[Gender] = None
+    country: Optional[str] = None
     occupation: Optional[str] = None
-    monthly_income: Optional[float] = None
-    monthly_expense_limit: Optional[float] = None
+    monthly_income: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
+    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
     financial_goal: Optional[str] = None
-    risk_level: Optional[str] = None
-    city: Optional[str] = None
-    family_members: Optional[int] = Field(default=None, ge=1, le=20)
+    spending_habits: Optional[SpendingHabits] = None
     onboarding_completed: Optional[bool] = None
 
 

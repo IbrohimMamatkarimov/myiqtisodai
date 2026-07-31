@@ -29,8 +29,8 @@ export default function ForgotPasswordPage() {
       {sent ? (
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <MailCheck className="text-emerald-500" size={40} />
-          <p className="font-medium">If that email exists, a reset link is on its way.</p>
-          <Link href="/login" className="text-sm text-gold-600 dark:text-gold-400 hover:underline">
+          <p className="font-medium text-textmain">If that email exists, a reset link is on its way.</p>
+          <Link href="/login" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">
             {t('signIn')}
           </Link>
         </div>

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { useTheme } from '@/components/theme-provider';
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
@@ -15,7 +14,6 @@ const CURRENCIES = ['UZS', 'USD', 'EUR'];
 export default function SettingsPage() {
   const checked = useRequireAuth();
   const t = useTranslations('settings');
-  const { theme, toggleTheme } = useTheme();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const logout = useAuthStore((s) => s.logout);
@@ -70,31 +68,13 @@ export default function SettingsPage() {
         </section>
 
         <section className="glass-card p-5">
-          <h2 className="font-display font-semibold mb-4">{t('theme')}</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={() => theme !== 'light' && toggleTheme()}
-              className={`btn-secondary flex-1 ${theme === 'light' ? 'ring-2 ring-gold-500/50' : ''}`}
-            >
-              {t('lightMode')}
-            </button>
-            <button
-              onClick={() => theme !== 'dark' && toggleTheme()}
-              className={`btn-secondary flex-1 ${theme === 'dark' ? 'ring-2 ring-gold-500/50' : ''}`}
-            >
-              {t('darkMode')}
-            </button>
-          </div>
-        </section>
-
-        <section className="glass-card p-5">
           <h2 className="font-display font-semibold mb-4">{t('currency')}</h2>
           <div className="flex gap-2 items-center">
             {CURRENCIES.map((c) => (
               <button
                 key={c}
                 onClick={() => updateCurrency(c)}
-                className={`btn-secondary flex-1 ${currency === c ? 'ring-2 ring-gold-500/50' : ''}`}
+                className={`btn-secondary flex-1 ${currency === c ? 'ring-2 ring-primary/50' : ''}`}
               >
                 {c}
               </button>
@@ -105,7 +85,7 @@ export default function SettingsPage() {
 
         <section className="glass-card p-5 border border-coral-500/20">
           <h2 className="font-display font-semibold mb-2 text-coral-500">{t('deleteAccount')}</h2>
-          <p className="text-sm text-ink-700/60 dark:text-cream-100/60 mb-4">
+          <p className="text-sm text-textmuted mb-4">
             This permanently deletes your account and all financial data. This cannot be undone.
           </p>
           {!confirmDelete ? (

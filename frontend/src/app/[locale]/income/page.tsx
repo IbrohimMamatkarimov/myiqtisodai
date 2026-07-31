@@ -28,6 +28,7 @@ export default function IncomePage() {
 
   const [sourceName, setSourceName] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('UZS');
   const [incomeDate, setIncomeDate] = useState(new Date().toISOString().slice(0, 10));
 
   async function loadIncomes() {
@@ -51,10 +52,12 @@ export default function IncomePage() {
       await api.post('/incomes', {
         source_name: sourceName,
         amount: parseFloat(amount),
+        currency,
         income_date: incomeDate,
       });
       setSourceName('');
       setAmount('');
+      setCurrency('UZS');
       setShowForm(false);
       await loadIncomes();
     } finally {
@@ -80,7 +83,7 @@ export default function IncomePage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleAdd} className="glass-card p-5 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <form onSubmit={handleAdd} className="glass-card p-5 mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="label-text">{t('source')}</label>
             <input
@@ -102,6 +105,14 @@ export default function IncomePage() {
               className="input-field mt-1"
               placeholder="5000000"
             />
+          </div>
+          <div>
+            <label className="label-text">Currency</label>
+            <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="input-field mt-1">
+              <option value="UZS">UZS</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
           </div>
           <div>
             <label className="label-text">Date</label>

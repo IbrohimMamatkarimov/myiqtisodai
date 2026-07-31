@@ -1,0 +1,76 @@
+diff --git a/backend/app/api/v1/endpoints/auth.py b/backend/app/api/v1/endpoints/auth.py
+index 9425428..a9aebec 100644
+--- a/backend/app/api/v1/endpoints/auth.py
++++ b/backend/app/api/v1/endpoints/auth.py
+@@ -35,7 +35,7 @@ from app.utils.seed_categories import seed_default_categories
+ router = APIRouter(prefix="/auth", tags=["Authentication"])
+ 
+ 
+-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
++@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+ def register(payload: UserCreate, db: Session = Depends(get_db)):
+     existing = db.scalar(select(User).where(User.email == payload.email))
+ 
+@@ -59,14 +59,19 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
+ 
+     seed_default_categories(user.id)
+ 
+-    token = create_email_token(
++    verify_token = create_email_token(
+         str(user.id),
+         purpose="verify_email",
+     )
+ 
+-    send_verification_email(user.email, token)
++    send_verification_email(user.email, verify_token)
+ 
+-    return user
++    # Log the user straight in so they can go directly into onboarding
++    # without a second login step.
++    return Token(
++        access_token=create_access_token(str(user.id)),
++        refresh_token=create_refresh_token(str(user.id)),
++    )
+ 
+ 
+ @router.post("/login", response_model=Token)
+diff --git a/frontend/src/app/[locale]/(auth)/register/page.tsx b/frontend/src/app/[locale]/(auth)/register/page.tsx
+index afc52bf..c19d0b8 100644
+--- a/frontend/src/app/[locale]/(auth)/register/page.tsx
++++ b/frontend/src/app/[locale]/(auth)/register/page.tsx
+@@ -5,11 +5,14 @@ import { useTranslations } from 'next-intl';
+ import { Link, useRouter } from '@/navigation';
+ import { AuthShell } from '@/components/auth-shell';
+ import { api } from '@/lib/api-client';
++import { useAuthStore } from '@/lib/auth-store';
+ import { Loader2 } from 'lucide-react';
+ 
+ export default function RegisterPage() {
+   const t = useTranslations('auth');
+   const router = useRouter();
++  const setTokens = useAuthStore((s) => s.setTokens);
++  const setUser = useAuthStore((s) => s.setUser);
+ 
+   const [fullName, setFullName] = useState('');
+   const [email, setEmail] = useState('');
+@@ -25,12 +28,19 @@ export default function RegisterPage() {
+     setError(null);
+ 
+     try {
+-      await api.post('/auth/register', {
++      const { data } = await api.post('/auth/register', {
+         email,
+         password,
+         full_name: fullName,
+       });
+ 
++      setTokens(data.access_token, data.refresh_token);
++
++      const me = await api.get('/auth/me', {
++        headers: { Authorization: `Bearer ${data.access_token}` },
++      });
++      setUser(me.data);
++
+       router.push('/onboarding');
+     } catch (err: any) {
+       const detail = err?.response?.data?.detail;

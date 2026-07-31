@@ -1,0 +1,808 @@
+diff --git a/backend/alembic/versions/0002_onboarding_fields.py b/backend/alembic/versions/0002_onboarding_fields.py
+new file mode 100644
+index 0000000..8980a87
+--- /dev/null
++++ b/backend/alembic/versions/0002_onboarding_fields.py
+@@ -0,0 +1,65 @@
++"""onboarding fields
++
++Revision ID: 0002_onboarding
++Revises: 0001_initial
++Create Date: 2026-07-29
++
++"""
++from typing import Sequence, Union
++
++from alembic import op
++import sqlalchemy as sa
++from sqlalchemy.dialects import postgresql
++
++revision: str = "0002_onboarding"
++down_revision: Union[str, None] = "0001_initial"
++branch_labels = None
++depends_on = None
++
++gender_enum = postgresql.ENUM(
++    "male", "female", "other", "prefer_not_to_say", name="gender", create_type=False
++)
++financial_goal_enum = postgresql.ENUM(
++    "save_money", "reduce_spending", "emergency_fund", "buy_house", "buy_car",
++    "travel", "education", "invest", "debt_free", "other",
++    name="financialgoal", create_type=False,
++)
++
++
++def upgrade() -> None:
++    bind = op.get_bind()
++    gender_enum.create(bind, checkfirst=True)
++    financial_goal_enum.create(bind, checkfirst=True)
++
++    # These existed on the SQLAlchemy model already, but the initial
++    # migration never created them on the users table.
++    op.add_column("users", sa.Column("age", sa.Integer(), nullable=True))
++    op.add_column("users", sa.Column("country", sa.String(100), nullable=True))
++    op.add_column("users", sa.Column("occupation", sa.String(150), nullable=True))
++    op.add_column("users", sa.Column("monthly_income", sa.Numeric(12, 2), nullable=True))
++    op.add_column("users", sa.Column("salary_day", sa.Integer(), nullable=True))
++    op.add_column("users", sa.Column("financial_goal", financial_goal_enum, nullable=True))
++    op.add_column(
++        "users",
++        sa.Column("onboarding_completed", sa.Boolean(), server_default=sa.false(), nullable=False),
++    )
++
++    # New in Phase 1
++    op.add_column("users", sa.Column("gender", gender_enum, nullable=True))
++    op.add_column("users", sa.Column("spending_habits", sa.JSON(), nullable=True))
++
++
++def downgrade() -> None:
++    op.drop_column("users", "spending_habits")
++    op.drop_column("users", "gender")
++    op.drop_column("users", "onboarding_completed")
++    op.drop_column("users", "financial_goal")
++    op.drop_column("users", "salary_day")
++    op.drop_column("users", "monthly_income")
++    op.drop_column("users", "occupation")
++    op.drop_column("users", "country")
++    op.drop_column("users", "age")
++
++    bind = op.get_bind()
++    financial_goal_enum.drop(bind, checkfirst=True)
++    gender_enum.drop(bind, checkfirst=True)
+diff --git a/backend/app/api/v1/endpoints/auth.py b/backend/app/api/v1/endpoints/auth.py
+index b4d966c..9425428 100644
+--- a/backend/app/api/v1/endpoints/auth.py
++++ b/backend/app/api/v1/endpoints/auth.py
+@@ -51,19 +51,6 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
+         full_name=payload.full_name,
+ 
+         language=payload.language,
+-
+-        age=payload.age,
+-        occupation=payload.occupation,
+-        monthly_income=payload.monthly_income,
+-        monthly_expense_limit=payload.monthly_expense_limit,
+-
+-        financial_goal=payload.financial_goal,
+-        risk_level=payload.risk_level,
+-
+-        city=payload.city,
+-        family_members=payload.family_members,
+-
+-        onboarding_completed=payload.onboarding_completed,
+     )
+ 
+     db.add(user)
+diff --git a/backend/app/api/v1/endpoints/users.py b/backend/app/api/v1/endpoints/users.py
+index 05957c2..203a683 100644
+--- a/backend/app/api/v1/endpoints/users.py
++++ b/backend/app/api/v1/endpoints/users.py
+@@ -1,10 +1,12 @@
+ from fastapi import APIRouter, Depends, status
++from sqlalchemy import select
+ from sqlalchemy.orm import Session
+ 
+ from app.api.deps import get_current_user
+ from app.db.session import get_db
++from app.models.budget import Budget, BudgetPeriod
+ from app.models.user import User
+-from app.schemas.user import UserOut, UserUpdate
++from app.schemas.user import CompleteOnboarding, UserOut, UserUpdate
+ 
+ router = APIRouter(prefix="/users", tags=["Users"])
+ 
+@@ -36,17 +38,40 @@ def update_profile(
+ # -------------------------------
+ @router.post("/complete-onboarding", response_model=UserOut)
+ def complete_onboarding(
+-    payload: UserUpdate,
++    payload: CompleteOnboarding,
+     current_user: User = Depends(get_current_user),
+     db: Session = Depends(get_db),
+ ):
+-    update_data = payload.model_dump(exclude_unset=True)
++    update_data = payload.model_dump(exclude_unset=True, exclude={"monthly_budget"})
+ 
+     for field, value in update_data.items():
+         setattr(current_user, field, value)
+ 
+     current_user.onboarding_completed = True
+ 
++    # Screen 4's "monthly budget" is the user's overall spending limit, which
++    # lives in the Budget table (category_id=None means "overall", not
++    # tied to one category) so it can feed the Phase 2 dashboard directly.
++    if payload.monthly_budget is not None:
++        overall_budget = db.scalar(
++            select(Budget).where(
++                Budget.user_id == current_user.id,
++                Budget.category_id.is_(None),
++                Budget.period == BudgetPeriod.monthly,
++            )
++        )
++
++        if overall_budget is None:
++            overall_budget = Budget(
++                user_id=current_user.id,
++                category_id=None,
++                period=BudgetPeriod.monthly,
++                limit_amount=payload.monthly_budget,
++            )
++            db.add(overall_budget)
++        else:
++            overall_budget.limit_amount = payload.monthly_budget
++
+     db.commit()
+     db.refresh(current_user)
+ 
+diff --git a/backend/app/models/user.py b/backend/app/models/user.py
+index 73b0fc2..d02f24c 100644
+--- a/backend/app/models/user.py
++++ b/backend/app/models/user.py
+@@ -1,6 +1,6 @@
+ import enum
+ 
+-from sqlalchemy import Boolean, Enum, Integer, Numeric, String
++from sqlalchemy import Boolean, Enum, Integer, JSON, Numeric, String
+ from sqlalchemy.orm import Mapped, mapped_column, relationship
+ 
+ from app.db.base_class import Base, TimestampMixin, UUIDMixin
+@@ -17,6 +17,13 @@ class Theme(str, enum.Enum):
+     dark = "dark"
+ 
+ 
++class Gender(str, enum.Enum):
++    male = "male"
++    female = "female"
++    other = "other"
++    prefer_not_to_say = "prefer_not_to_say"
++
++
+ class Currency(str, enum.Enum):
+     UZS = "UZS"
+     USD = "USD"
+@@ -62,6 +69,11 @@ class User(UUIDMixin, TimestampMixin, Base):
+ 
+     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+ 
++    gender: Mapped[Gender | None] = mapped_column(
++        Enum(Gender),
++        nullable=True,
++    )
++
+     country: Mapped[str | None] = mapped_column(
+         String(100),
+         nullable=True,
+@@ -87,6 +99,15 @@ class User(UUIDMixin, TimestampMixin, Base):
+         nullable=True,
+     )
+ 
++    # Rough self-reported monthly spend per habit category, e.g.
++    # {"coffee": 150000, "restaurant": 400000, "taxi": 0, ...}
++    # Collected once at onboarding to give the AI a starting picture
++    # before real expense history exists.
++    spending_habits: Mapped[dict | None] = mapped_column(
++        JSON,
++        nullable=True,
++    )
++
+     onboarding_completed: Mapped[bool] = mapped_column(
+         Boolean,
+         default=False,
+diff --git a/backend/app/schemas/user.py b/backend/app/schemas/user.py
+index 81632ee..f6bd5d2 100644
+--- a/backend/app/schemas/user.py
++++ b/backend/app/schemas/user.py
+@@ -4,7 +4,7 @@ from typing import Optional
+ 
+ from pydantic import BaseModel, ConfigDict, EmailStr, Field
+ 
+-from app.models.user import Currency, Language, Theme
++from app.models.user import Currency, Gender, Language, Theme
+ 
+ 
+ class UserCreate(BaseModel):
+@@ -14,18 +14,45 @@ class UserCreate(BaseModel):
+ 
+     language: Language = Language.uz
+ 
++
++class SpendingHabits(BaseModel):
++    """Rough self-reported monthly spend per habit, collected once at
++    onboarding (Screen 5) to give the AI a starting picture before real
++    expense history exists. Amounts are in the user's chosen currency."""
++
++    coffee: Optional[float] = 0
++    restaurant: Optional[float] = 0
++    taxi: Optional[float] = 0
++    subscriptions: Optional[float] = 0
++    shopping: Optional[float] = 0
++    gaming: Optional[float] = 0
++    travel: Optional[float] = 0
++
++
++class CompleteOnboarding(BaseModel):
++    """Payload for POST /users/complete-onboarding, covering all 5 screens."""
++
++    # Screen 1
++    full_name: Optional[str] = Field(default=None, min_length=2, max_length=255)
+     age: Optional[int] = Field(default=None, ge=10, le=100)
+-    occupation: Optional[str] = Field(default=None, max_length=100)
+-    monthly_income: Optional[float] = None
+-    monthly_expense_limit: Optional[float] = None
++    gender: Optional[Gender] = None
++
++    # Screen 2
++    country: Optional[str] = Field(default=None, max_length=100)
++    currency: Optional[Currency] = None
++    occupation: Optional[str] = Field(default=None, max_length=150)
++    monthly_income: Optional[float] = Field(default=None, ge=0)
+ 
++    # Screen 3
+     financial_goal: Optional[str] = None
+-    risk_level: Optional[str] = "medium"
+ 
+-    city: Optional[str] = None
+-    family_members: Optional[int] = Field(default=1, ge=1, le=20)
++    # Screen 4 — monthly_budget becomes an overall Budget row, not a User column
++    monthly_budget: Optional[float] = Field(default=None, ge=0)
++    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
++    language: Optional[Language] = None
+ 
+-    onboarding_completed: bool = False
++    # Screen 5
++    spending_habits: Optional[SpendingHabits] = None
+ 
+ 
+ class UserLogin(BaseModel):
+@@ -49,13 +76,13 @@ class UserOut(BaseModel):
+     notifications_enabled: bool
+ 
+     age: Optional[int]
++    gender: Optional[Gender]
++    country: Optional[str]
+     occupation: Optional[str]
+     monthly_income: Optional[float]
+-    monthly_expense_limit: Optional[float]
++    salary_day: Optional[int]
+     financial_goal: Optional[str]
+-    risk_level: Optional[str]
+-    city: Optional[str]
+-    family_members: Optional[int]
++    spending_habits: Optional[dict]
+     onboarding_completed: bool
+ 
+     created_at: datetime
+@@ -71,13 +98,13 @@ class UserUpdate(BaseModel):
+     notifications_enabled: Optional[bool] = None
+ 
+     age: Optional[int] = Field(default=None, ge=10, le=100)
++    gender: Optional[Gender] = None
++    country: Optional[str] = None
+     occupation: Optional[str] = None
+     monthly_income: Optional[float] = None
+-    monthly_expense_limit: Optional[float] = None
++    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
+     financial_goal: Optional[str] = None
+-    risk_level: Optional[str] = None
+-    city: Optional[str] = None
+-    family_members: Optional[int] = Field(default=None, ge=1, le=20)
++    spending_habits: Optional[SpendingHabits] = None
+     onboarding_completed: Optional[bool] = None
+ 
+ 
+diff --git a/frontend/src/app/[locale]/onboarding/page.tsx b/frontend/src/app/[locale]/onboarding/page.tsx
+index 25862cd..32eda43 100644
+--- a/frontend/src/app/[locale]/onboarding/page.tsx
++++ b/frontend/src/app/[locale]/onboarding/page.tsx
+@@ -3,127 +3,398 @@
+ import { useState } from 'react';
+ import { useRouter } from '@/navigation';
+ import { api } from '@/lib/api-client';
++import {
++  ChevronLeft,
++  ChevronRight,
++  Loader2,
++  Sparkles,
++} from 'lucide-react';
++
++const TOTAL_SCREENS = 5;
++
++const FINANCIAL_GOALS = [
++  { value: 'save_money', label: 'Save money' },
++  { value: 'reduce_spending', label: 'Control spending' },
++  { value: 'debt_free', label: 'Become debt free' },
++  { value: 'invest', label: 'Invest' },
++  { value: 'emergency_fund', label: 'Build emergency fund' },
++];
++
++const CURRENCIES = ['UZS', 'USD', 'EUR'];
++const LANGUAGES = [
++  { value: 'uz', label: "O'zbekcha" },
++  { value: 'en', label: 'English' },
++  { value: 'ru', label: 'Русский' },
++];
++
++const SPENDING_HABITS: { key: string; label: string; emoji: string }[] = [
++  { key: 'coffee', label: 'Coffee', emoji: '☕' },
++  { key: 'restaurant', label: 'Restaurants', emoji: '🍽️' },
++  { key: 'taxi', label: 'Taxi', emoji: '🚕' },
++  { key: 'subscriptions', label: 'Subscriptions', emoji: '📺' },
++  { key: 'shopping', label: 'Shopping', emoji: '🛍️' },
++  { key: 'gaming', label: 'Gaming', emoji: '🎮' },
++  { key: 'travel', label: 'Travel', emoji: '✈️' },
++];
++
++type FormState = {
++  full_name: string;
++  age: string;
++  gender: string;
++
++  country: string;
++  currency: string;
++  occupation: string;
++  monthly_income: string;
++
++  financial_goal: string;
++
++  monthly_budget: string;
++  salary_day: string;
++  language: string;
++
++  spending_habits: Record<string, string>;
++};
++
++const initialState: FormState = {
++  full_name: '',
++  age: '',
++  gender: '',
++  country: '',
++  currency: 'UZS',
++  occupation: '',
++  monthly_income: '',
++  financial_goal: '',
++  monthly_budget: '',
++  salary_day: '',
++  language: 'uz',
++  spending_habits: {},
++};
+ 
+ export default function OnboardingPage() {
+   const router = useRouter();
+ 
+-  const [age, setAge] = useState('');
+-  const [occupation, setOccupation] = useState('');
+-  const [city, setCity] = useState('');
+-  const [familyMembers, setFamilyMembers] = useState('');
+-  const [monthlyIncome, setMonthlyIncome] = useState('');
+-  const [monthlyExpenseLimit, setMonthlyExpenseLimit] = useState('');
+-  const [financialGoal, setFinancialGoal] = useState('');
+-  const [riskLevel, setRiskLevel] = useState('medium');
++  const [screen, setScreen] = useState(1);
++  const [form, setForm] = useState<FormState>(initialState);
+   const [loading, setLoading] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++
++  function update<K extends keyof FormState>(key: K, value: FormState[K]) {
++    setForm((prev) => ({ ...prev, [key]: value }));
++  }
++
++  function updateHabit(key: string, value: string) {
++    setForm((prev) => ({
++      ...prev,
++      spending_habits: { ...prev.spending_habits, [key]: value },
++    }));
++  }
++
++  function next() {
++    setError(null);
++    setScreen((s) => Math.min(s + 1, TOTAL_SCREENS));
++  }
++
++  function back() {
++    setError(null);
++    setScreen((s) => Math.max(s - 1, 1));
++  }
+ 
+   async function finish() {
+     setLoading(true);
++    setError(null);
++
++    const spendingHabitsPayload = Object.fromEntries(
++      Object.entries(form.spending_habits).map(([k, v]) => [k, Number(v) || 0])
++    );
+ 
+     try {
+       await api.post('/users/complete-onboarding', {
+-        age: Number(age),
+-        occupation,
+-        city,
+-        family_members: Number(familyMembers),
+-        monthly_income: Number(monthlyIncome),
+-        monthly_expense_limit: Number(monthlyExpenseLimit),
+-        financial_goal: financialGoal,
+-        risk_level: riskLevel,
++        full_name: form.full_name || undefined,
++        age: form.age ? Number(form.age) : undefined,
++        gender: form.gender || undefined,
++
++        country: form.country || undefined,
++        currency: form.currency || undefined,
++        occupation: form.occupation || undefined,
++        monthly_income: form.monthly_income ? Number(form.monthly_income) : undefined,
++
++        financial_goal: form.financial_goal || undefined,
++
++        monthly_budget: form.monthly_budget ? Number(form.monthly_budget) : undefined,
++        salary_day: form.salary_day ? Number(form.salary_day) : undefined,
++        language: form.language || undefined,
++
++        spending_habits: Object.keys(spendingHabitsPayload).length
++          ? spendingHabitsPayload
++          : undefined,
+       });
+ 
+       router.push('/dashboard');
+     } catch (e) {
+       console.error(e);
+-      alert('Unable to save your information.');
++      setError('Something went wrong saving your information. Please try again.');
++    } finally {
++      setLoading(false);
+     }
+-
+-    setLoading(false);
+   }
+ 
+   return (
+-    <div className="min-h-screen bg-[#F8FCF9] flex items-center justify-center p-8">
+-      <div className="bg-white rounded-3xl shadow-xl p-10 w-full max-w-2xl">
+-
+-        <h1 className="text-4xl font-bold mb-2">
+-          Welcome 
+-        </h1>
+-
+-        <p className="text-gray-500 mb-8">
+-          Let's personalize your financial assistant.
+-        </p>
+-
+-        <div className="space-y-5">
+-
+-          <input
+-            className="input-field"
+-            placeholder="Age"
+-            value={age}
+-            onChange={(e) => setAge(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="Occupation"
+-            value={occupation}
+-            onChange={(e) => setOccupation(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="City"
+-            value={city}
+-            onChange={(e) => setCity(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="Family members"
+-            value={familyMembers}
+-            onChange={(e) => setFamilyMembers(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="Monthly income"
+-            value={monthlyIncome}
+-            onChange={(e) => setMonthlyIncome(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="Monthly spending limit"
+-            value={monthlyExpenseLimit}
+-            onChange={(e) => setMonthlyExpenseLimit(e.target.value)}
+-          />
+-
+-          <input
+-            className="input-field"
+-            placeholder="Financial goal"
+-            value={financialGoal}
+-            onChange={(e) => setFinancialGoal(e.target.value)}
+-          />
+-
+-          <select
+-            className="input-field"
+-            value={riskLevel}
+-            onChange={(e) => setRiskLevel(e.target.value)}
++    <div className="min-h-screen bg-[#F9FCFA] flex items-center justify-center p-6">
++      <div className="glass-card p-8 sm:p-10 w-full max-w-xl">
++
++        {/* Progress */}
++        <div className="flex items-center gap-2 mb-8">
++          {Array.from({ length: TOTAL_SCREENS }).map((_, i) => (
++            <div
++              key={i}
++              className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
++                i + 1 <= screen ? 'bg-emerald-500' : 'bg-gray-100'
++              }`}
++            />
++          ))}
++        </div>
++
++        {screen === 1 && (
++          <Screen
++            icon={<Sparkles className="w-6 h-6 text-emerald-500" />}
++            title="Welcome"
++            subtitle="Let's get to know you a little."
+           >
+-            <option value="low">Conservative</option>
+-            <option value="medium">Balanced</option>
+-            <option value="high">Aggressive</option>
+-          </select>
++            <Field label="Name">
++              <input
++                className="input-field"
++                placeholder="Your name"
++                value={form.full_name}
++                onChange={(e) => update('full_name', e.target.value)}
++              />
++            </Field>
+ 
++            <Field label="Age">
++              <input
++                type="number"
++                className="input-field"
++                placeholder="e.g. 24"
++                value={form.age}
++                onChange={(e) => update('age', e.target.value)}
++              />
++            </Field>
++
++            <Field label="Gender (optional)">
++              <select
++                className="input-field"
++                value={form.gender}
++                onChange={(e) => update('gender', e.target.value)}
++              >
++                <option value="">Prefer not to say</option>
++                <option value="male">Male</option>
++                <option value="female">Female</option>
++                <option value="other">Other</option>
++              </select>
++            </Field>
++          </Screen>
++        )}
++
++        {screen === 2 && (
++          <Screen
++            title="About your finances"
++            subtitle="A quick snapshot of your situation."
++          >
++            <Field label="Country">
++              <input
++                className="input-field"
++                placeholder="e.g. Uzbekistan"
++                value={form.country}
++                onChange={(e) => update('country', e.target.value)}
++              />
++            </Field>
++
++            <Field label="Currency">
++              <select
++                className="input-field"
++                value={form.currency}
++                onChange={(e) => update('currency', e.target.value)}
++              >
++                {CURRENCIES.map((c) => (
++                  <option key={c} value={c}>{c}</option>
++                ))}
++              </select>
++            </Field>
++
++            <Field label="Occupation">
++              <input
++                className="input-field"
++                placeholder="e.g. Teacher, Student, Engineer"
++                value={form.occupation}
++                onChange={(e) => update('occupation', e.target.value)}
++              />
++            </Field>
++
++            <Field label="Monthly income">
++              <input
++                type="number"
++                className="input-field"
++                placeholder="e.g. 4000000"
++                value={form.monthly_income}
++                onChange={(e) => update('monthly_income', e.target.value)}
++              />
++            </Field>
++          </Screen>
++        )}
++
++        {screen === 3 && (
++          <Screen
++            title="Your financial goal"
++            subtitle="What matters most to you right now?"
++          >
++            <div className="space-y-3">
++              {FINANCIAL_GOALS.map((g) => (
++                <button
++                  key={g.value}
++                  type="button"
++                  onClick={() => update('financial_goal', g.value)}
++                  className={`w-full text-left rounded-xl border px-4 py-3 transition-all duration-200 ${
++                    form.financial_goal === g.value
++                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold'
++                      : 'border-gray-200 hover:border-emerald-300'
++                  }`}
++                >
++                  {g.label}
++                </button>
++              ))}
++            </div>
++          </Screen>
++        )}
++
++        {screen === 4 && (
++          <Screen
++            title="Budget & preferences"
++            subtitle="We'll use this to track your spending."
++          >
++            <Field label="Monthly budget">
++              <input
++                type="number"
++                className="input-field"
++                placeholder="e.g. 3000000"
++                value={form.monthly_budget}
++                onChange={(e) => update('monthly_budget', e.target.value)}
++              />
++            </Field>
++
++            <Field label="Salary date (day of month)">
++              <input
++                type="number"
++                min={1}
++                max={31}
++                className="input-field"
++                placeholder="e.g. 5"
++                value={form.salary_day}
++                onChange={(e) => update('salary_day', e.target.value)}
++              />
++            </Field>
++
++            <Field label="Preferred language">
++              <select
++                className="input-field"
++                value={form.language}
++                onChange={(e) => update('language', e.target.value)}
++              >
++                {LANGUAGES.map((l) => (
++                  <option key={l.value} value={l.value}>{l.label}</option>
++                ))}
++              </select>
++            </Field>
++          </Screen>
++        )}
++
++        {screen === 5 && (
++          <Screen
++            title="Spending habits"
++            subtitle="Roughly how much do you spend on these each month? (skip anything that doesn't apply)"
++          >
++            <div className="space-y-3">
++              {SPENDING_HABITS.map((h) => (
++                <div key={h.key} className="flex items-center gap-3">
++                  <span className="text-xl w-8 text-center">{h.emoji}</span>
++                  <span className="w-28 text-sm text-slate-600">{h.label}</span>
++                  <input
++                    type="number"
++                    className="input-field"
++                    placeholder="0"
++                    value={form.spending_habits[h.key] ?? ''}
++                    onChange={(e) => updateHabit(h.key, e.target.value)}
++                  />
++                </div>
++              ))}
++            </div>
++          </Screen>
++        )}
++
++        {error && (
++          <p className="text-sm text-red-500 mt-4">{error}</p>
++        )}
++
++        <div className="flex items-center justify-between mt-8">
+           <button
+-            onClick={finish}
+-            disabled={loading}
+-            className="btn-primary w-full"
++            type="button"
++            onClick={back}
++            disabled={screen === 1}
++            className="btn-secondary disabled:opacity-0 disabled:pointer-events-none"
+           >
+-            {loading ? 'Saving...' : 'Start Using IqtisodAI'}
++            <ChevronLeft className="w-4 h-4" />
++            Back
+           </button>
+ 
++          {screen < TOTAL_SCREENS ? (
++            <button type="button" onClick={next} className="btn-primary">
++              Next
++              <ChevronRight className="w-4 h-4" />
++            </button>
++          ) : (
++            <button
++              type="button"
++              onClick={finish}
++              disabled={loading}
++              className="btn-primary"
++            >
++              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
++              {loading ? 'Saving...' : 'Start Using IqtisodAI'}
++            </button>
++          )}
+         </div>
+       </div>
+     </div>
+   );
+ }
++
++function Screen({
++  icon,
++  title,
++  subtitle,
++  children,
++}: {
++  icon?: React.ReactNode;
++  title: string;
++  subtitle: string;
++  children: React.ReactNode;
++}) {
++  return (
++    <div>
++      <div className="flex items-center gap-2 mb-1">
++        {icon}
++        <h1 className="text-2xl sm:text-3xl font-bold font-display">{title}</h1>
++      </div>
++      <p className="text-gray-500 mb-6">{subtitle}</p>
++      <div className="space-y-5">{children}</div>
++    </div>
++  );
++}
++
++function Field({ label, children }: { label: string; children: React.ReactNode }) {
++  return (
++    <div>
++      <label className="label-text block mb-1">{label}</label>
++      {children}
++    </div>
++  );
++}

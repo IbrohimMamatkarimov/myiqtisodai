@@ -38,5 +38,16 @@ class Expense(UUIDMixin, TimestampMixin, Base):
         Enum(RecurrenceInterval), default=RecurrenceInterval.none
     )
 
+    merchant_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    payment_method: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    receipt_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    receipt_image: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_category: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+
+    # ---------- Receipt scanner (Phase 3) ----------
+    receipt_time: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
+    tax_amount: Mapped[Optional[float]] = mapped_column(Numeric(14, 2), nullable=True)
+    products: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON-encoded list
+
     user = relationship("User", back_populates="expenses")
     category = relationship("Category", back_populates="expenses")
