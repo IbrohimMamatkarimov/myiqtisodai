@@ -3,22 +3,86 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+import httpx
+
 from app.core.config import settings
 
 logger = logging.getLogger("myiqtisod.email")
 
 
-def send_email(to_email: str, subject: str, html_body: str) -> bool:
-    """Send an email via SMTP. Returns True on success, False otherwise.
+def _send_via_brevo(to_email: str, subject: str, html_body: str) -> bool:
+    """Send via Brevo's HTTPS API (https://api.brevo.com/v3/smtp/email).
 
-    In development (no SMTP configured, or still using the placeholder
-    values from .env.example), logs the email instead of trying to send it,
-    so auth flows are still testable without real credentials. Without this
-    check, placeholder values like "your-email@gmail.com" look "configured"
-    (they're non-empty strings), so the code would try a real SMTP login,
-    fail authentication, and silently swallow the error below - which is
-    exactly why reset/verification emails were never arriving.
+    Uses plain HTTPS (port 443), not SMTP ports - this is what makes it work
+    on hosts like Render's free tier, which blocks outbound SMTP ports
+    25/465/587 but not regular HTTPS traffic.
     """
+    try:
+        response = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": settings.BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json={
+                "sender": {"email": settings.EMAIL_FROM},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_body,
+            },
+            timeout=15,
+        )
+        if response.status_code >= 400:
+            logger.error(
+                "Brevo API error sending to %s: %s %s",
+                to_email,
+                response.status_code,
+                response.text,
+            )
+            return False
+        return True
+    except Exception:
+        logger.exception("Brevo API request failed for %s", to_email)
+        return False
+
+
+def _send_via_smtp(to_email: str, subject: str, html_body: str) -> bool:
+    """Legacy direct-SMTP path. Works fine on your own machine, but will hang
+    or fail on hosts that block outbound SMTP ports (e.g. Render free tier) -
+    kept as a local-dev fallback only."""
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = settings.EMAIL_FROM
+        msg["To"] = to_email
+        msg.attach(MIMEText(html_body, "html"))
+
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+            server.starttls()
+            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            server.sendmail(settings.EMAIL_FROM, to_email, msg.as_string())
+        return True
+    except Exception:
+        logger.exception("Failed to send email (SMTP) to %s", to_email)
+        return False
+
+
+def send_email(to_email: str, subject: str, html_body: str) -> bool:
+    """Send an email. Returns True on success, False otherwise.
+
+    Prefers Brevo's HTTPS API when BREVO_API_KEY is configured (works
+    everywhere, including hosts that block SMTP ports). Falls back to direct
+    SMTP if no Brevo key is set - fine for local dev, but will hang/fail on
+    hosts like Render's free tier.
+
+    In development with neither configured (or still using placeholder .env
+    values), logs the email instead of trying to send it, so auth flows are
+    still testable without real credentials.
+    """
+    if settings.BREVO_API_KEY:
+        return _send_via_brevo(to_email, subject, html_body)
+
     looks_like_placeholder = (
         not settings.SMTP_USER
         or not settings.SMTP_PASSWORD
@@ -27,29 +91,15 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
     )
     if looks_like_placeholder:
         logger.info(
-            "SMTP not configured (or still has placeholder .env values). "
-            "Would send email to %s: %s\n%s",
+            "No email provider configured (no BREVO_API_KEY, and SMTP is unset "
+            "or still has placeholder .env values). Would send email to %s: %s\n%s",
             to_email,
             subject,
             html_body,
         )
         return False
 
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = settings.EMAIL_FROM
-        msg["To"] = to_email
-        msg.attach(MIMEText(html_body, "html"))
-
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.sendmail(settings.EMAIL_FROM, to_email, msg.as_string())
-        return True
-    except Exception:
-        logger.exception("Failed to send email to %s", to_email)
-        return False
+    return _send_via_smtp(to_email, subject, html_body)
 
 
 def send_verification_email(to_email: str, token: str) -> str | None:

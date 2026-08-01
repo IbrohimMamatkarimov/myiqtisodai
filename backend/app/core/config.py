@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     EMAIL_FROM: str = "noreply@myiqtisod.uz"
 
+    # Brevo (transactional email over HTTPS API - works on hosts like Render
+    # free tier that block outbound SMTP ports 25/465/587)
+    BREVO_API_KEY: str = ""
+
     # ---------- AI ----------
 
     GROQ_API_KEY: str = ""
