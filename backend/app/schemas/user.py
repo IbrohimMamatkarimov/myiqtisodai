@@ -1,6 +1,6 @@
-import uuid
 from datetime import datetime
 from typing import Optional
+import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -67,6 +67,7 @@ class UserOut(BaseModel):
     full_name: str
 
     is_email_verified: bool
+    is_superuser: bool
 
     language: Language
     theme: Theme
@@ -83,6 +84,10 @@ class UserOut(BaseModel):
     financial_goal: Optional[str]
     spending_habits: Optional[dict]
     onboarding_completed: bool
+
+    deletion_requested: bool
+    deletion_reason: Optional[str]
+    deletion_requested_at: Optional[datetime]
 
     created_at: datetime
 
@@ -110,6 +115,20 @@ class UserUpdate(BaseModel):
 class ChangePassword(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class AccountDeletionRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=1000)
+
+
+class DeletionRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: EmailStr
+    full_name: str
+    deletion_reason: Optional[str]
+    deletion_requested_at: Optional[datetime]
 
 
 class ForgotPassword(BaseModel):

@@ -20,6 +20,10 @@ export interface AuthUser {
   monthly_expenses?: number | null;
   financial_goal?: string | null;
   onboarding_completed?: boolean;
+  is_superuser?: boolean;
+  deletion_requested?: boolean;
+  deletion_reason?: string | null;
+  deletion_requested_at?: string | null;
 }
 
 interface AuthState {

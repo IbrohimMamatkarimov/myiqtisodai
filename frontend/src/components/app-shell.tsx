@@ -14,6 +14,7 @@ import {
   Target,
   Moon,
   Sun,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useTheme } from './theme-provider';
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { href: '/goals', label: t('goals'), icon: Target },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
+    ...(user?.is_superuser ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
   ];
 
   function handleLogout() {

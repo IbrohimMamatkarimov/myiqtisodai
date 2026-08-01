@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.budget import Budget, BudgetPeriod
+from app.models.notification import Notification, NotificationType
 from app.models.user import User
-from app.schemas.user import CompleteOnboarding, UserOut, UserUpdate
+from app.schemas.user import AccountDeletionRequest, CompleteOnboarding, UserOut, UserUpdate
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -79,14 +81,48 @@ def complete_onboarding(
 
 
 # -------------------------------
-# Delete account
+# Account deletion (request/approve flow, not instant)
 # -------------------------------
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
-def delete_account(
+@router.post("/me/request-deletion", response_model=UserOut)
+def request_account_deletion(
+    payload: AccountDeletionRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    db.delete(current_user)
-    db.commit()
+    if current_user.deletion_requested:
+        raise HTTPException(status_code=400, detail="A deletion request is already pending.")
 
-    return None
+    current_user.deletion_requested = True
+    current_user.deletion_reason = payload.reason
+    current_user.deletion_requested_at = datetime.now(timezone.utc)
+
+    admins = db.scalars(select(User).where(User.is_superuser.is_(True))).all()
+    for admin in admins:
+        db.add(
+            Notification(
+                user_id=admin.id,
+                type=NotificationType.system,
+                title="Account deletion request",
+                message=f"{current_user.full_name} ({current_user.email}) wants to delete their account: \u201c{payload.reason}\u201d",
+            )
+        )
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user
+
+
+@router.post("/me/cancel-deletion-request", response_model=UserOut)
+def cancel_account_deletion(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.deletion_requested = False
+    current_user.deletion_reason = None
+    current_user.deletion_requested_at = None
+
+    db.commit()
+    db.refresh(current_user)
+
+    return current_user

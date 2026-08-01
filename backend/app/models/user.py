@@ -1,6 +1,7 @@
 import enum
+from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, Integer, JSON, Numeric, String
+from sqlalchemy import Boolean, DateTime, Enum, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
@@ -112,6 +113,15 @@ class User(UUIDMixin, TimestampMixin, Base):
         Boolean,
         default=False,
     )
+
+    # --------------------------
+    # Account deletion request
+    # --------------------------
+    # Self-deletion isn't instant: the user submits a reason, an admin
+    # (is_superuser) approves or rejects it. See app/api/v1/endpoints/admin.py.
+    deletion_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    deletion_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    deletion_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     expenses = relationship(

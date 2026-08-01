@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useAuthStore } from '@/lib/auth-store';
-import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
 import { Loader2 } from 'lucide-react';
 
@@ -16,13 +15,13 @@ export default function SettingsPage() {
   const t = useTranslations('settings');
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
-  const logout = useAuthStore((s) => s.logout);
-  const router = useRouter();
 
   const [currency, setCurrency] = useState(user?.currency || 'UZS');
   const [savingCurrency, setSavingCurrency] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [showReasonForm, setShowReasonForm] = useState(false);
+  const [reason, setReason] = useState('');
 
   // user loads asynchronously after mount (auth check + /auth/me), so the useState
   // initializer above often runs before user.currency exists yet and silently locks
@@ -42,14 +41,26 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDeleteAccount() {
-    setDeleting(true);
+  async function handleRequestDeletion(e: React.FormEvent) {
+    e.preventDefault();
+    setRequesting(true);
     try {
-      await api.delete('/users/me');
-      logout();
-      router.push('/login');
+      const { data } = await api.post('/users/me/request-deletion', { reason });
+      setUser(data);
+      setShowReasonForm(false);
+      setReason('');
     } finally {
-      setDeleting(false);
+      setRequesting(false);
+    }
+  }
+
+  async function handleCancelDeletion() {
+    setCancelling(true);
+    try {
+      const { data } = await api.post('/users/me/cancel-deletion-request');
+      setUser(data);
+    } finally {
+      setCancelling(false);
     }
   }
 
@@ -92,26 +103,64 @@ export default function SettingsPage() {
 
         <section className="glass-card p-5 border border-coral-500/20">
           <h2 className="font-display font-semibold mb-2 text-coral-500">{t('deleteAccount')}</h2>
-          <p className="text-sm text-textmuted mb-4">
-            This permanently deletes your account and all financial data. This cannot be undone.
-          </p>
-          {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)} className="btn-secondary text-coral-500">
-              {t('deleteAccount')}
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="btn-secondary">
-                Cancel
-              </button>
+
+          {user?.deletion_requested ? (
+            <div>
+              <p className="text-sm text-textmain mb-1 font-medium">
+                Waiting for admin approval
+              </p>
+              <p className="text-sm text-textmuted mb-4">
+                Your request has been sent. An admin needs to review it before your account and data are deleted.
+              </p>
               <button
-                onClick={handleDeleteAccount}
-                disabled={deleting}
-                className="btn-primary bg-coral-500 dark:bg-coral-500"
+                onClick={handleCancelDeletion}
+                disabled={cancelling}
+                className="btn-secondary"
               >
-                {deleting ? <Loader2 size={16} className="animate-spin" /> : 'Yes, delete permanently'}
+                {cancelling ? <Loader2 size={16} className="animate-spin" /> : 'Cancel request'}
               </button>
             </div>
+          ) : (
+            <>
+              <p className="text-sm text-textmuted mb-4">
+                This sends a request to the admin to permanently delete your account and all financial data.
+                It won't happen immediately — an admin has to approve it first.
+              </p>
+              {!showReasonForm ? (
+                <button onClick={() => setShowReasonForm(true)} className="btn-secondary text-coral-500">
+                  {t('deleteAccount')}
+                </button>
+              ) : (
+                <form onSubmit={handleRequestDeletion} className="space-y-3">
+                  <div>
+                    <label className="label-text">Why do you want to delete your account?</label>
+                    <textarea
+                      required
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className="input-field mt-1 min-h-[80px]"
+                      placeholder="Let us know why you're leaving..."
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowReasonForm(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={requesting}
+                      className="btn-primary bg-coral-500 dark:bg-coral-500"
+                    >
+                      {requesting ? <Loader2 size={16} className="animate-spin" /> : 'Send request'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
           )}
         </section>
       </div>

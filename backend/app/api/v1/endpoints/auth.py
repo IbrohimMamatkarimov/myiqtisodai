@@ -14,6 +14,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
+from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import (
     ChangePassword,
@@ -164,6 +165,7 @@ def verify_email(payload: VerifyEmail, db: Session = Depends(get_db)):
 def forgot_password(payload: ForgotPassword, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == payload.email))
 
+    dev_link = None
     if user:
         token = create_email_token(
             str(user.id),
@@ -171,14 +173,22 @@ def forgot_password(payload: ForgotPassword, db: Session = Depends(get_db)):
             minutes=60,
         )
 
-        send_password_reset_email(
+        dev_link = send_password_reset_email(
             user.email,
             token,
         )
 
-    return {
+    response = {
         "message": "If that email exists, a reset link has been sent.",
     }
+    # DEV CONVENIENCE ONLY: real SMTP isn't configured yet (see
+    # app/services/email.py), so surface the link directly in the response
+    # while developing instead of it disappearing into a console log.
+    # Remove this once real SMTP credentials are set in .env.
+    if settings.DEBUG and dev_link:
+        response["dev_reset_link"] = dev_link
+
+    return response
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
