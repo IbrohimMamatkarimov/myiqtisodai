@@ -9,6 +9,7 @@
     "edit": "Tahrirlash",
     "add": "Qo'shish",
     "search": "Qidirish",
+    "currency": "Valyuta",
     "loading": "Yuklanmoqda...",
     "confirm": "Tasdiqlash",
     "back": "Orqaga",
@@ -38,6 +39,7 @@
     "search": "Qidirish...",
     "searchNoResults": "Mos xarajat yoki daromad topilmadi.",
     "notifications": "Bildirishnomalar",
+    "notificationsEmpty": "Yangi bildirishnoma yo'q.",
     "askAI": "AI'dan so'rash"
   },
   "auth": {
@@ -138,10 +140,16 @@
   "goals": {
     "title": "Jamg'arma maqsadlari",
     "addGoal": "Maqsad qo'shish",
+    "titleLabel": "Maqsad nomi",
+    "titlePlaceholder": "masalan, Yangi noutbuk",
     "target": "Maqsad summasi",
     "current": "Joriy summa",
     "deadline": "Muddat",
-    "progress": "Bajarilish"
+    "progress": "Bajarilish",
+    "addFunds": "Pul qo'shish",
+    "aiAdvice": "AI maslahati",
+    "noGoals": "Hozircha maqsad yo'q",
+    "noGoalsSubtitle": "Jamg'arma maqsadi qo'ying va har oy taraqqiyotini kuzating."
   },
   "assistant": {
     "title": "AI Moliyaviy Yordamchi",
@@ -173,8 +181,8 @@
   "onboarding": {
     "screen1Title": "Xush kelibsiz",
     "screen1Subtitle": "Siz bilan biroz tanishib olaylik.",
-    "name": "Ism",
-    "namePlaceholder": "Ismingiz",
+    "name": "To'liq ism",
+    "namePlaceholder": "Aziz Karimov",
     "age": "Yosh",
     "agePlaceholder": "masalan, 24",
     "gender": "Jins",
@@ -196,6 +204,11 @@
     "goalDebtFree": "Qarzlardan xalos bo'lish",
     "goalInvest": "Sarmoya kiritish",
     "goalEmergencyFund": "Zaxira jamg'arma yaratish",
+    "goalBuyHouse": "Uy sotib olish",
+    "goalBuyCar": "Mashina sotib olish",
+    "goalTravel": "Sayohat",
+    "goalEducation": "Ta'lim",
+    "goalOther": "Boshqa",
     "screen4Title": "Byudjet va sozlamalar",
     "screen4Subtitle": "Bundan xarajatlaringizni kuzatish uchun foydalanamiz.",
     "monthlyBudget": "Oylik byudjet",

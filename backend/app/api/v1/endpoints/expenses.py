@@ -16,6 +16,7 @@ from app.models.expense import Expense
 from app.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate, PaginatedExpenses, ReceiptScanResult
 from app.services.receipt_scanner import scan_receipt, _downscale_image
+from app.services.budget_alerts import check_budget_alerts
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
@@ -84,6 +85,7 @@ def create_expense(
     db.add(expense)
     db.commit()
     db.refresh(expense)
+    check_budget_alerts(db, current_user.id, expense.category_id)
     return expense
 
 

@@ -74,7 +74,7 @@ export function GlobalSearch() {
   const showDropdown = open && query.trim().length >= 2;
 
   return (
-    <div ref={containerRef} className="relative hidden lg:block w-64">
+    <div ref={containerRef} className="relative w-64">
       <div className="flex items-center gap-2 rounded-xl border border-black/5 bg-white/40 backdrop-blur-sm px-3 py-2 text-sm text-textmuted">
         <Search size={15} />
         <input
@@ -88,7 +88,7 @@ export function GlobalSearch() {
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full mt-2 w-80 right-0 lg:left-0 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full mt-2 w-80 left-0 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
           {!loading && results.length === 0 && (
             <p className="text-sm text-textmuted px-4 py-4 text-center">{t('searchNoResults')}</p>
           )}

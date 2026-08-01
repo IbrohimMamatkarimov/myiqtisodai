@@ -136,6 +136,18 @@ export interface PaginatedExpenses {
   total_pages: number;
 }
 
+export interface Goal {
+  id: string;
+  title: string;
+  target_amount: number;
+  current_amount: number;
+  deadline: string | null;
+  icon: string | null;
+  currency: string;
+  is_completed: boolean;
+  progress_percent: number;
+}
+
 export interface Income {
   id: string;
   category_id: string | null;

@@ -9,6 +9,7 @@
     "edit": "Edit",
     "add": "Add",
     "search": "Search",
+    "currency": "Currency",
     "loading": "Loading...",
     "confirm": "Confirm",
     "back": "Back",
@@ -38,6 +39,7 @@
     "search": "Search...",
     "searchNoResults": "No matching expenses or income found.",
     "notifications": "Notifications",
+    "notificationsEmpty": "You're all caught up.",
     "askAI": "Ask AI"
   },
   "auth": {
@@ -138,10 +140,16 @@
   "goals": {
     "title": "Savings goals",
     "addGoal": "Add goal",
+    "titleLabel": "Goal name",
+    "titlePlaceholder": "e.g. New laptop",
     "target": "Target amount",
     "current": "Current amount",
     "deadline": "Deadline",
-    "progress": "Progress"
+    "progress": "Progress",
+    "addFunds": "Add funds",
+    "aiAdvice": "AI advice",
+    "noGoals": "No goals yet",
+    "noGoalsSubtitle": "Set a savings goal and track your progress toward it every month."
   },
   "assistant": {
     "title": "AI Financial Assistant",
@@ -162,19 +170,16 @@
     "title": "Settings",
     "profile": "Profile",
     "language": "Language",
-    "theme": "Theme",
     "currency": "Currency",
     "notifications": "Notifications",
     "security": "Security",
-    "deleteAccount": "Delete account",
-    "lightMode": "Light",
-    "darkMode": "Dark"
+    "deleteAccount": "Delete account"
   },
   "onboarding": {
     "screen1Title": "Welcome",
     "screen1Subtitle": "Let's get to know you a little.",
-    "name": "Name",
-    "namePlaceholder": "Your name",
+    "name": "Full name",
+    "namePlaceholder": "Aziz Karimov",
     "age": "Age",
     "agePlaceholder": "e.g. 24",
     "gender": "Gender",
@@ -196,6 +201,11 @@
     "goalDebtFree": "Become debt free",
     "goalInvest": "Invest",
     "goalEmergencyFund": "Build emergency fund",
+    "goalBuyHouse": "Buy a house",
+    "goalBuyCar": "Buy a car",
+    "goalTravel": "Travel",
+    "goalEducation": "Education",
+    "goalOther": "Other",
     "screen4Title": "Budget & preferences",
     "screen4Subtitle": "We'll use this to track your spending.",
     "monthlyBudget": "Monthly budget",

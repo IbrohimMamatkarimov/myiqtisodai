@@ -40,15 +40,32 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(User.email == payload.email))
 
     if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered",
+        if existing.onboarding_completed:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already registered",
+            )
+        # They registered before but abandoned onboarding partway through (closed
+        # the tab, tried a different email, etc). Rather than permanently blocking
+        # this email, let them claim the same account and start fresh - update the
+        # password in case they've forgotten what they used the first time, and
+        # re-issue tokens straight into onboarding.
+        existing.hashed_password = hash_password(payload.password)
+        existing.language = payload.language
+        db.commit()
+        db.refresh(existing)
+
+        return Token(
+            access_token=create_access_token(str(existing.id)),
+            refresh_token=create_refresh_token(str(existing.id)),
         )
 
     user = User(
         email=payload.email,
         hashed_password=hash_password(payload.password),
-        full_name=payload.full_name,
+        # Real name is collected on Onboarding Screen 1 (complete-onboarding);
+        # this is just a NOT-NULL placeholder until then.
+        full_name=payload.email.split("@")[0],
 
         language=payload.language,
     )

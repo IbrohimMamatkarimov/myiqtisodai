@@ -14,7 +14,6 @@ export default function RegisterPage() {
   const setTokens = useAuthStore((s) => s.setTokens);
   const setUser = useAuthStore((s) => s.setUser);
 
-  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -31,7 +30,6 @@ export default function RegisterPage() {
       const { data } = await api.post('/auth/register', {
         email,
         password,
-        full_name: fullName,
       });
 
       setTokens(data.access_token, data.refresh_token);
@@ -61,20 +59,6 @@ export default function RegisterPage() {
       subtitle={t('createAccountSubtitle')}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-
-        <div>
-          <label className="label-text">
-            {t('fullName')}
-          </label>
-
-          <input
-            required
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            className="input-field mt-1"
-            placeholder="Aziz Karimov"
-          />
-        </div>
 
         <div>
           <label className="label-text">
@@ -108,7 +92,7 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <p className="text-sm text-coral-500">
+          <p className="text-sm text-danger">
             {error}
           </p>
         )}
@@ -127,7 +111,7 @@ export default function RegisterPage() {
           {t('haveAccount')}{' '}
           <Link
             href="/login"
-            className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+            className="font-medium text-primary hover:underline"
           >
             {t('signIn')}
           </Link>

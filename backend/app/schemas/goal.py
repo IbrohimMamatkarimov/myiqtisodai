@@ -11,6 +11,7 @@ class GoalCreate(BaseModel):
     current_amount: float = Field(default=0, ge=0)
     deadline: Optional[date] = None
     icon: Optional[str] = None
+    currency: str = Field(default="UZS", max_length=8)
 
 
 class GoalUpdate(BaseModel):
@@ -19,6 +20,7 @@ class GoalUpdate(BaseModel):
     current_amount: Optional[float] = Field(default=None, ge=0)
     deadline: Optional[date] = None
     icon: Optional[str] = None
+    currency: Optional[str] = Field(default=None, max_length=8)
     is_completed: Optional[bool] = None
 
 
@@ -31,5 +33,6 @@ class GoalOut(BaseModel):
     current_amount: float
     deadline: Optional[date]
     icon: Optional[str]
+    currency: str
     is_completed: bool
     progress_percent: float

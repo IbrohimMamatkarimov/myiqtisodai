@@ -9,6 +9,7 @@
     "edit": "Изменить",
     "add": "Добавить",
     "search": "Поиск",
+    "currency": "Валюта",
     "loading": "Загрузка...",
     "confirm": "Подтвердить",
     "back": "Назад",
@@ -38,6 +39,7 @@
     "search": "Поиск...",
     "searchNoResults": "Расходы или доходы не найдены.",
     "notifications": "Уведомления",
+    "notificationsEmpty": "Новых уведомлений нет.",
     "askAI": "Спросить AI"
   },
   "auth": {
@@ -138,10 +140,16 @@
   "goals": {
     "title": "Цели накоплений",
     "addGoal": "Добавить цель",
+    "titleLabel": "Название цели",
+    "titlePlaceholder": "например, Новый ноутбук",
     "target": "Целевая сумма",
     "current": "Текущая сумма",
     "deadline": "Срок",
-    "progress": "Прогресс"
+    "progress": "Прогресс",
+    "addFunds": "Пополнить",
+    "aiAdvice": "Совет AI",
+    "noGoals": "Пока нет целей",
+    "noGoalsSubtitle": "Поставьте цель накоплений и отслеживайте прогресс каждый месяц."
   },
   "assistant": {
     "title": "AI Финансовый Помощник",
@@ -173,8 +181,8 @@
   "onboarding": {
     "screen1Title": "Добро пожаловать",
     "screen1Subtitle": "Давайте немного узнаем вас.",
-    "name": "Имя",
-    "namePlaceholder": "Ваше имя",
+    "name": "Полное имя",
+    "namePlaceholder": "Aziz Karimov",
     "age": "Возраст",
     "agePlaceholder": "например, 24",
     "gender": "Пол",
@@ -196,6 +204,11 @@
     "goalDebtFree": "Избавиться от долгов",
     "goalInvest": "Инвестировать",
     "goalEmergencyFund": "Создать резервный фонд",
+    "goalBuyHouse": "Купить дом",
+    "goalBuyCar": "Купить машину",
+    "goalTravel": "Путешествия",
+    "goalEducation": "Образование",
+    "goalOther": "Другое",
     "screen4Title": "Бюджет и настройки",
     "screen4Subtitle": "Мы будем использовать это для отслеживания ваших расходов.",
     "monthlyBudget": "Ежемесячный бюджет",

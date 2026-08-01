@@ -21,6 +21,7 @@ class Goal(UUIDMixin, TimestampMixin, Base):
     current_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     deadline: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     icon: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    currency: Mapped[str] = mapped_column(String(8), default="UZS", nullable=False)
     is_completed: Mapped[bool] = mapped_column(default=False)
 
     user = relationship("User", back_populates="goals")

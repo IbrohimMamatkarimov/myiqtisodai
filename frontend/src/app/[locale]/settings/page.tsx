@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
@@ -23,6 +23,13 @@ export default function SettingsPage() {
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // user loads asynchronously after mount (auth check + /auth/me), so the useState
+  // initializer above often runs before user.currency exists yet and silently locks
+  // in the 'UZS' fallback forever. Re-sync whenever the real value arrives/changes.
+  useEffect(() => {
+    if (user?.currency) setCurrency(user.currency);
+  }, [user?.currency]);
 
   async function updateCurrency(next: string) {
     setCurrency(next);

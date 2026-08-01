@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Wallet, Sparkles, Coffee, ArrowRight } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { ScanReceiptFab } from '@/components/ScanReceiptFab';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api } from '@/lib/api-client';
@@ -176,6 +178,10 @@ export default function DashboardPage() {
               </Link>
             </div>
 
+            <div className="mb-4">
+              <GlobalSearch />
+            </div>
+
             {txns.length === 0 ? (
               <p className="text-sm text-textmuted py-6 text-center">{t('emptyTodaySubtitle')}</p>
             ) : (
@@ -198,6 +204,10 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
+
+            <div className="mt-4 pt-4 border-t border-textmain/[0.06]">
+              <ScanReceiptFab variant="inline" />
+            </div>
           </div>
 
           {/* AI Coach - short, no fluff */}

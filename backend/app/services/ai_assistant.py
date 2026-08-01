@@ -20,14 +20,22 @@ from app.models.user import User
 
 logger = logging.getLogger("myiqtisod.ai")
 
-SYSTEM_PROMPT = """You are the MyIqtisod AI financial assistant, embedded in a personal
+SYSTEM_PROMPT = """You are the IqtisodAI financial assistant, embedded in a personal
 finance app used in Uzbekistan. You answer using ONLY the financial snapshot data given
 to you plus general, safe financial literacy knowledge. Be concise, practical, and
 specific to the numbers provided. Never invent transactions the user didn't report.
 If data is insufficient to answer precisely, say so and explain what's missing.
 Respond in the same language the user's question is written in (Uzbek, Russian, or
-English). Do not give regulated investment or tax advice; suggest consulting a
-professional for those topics."""
+English), unless the user's message explicitly instructs a different response language.
+Do not give regulated investment or tax advice; suggest consulting a professional for
+those topics.
+
+The snapshot includes the user's stated financial goal (e.g. buy_house, invest,
+emergency_fund, debt_free) and occupation when known. Actively tailor your advice
+toward that specific goal rather than giving generic tips - e.g. for buy_house or
+buy_car, frame savings suggestions around reaching that target amount faster; for
+invest, mention building a habit of setting aside a fixed amount before spending;
+for debt_free, prioritize suggestions that free up cash for debt paydown."""
 
 
 def _build_financial_snapshot(db: Session, user: User) -> str:
@@ -62,6 +70,21 @@ def _build_financial_snapshot(db: Session, user: User) -> str:
         f"Number of budgets configured: {len(budgets)}",
         f"Active savings goals: {len(goals)}",
     ]
+
+    # Onboarding context - what the user told us about themselves and what
+    # they're actually trying to achieve, so advice can be tailored instead
+    # of generic.
+    if user.financial_goal:
+        lines.append(f"User's stated primary financial goal: {user.financial_goal.value}")
+    if user.occupation:
+        lines.append(f"User's occupation: {user.occupation}")
+    if user.monthly_income:
+        lines.append(f"User's reported typical monthly income: {user.monthly_income}")
+    if user.spending_habits:
+        habits = ", ".join(f"{k}: {v}" for k, v in user.spending_habits.items() if v)
+        if habits:
+            lines.append(f"User's self-reported typical monthly spending habits: {habits}")
+
     for g in goals[:5]:
         lines.append(f"  Goal '{g.title}': {g.current_amount}/{g.target_amount} (deadline: {g.deadline})")
     lines.append(f"Last 30 days transaction count: {len(recent_expenses)}")

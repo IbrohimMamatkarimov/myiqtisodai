@@ -10,20 +10,19 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
-  Bell,
   Send,
-  Sun,
+  Target,
   Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from './theme-provider';
 import { LanguageSwitcher } from './language-switcher';
-import { GlobalSearch } from './GlobalSearch';
+import { NotificationsBell } from './NotificationsBell';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('nav');
   const tb = useTranslations('topbar');
-  const ts = useTranslations('settings');
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -40,6 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { href: '/expenses', label: t('expenses'), icon: Receipt },
     { href: '/income', label: t('income'), icon: Wallet },
+    { href: '/goals', label: t('goals'), icon: Target },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
   ];
@@ -73,20 +73,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <div className="flex">
-        <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-textmain/[0.06] min-h-screen p-5">
+        <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-textmain/[0.06] min-h-screen p-5 relative">
           <Link
             href="/dashboard"
             onClick={() => router.refresh()}
-            className="flex items-center gap-2 mb-8 px-1"
+            className="flex items-center gap-2 mb-8 px-1 justify-between"
           >
-            <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
-              <img
-                src="/iqtisod-newphoto.png"
-                alt="IqtisodAI"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <span className="font-display font-semibold text-textmain">IqtisodAI</span>
+            <span className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
+                <img
+                  src="/iqtisod-newphoto.png"
+                  alt="IqtisodAI"
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <span className="font-display font-semibold text-textmain">IqtisodAI</span>
+            </span>
           </Link>
 
           <nav className="flex-1 space-y-0.5">
@@ -120,25 +122,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main className="flex-1 min-h-screen">
           <header className="flex items-center justify-between gap-4 px-8 py-4 border-b border-textmain/[0.06]">
-            <div>
-              <h1 className="font-display text-base font-semibold text-textmain flex items-center gap-1.5">
-                <span>{greeting}{firstName ? `, ${firstName}` : ''}</span>
-              </h1>
-              <p className="text-xs text-textmuted mt-0.5">{dateStr}</p>
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="shrink-0">
+                <h1 className="font-display text-base font-semibold text-textmain flex items-center gap-1.5">
+                  <span>{greeting}{firstName ? `, ${firstName}` : ''}</span>
+                </h1>
+                <p className="text-xs text-textmuted mt-0.5">{dateStr}</p>
+              </div>
             </div>
 
             <div className="flex items-center gap-2.5">
-              <div className="hidden lg:block">
-                <GlobalSearch />
-              </div>
-
               <button
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
-                aria-label={tb('notifications')}
+                type="button"
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-primary hover:border-primary/30 transition-colors"
               >
-                <Bell size={15} />
-                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
               </button>
+
+              <NotificationsBell />
 
               <Link
                 href="/assistant"
@@ -149,14 +152,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
 
               <LanguageSwitcher />
-
-              <button
-                onClick={toggleTheme}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
-                aria-label={theme === 'dark' ? ts('lightMode') : ts('darkMode')}
-              >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
             </div>
           </header>
           <div className="p-8">{children}</div>
