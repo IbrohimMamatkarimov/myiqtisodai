@@ -1,17 +1,19 @@
 import uuid
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_superuser
 from app.core.security import hash_password
 from app.db.session import get_db
+from app.models.chat_message import ChatMessage
 from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
+from app.schemas.chat import ChatConversationOut, ChatMessageCreate, ChatMessageOut
 from app.schemas.user import (
     AdminDeletionDecision,
     AdminNotifyUser,
@@ -203,3 +205,116 @@ def notify_user(
     )
     db.commit()
     return None
+
+
+# --------------------------------------------------------------------------
+# Support chat - all admins share one inbox per user (like a typical
+# single-inbox support tool), so any admin can pick up any conversation.
+# --------------------------------------------------------------------------
+
+@router.get("/chat/conversations", response_model=list[ChatConversationOut])
+def list_conversations(
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    # Latest message per user, plus how many of that user's messages the
+    # admin side hasn't read yet.
+    latest_ids_subq = (
+        select(
+            ChatMessage.user_id,
+            func.max(ChatMessage.created_at).label("max_created_at"),
+        )
+        .group_by(ChatMessage.user_id)
+        .subquery()
+    )
+
+    latest_messages = db.execute(
+        select(ChatMessage, User)
+        .join(User, User.id == ChatMessage.user_id)
+        .join(
+            latest_ids_subq,
+            (ChatMessage.user_id == latest_ids_subq.c.user_id)
+            & (ChatMessage.created_at == latest_ids_subq.c.max_created_at),
+        )
+        .order_by(ChatMessage.created_at.desc())
+    ).all()
+
+    results = []
+    for message, user in latest_messages:
+        unread_count = db.scalar(
+            select(func.count())
+            .select_from(ChatMessage)
+            .where(
+                ChatMessage.user_id == user.id,
+                ChatMessage.sender_is_admin.is_(False),
+                ChatMessage.is_read_by_admin.is_(False),
+            )
+        )
+        results.append(
+            ChatConversationOut(
+                user_id=user.id,
+                email=user.email,
+                full_name=user.full_name,
+                last_message=message.body,
+                last_message_at=message.created_at,
+                last_sender_is_admin=message.sender_is_admin,
+                unread_count=unread_count or 0,
+            )
+        )
+    return results
+
+
+@router.get("/chat/{user_id}/messages", response_model=list[ChatMessageOut])
+def get_conversation(
+    user_id: uuid.UUID,
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    messages = db.scalars(
+        select(ChatMessage)
+        .where(ChatMessage.user_id == user_id)
+        .order_by(ChatMessage.created_at.asc())
+    ).all()
+
+    # Opening the thread marks the user's messages as read by an admin.
+    db.execute(
+        update(ChatMessage)
+        .where(
+            ChatMessage.user_id == user_id,
+            ChatMessage.sender_is_admin.is_(False),
+            ChatMessage.is_read_by_admin.is_(False),
+        )
+        .values(is_read_by_admin=True)
+    )
+    db.commit()
+
+    return messages
+
+
+@router.post("/chat/{user_id}/messages", response_model=ChatMessageOut, status_code=201)
+def reply_to_conversation(
+    user_id: uuid.UUID,
+    payload: ChatMessageCreate,
+    current_admin: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    message = ChatMessage(
+        user_id=user_id,
+        sender_id=current_admin.id,
+        sender_is_admin=True,
+        body=payload.body,
+        is_read_by_admin=True,
+        is_read_by_user=False,
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message

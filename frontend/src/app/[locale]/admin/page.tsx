@@ -79,11 +79,9 @@ export default function AdminPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectMessage, setRejectMessage] = useState('');
 
-  // Message user modal
-  const [messageFor, setMessageFor] = useState<{ id: string; email: string } | null>(null);
-  const [messageTitle, setMessageTitle] = useState('');
-  const [messageBody, setMessageBody] = useState('');
-  const [messageSent, setMessageSent] = useState(false);
+  function openChat(userId: string) {
+    router.push(`/admin/chat?user=${userId}`);
+  }
 
   function loadUsers(q?: string) {
     setLoading(true);
@@ -185,23 +183,6 @@ export default function AdminPage() {
     }
   }
 
-  async function submitMessage() {
-    if (!messageFor || !messageTitle.trim() || !messageBody.trim()) return;
-    setBusy(true);
-    try {
-      await api.post(`/admin/users/${messageFor.id}/notify`, { title: messageTitle, message: messageBody });
-      setMessageSent(true);
-      setTimeout(() => {
-        setMessageFor(null);
-        setMessageTitle('');
-        setMessageBody('');
-        setMessageSent(false);
-      }, 1200);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6">
@@ -242,9 +223,9 @@ export default function AdminPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => setMessageFor({ id: r.id, email: r.email })}
+                      onClick={() => openChat(r.id)}
                       className="btn-secondary text-xs px-2 py-1.5"
-                      title="Message this user"
+                      title="Chat with this user"
                     >
                       <MessageSquare size={14} />
                     </button>
@@ -327,8 +308,8 @@ export default function AdminPage() {
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        title="Message user"
-                        onClick={() => setMessageFor({ id: u.id, email: u.email })}
+                        title="Chat with user"
+                        onClick={() => openChat(u.id)}
                         className="text-textmuted hover:text-primary"
                       >
                         <MessageSquare size={15} />
@@ -470,11 +451,11 @@ export default function AdminPage() {
                 )}
 
                 <button
-                  onClick={() => setMessageFor({ id: detail.id, email: detail.email })}
+                  onClick={() => openChat(detail.id)}
                   className="btn-secondary text-sm mt-4 w-full"
                 >
                   <MessageSquare size={15} />
-                  Message this user
+                  Chat with this user
                 </button>
               </>
             )}
@@ -504,50 +485,6 @@ export default function AdminPage() {
                 {busy ? <Loader2 size={16} className="animate-spin" /> : 'Set password'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Message user modal */}
-      {messageFor && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-textmain/20 p-4"
-          onClick={() => { setMessageFor(null); setMessageTitle(''); setMessageBody(''); setMessageSent(false); }}
-        >
-          <div className="glass-card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-display font-semibold text-textmain mb-1">Message {messageFor.email}</h2>
-            <p className="text-xs text-textmuted mb-4">
-              Lands in their notification bell inside the app.
-            </p>
-            {messageSent ? (
-              <p className="text-sm text-secondary font-medium py-2">Sent.</p>
-            ) : (
-              <>
-                <input
-                  autoFocus
-                  value={messageTitle}
-                  onChange={(e) => setMessageTitle(e.target.value)}
-                  placeholder="Title"
-                  className="input-field mb-2"
-                />
-                <textarea
-                  value={messageBody}
-                  onChange={(e) => setMessageBody(e.target.value)}
-                  placeholder="Message"
-                  className="input-field min-h-[100px]"
-                />
-                <div className="flex justify-end gap-2 mt-4">
-                  <button onClick={() => { setMessageFor(null); setMessageTitle(''); setMessageBody(''); }} className="btn-secondary">Cancel</button>
-                  <button
-                    onClick={submitMessage}
-                    disabled={busy || !messageTitle.trim() || !messageBody.trim()}
-                    className="btn-primary"
-                  >
-                    {busy ? <Loader2 size={16} className="animate-spin" /> : 'Send'}
-                  </button>
-                </div>
-              </>
-            )}
           </div>
         </div>
       )}

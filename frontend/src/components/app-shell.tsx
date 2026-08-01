@@ -10,16 +10,17 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
-  Send,
   Target,
   Moon,
   Sun,
   ShieldCheck,
+  MessageCircle,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useTheme } from './theme-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationsBell } from './NotificationsBell';
+import { SupportChatWidget } from './SupportChatWidget';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('nav');
@@ -50,6 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navItems = user?.is_superuser
     ? [
         { href: '/admin', label: 'Admin', icon: ShieldCheck },
+        { href: '/admin/chat', label: 'Chat', icon: MessageCircle },
         { href: '/settings', label: t('settings'), icon: SettingsIcon },
       ]
     : regularNavItems;
@@ -170,14 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <a href="https://t.me/ibrohimmamatkarimov"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-[#229ED9] text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity"
-      >
-        <Send size={18} />
-        <span className="text-sm font-medium">Support</span>
-      </a>
+      {!user?.is_superuser && <SupportChatWidget />}
     </div>
   );
 }

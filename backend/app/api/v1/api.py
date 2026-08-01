@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     auth,
     budgets,
     categories,
+    chat,
     dashboard,
     expenses,
     goals,
@@ -28,4 +29,5 @@ api_router.include_router(dashboard.router)
 api_router.include_router(notifications.router)
 api_router.include_router(reports.router)
 api_router.include_router(ai.router)
+api_router.include_router(chat.router)
 api_router.include_router(admin.router)
