@@ -52,7 +52,11 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
         return False
 
 
-def send_verification_email(to_email: str, token: str) -> str:
+def send_verification_email(to_email: str, token: str) -> str | None:
+    """Sends the verification email. Returns the link ONLY when the real send
+    failed (so callers can surface a dev-mode fallback) - returns None on a
+    genuine successful send, so the dev link never leaks into API responses
+    for emails that actually went out."""
     link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
     sent = send_email(
         to_email,
@@ -60,12 +64,19 @@ def send_verification_email(to_email: str, token: str) -> str:
         f"<p>Welcome to MyIqtisod! Please verify your email by clicking "
         f"<a href='{link}'>this link</a>. It expires in 24 hours.</p>",
     )
-    if settings.DEBUG and not sent:
+    if sent:
+        return None
+    if settings.DEBUG:
         logger.info("\n%s\nDEV MODE - verification link for %s:\n%s\n%s", "=" * 60, to_email, link, "=" * 60)
-    return link
+        return link
+    return None
 
 
-def send_password_reset_email(to_email: str, token: str) -> str:
+def send_password_reset_email(to_email: str, token: str) -> str | None:
+    """Sends the reset email. Returns the link ONLY when the real send
+    failed (so callers can surface a dev-mode fallback) - returns None on a
+    genuine successful send, so the dev link never leaks into API responses
+    for emails that actually went out."""
     link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     sent = send_email(
         to_email,
@@ -73,6 +84,9 @@ def send_password_reset_email(to_email: str, token: str) -> str:
         f"<p>We received a request to reset your password. Click "
         f"<a href='{link}'>this link</a> to set a new one. If you didn't request this, ignore this email.</p>",
     )
-    if settings.DEBUG and not sent:
+    if sent:
+        return None
+    if settings.DEBUG:
         logger.info("\n%s\nDEV MODE - password reset link for %s:\n%s\n%s", "=" * 60, to_email, link, "=" * 60)
-    return link
+        return link
+    return None

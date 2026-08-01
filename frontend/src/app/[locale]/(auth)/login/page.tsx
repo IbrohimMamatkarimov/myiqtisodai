@@ -18,10 +18,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setNeedsVerification(false);
+    setResent(false);
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
@@ -32,11 +37,31 @@ export default function LoginPage() {
       });
       setUser(me.data);
 
-      router.push('/dashboard');
+      router.push(
+        me.data.is_superuser
+          ? '/admin'
+          : me.data.onboarding_completed
+            ? '/dashboard'
+            : '/onboarding'
+      );
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Something went wrong. Please try again.');
+      const detail = err?.response?.data?.detail || 'Something went wrong. Please try again.';
+      setError(detail);
+      if (typeof detail === 'string' && detail.toLowerCase().includes('verify your email')) {
+        setNeedsVerification(true);
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setResending(true);
+    try {
+      await api.post('/auth/resend-verification', { email });
+      setResent(true);
+    } finally {
+      setResending(false);
     }
   }
 
@@ -66,7 +91,21 @@ export default function LoginPage() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && (
+          <div>
+            <p className="text-sm text-red-500">{error}</p>
+            {needsVerification && (
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resending || resent}
+                className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
+              >
+                {resending ? 'Sending...' : resent ? 'Verification email sent - check your inbox' : 'Resend verification email'}
+              </button>
+            )}
+          </div>
+        )}
 
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? <Loader2 className="animate-spin" size={18} /> : t('signIn')}

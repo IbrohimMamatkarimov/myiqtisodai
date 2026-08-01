@@ -2,23 +2,22 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Link, useRouter } from '@/navigation';
+import { Link } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { api } from '@/lib/api-client';
-import { useAuthStore } from '@/lib/auth-store';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MailCheck } from 'lucide-react';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
-  const router = useRouter();
-  const setTokens = useAuthStore((s) => s.setTokens);
-  const setUser = useAuthStore((s) => s.setUser);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,19 +26,12 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const { data } = await api.post('/auth/register', {
+      await api.post('/auth/register', {
         email,
         password,
       });
 
-      setTokens(data.access_token, data.refresh_token);
-
-      const me = await api.get('/auth/me', {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      setUser(me.data);
-
-      router.push('/onboarding');
+      setSent(true);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
 
@@ -51,6 +43,44 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResending(true);
+    try {
+      await api.post('/auth/resend-verification', { email });
+      setResent(true);
+    } finally {
+      setResending(false);
+    }
+  }
+
+  if (sent) {
+    return (
+      <AuthShell title={t('createAccountTitle')} subtitle="One more step.">
+        <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <MailCheck className="text-emerald-500" size={40} />
+          <p className="font-medium text-textmain">Check your email to verify your account.</p>
+          <p className="text-sm text-textmuted">
+            We sent a verification link to <span className="font-medium text-textmain">{email}</span>.
+            Click it, then sign in below.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resending || resent}
+            className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
+          >
+            {resending ? 'Sending...' : resent ? 'Verification email sent - check your inbox' : "Didn't get it? Resend"}
+          </button>
+
+          <Link href="/login" className="btn-primary mt-4">
+            {t('signIn')}
+          </Link>
+        </div>
+      </AuthShell>
+    );
   }
 
   return (

@@ -42,6 +42,10 @@ export default function ExpensesPage() {
         params: { page: 1, page_size: 20 },
       });
       setData(data);
+    } catch {
+      // 401s are handled globally by the axios interceptor (redirects to
+      // /login); anything else just leaves the list empty rather than
+      // crashing the page with an unhandled error overlay.
     } finally {
       setLoading(false);
     }

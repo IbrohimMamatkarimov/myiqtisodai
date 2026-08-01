@@ -131,6 +131,74 @@ class DeletionRequestOut(BaseModel):
     deletion_requested_at: Optional[datetime]
 
 
+class AdminUserOut(BaseModel):
+    """User row for the admin panel. Deliberately excludes hashed_password -
+    passwords are one-way hashed (bcrypt) and are never readable by anyone,
+    including admins; this is standard practice and won't change even for
+    the admin panel. Admins can force-set a NEW password instead (see
+    AdminSetPassword) rather than viewing the existing one."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    email: EmailStr
+    full_name: str
+
+    is_active: bool
+    is_email_verified: bool
+    is_superuser: bool
+    onboarding_completed: bool
+
+    currency: Currency
+    language: Language
+    financial_goal: Optional[str]
+
+    # Full onboarding profile - everything the user told the app about themselves
+    age: Optional[int]
+    gender: Optional[Gender]
+    country: Optional[str]
+    occupation: Optional[str]
+    monthly_income: Optional[float]
+    salary_day: Optional[int]
+    spending_habits: Optional[dict]
+    notifications_enabled: bool
+    theme: Theme
+
+    deletion_requested: bool
+    deletion_reason: Optional[str]
+    deletion_requested_at: Optional[datetime]
+
+    created_at: datetime
+
+
+class AdminUserDetail(AdminUserOut):
+    total_income: float
+    total_expenses: float
+    expense_count: int
+    income_count: int
+    goal_count: int
+
+
+class AdminSetPassword(BaseModel):
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class AdminNotifyUser(BaseModel):
+    """Admin sends a one-off message to a user - shows up in their
+    notification bell. Used for contacting users about things like a
+    declined account-deletion request, or any other manual outreach."""
+
+    title: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class AdminDeletionDecision(BaseModel):
+    """Optional message sent to the user alongside the approve/reject
+    decision - e.g. explaining why a deletion request was declined."""
+
+    message: Optional[str] = Field(default=None, max_length=2000)
+
+
 class ForgotPassword(BaseModel):
     email: EmailStr
 

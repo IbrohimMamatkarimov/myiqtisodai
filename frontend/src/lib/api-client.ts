@@ -31,9 +31,11 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch {
           useAuthStore.getState().logout();
+          if (typeof window !== 'undefined') window.location.href = '/login';
         }
       } else {
         useAuthStore.getState().logout();
+        if (typeof window !== 'undefined') window.location.href = '/login';
       }
     }
     return Promise.reject(error);

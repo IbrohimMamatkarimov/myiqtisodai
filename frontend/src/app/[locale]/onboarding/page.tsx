@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
+import { useAuthStore } from '@/lib/auth-store';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { CountrySelect } from '@/components/country-select';
 import {
@@ -59,7 +60,6 @@ type FormState = {
 
   financial_goal: string;
 
-  monthly_budget: string;
   salary_day: string;
   language: string;
 
@@ -75,7 +75,6 @@ const initialState: FormState = {
   occupation: '',
   monthly_income: '',
   financial_goal: '',
-  monthly_budget: '',
   salary_day: '',
   language: 'uz',
   spending_habits: {},
@@ -134,6 +133,10 @@ export default function OnboardingPage() {
 
   function next() {
     setError(null);
+    if (screen === 1 && form.full_name.trim().length < 2) {
+      setError(t('nameRequiredError'));
+      return;
+    }
     setScreen((s) => Math.min(s + 1, TOTAL_SCREENS));
   }
 
@@ -151,7 +154,7 @@ export default function OnboardingPage() {
     );
 
     try {
-      await api.post('/users/complete-onboarding', {
+      const { data } = await api.post('/users/complete-onboarding', {
         full_name: form.full_name || undefined,
         age: form.age ? Number(form.age) : undefined,
         gender: form.gender || undefined,
@@ -163,7 +166,6 @@ export default function OnboardingPage() {
 
         financial_goal: form.financial_goal || undefined,
 
-        monthly_budget: form.monthly_budget ? Number(form.monthly_budget) : undefined,
         salary_day: form.salary_day ? Number(form.salary_day) : undefined,
         language: form.language || undefined,
 
@@ -171,6 +173,8 @@ export default function OnboardingPage() {
           ? spendingHabitsPayload
           : undefined,
       });
+
+      useAuthStore.getState().setUser(data);
 
       try {
         sessionStorage.removeItem(STORAGE_KEY);
@@ -238,6 +242,7 @@ export default function OnboardingPage() {
           >
             <Field label={t('name')}>
               <input
+                required
                 className="input-field"
                 placeholder={t('namePlaceholder')}
                 value={form.full_name}
@@ -343,16 +348,6 @@ export default function OnboardingPage() {
             title={t('screen4Title')}
             subtitle={t('screen4Subtitle')}
           >
-            <Field label={t('monthlyBudget')}>
-              <input
-                type="number"
-                className="input-field"
-                placeholder={t('monthlyBudgetPlaceholder')}
-                value={form.monthly_budget}
-                onChange={(e) => update('monthly_budget', e.target.value)}
-              />
-            </Field>
-
             <Field label={t('salaryDate')}>
               <input
                 type="number"

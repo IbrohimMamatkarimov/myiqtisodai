@@ -5,7 +5,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Wallet, Sparkles, Coffee, ArrowRight } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ScanReceiptFab } from '@/components/ScanReceiptFab';
-import { GlobalSearch } from '@/components/GlobalSearch';
 import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api } from '@/lib/api-client';
@@ -176,10 +175,6 @@ export default function DashboardPage() {
                 {t('seeAll')}
                 <ArrowRight size={13} />
               </Link>
-            </div>
-
-            <div className="mb-4">
-              <GlobalSearch />
             </div>
 
             {txns.length === 0 ? (

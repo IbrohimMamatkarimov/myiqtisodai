@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -34,9 +35,10 @@ from app.services.email import (
 from app.utils.seed_categories import seed_default_categories
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+logger = logging.getLogger("myiqtisod.auth")
 
 
-@router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(User.email == payload.email))
 
@@ -50,16 +52,23 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         # the tab, tried a different email, etc). Rather than permanently blocking
         # this email, let them claim the same account and start fresh - update the
         # password in case they've forgotten what they used the first time, and
-        # re-issue tokens straight into onboarding.
+        # send a fresh verification link rather than logging them straight in.
         existing.hashed_password = hash_password(payload.password)
         existing.language = payload.language
+        existing.is_email_verified = False
         db.commit()
         db.refresh(existing)
 
-        return Token(
-            access_token=create_access_token(str(existing.id)),
-            refresh_token=create_refresh_token(str(existing.id)),
+        verify_token = create_email_token(
+            str(existing.id),
+            purpose="verify_email",
         )
+        send_verification_email(existing.email, verify_token)
+
+        return {
+            "message": "Please check your email to verify your account before logging in.",
+            "email": existing.email,
+        }
 
     user = User(
         email=payload.email,
@@ -84,12 +93,14 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 
     send_verification_email(user.email, verify_token)
 
-    # Log the user straight in so they can go directly into onboarding
-    # without a second login step.
-    return Token(
-        access_token=create_access_token(str(user.id)),
-        refresh_token=create_refresh_token(str(user.id)),
-    )
+    # No tokens issued here anymore - the account can't be used until the
+    # verification link is clicked and the user logs in through /login,
+    # which enforces is_email_verified. Issuing tokens here would let
+    # anyone skip verification entirely by just registering.
+    return {
+        "message": "Please check your email to verify your account before logging in.",
+        "email": user.email,
+    }
 
 
 @router.post("/login", response_model=Token)
@@ -109,6 +120,12 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=403,
             detail="Account is disabled",
+        )
+
+    if not user.is_email_verified:
+        raise HTTPException(
+            status_code=403,
+            detail="Please verify your email before logging in. Check your inbox for the verification link.",
         )
 
     return Token(
@@ -161,6 +178,24 @@ def verify_email(payload: VerifyEmail, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/resend-verification", status_code=status.HTTP_200_OK)
+def resend_verification(payload: ForgotPassword, db: Session = Depends(get_db)):
+    # Reuses ForgotPassword's shape (just an email field) - same generic
+    # response either way so this can't be used to check which emails exist.
+    user = db.scalar(select(User).where(User.email == payload.email))
+
+    if user and not user.is_email_verified:
+        verify_token = create_email_token(
+            str(user.id),
+            purpose="verify_email",
+        )
+        send_verification_email(user.email, verify_token)
+
+    return {
+        "message": "If that email exists and isn't verified yet, a new verification link has been sent.",
+    }
+
+
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 def forgot_password(payload: ForgotPassword, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == payload.email))
@@ -176,6 +211,21 @@ def forgot_password(payload: ForgotPassword, db: Session = Depends(get_db)):
         dev_link = send_password_reset_email(
             user.email,
             token,
+        )
+        logger.info(
+            "Password reset requested for %s (user found) - email send attempted. "
+            "If it doesn't arrive, check the lines just above this one for a "
+            "'Failed to send email' traceback.",
+            payload.email,
+        )
+    else:
+        # Not a bug - this is intentional (never reveal whether an email is
+        # registered). But it looks EXACTLY like "the email isn't sending"
+        # if you're testing with an email that has no account, so log it
+        # loudly here rather than staying silent.
+        logger.warning(
+            "Password reset requested for %s - NO account with this email exists, so nothing was sent.",
+            payload.email,
         )
 
     response = {

@@ -18,6 +18,9 @@ export default function SettingsPage() {
 
   const [currency, setCurrency] = useState(user?.currency || 'UZS');
   const [savingCurrency, setSavingCurrency] = useState(false);
+  const [fullName, setFullName] = useState(user?.full_name || '');
+  const [savingName, setSavingName] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
   const [requesting, setRequesting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showReasonForm, setShowReasonForm] = useState(false);
@@ -30,6 +33,10 @@ export default function SettingsPage() {
     if (user?.currency) setCurrency(user.currency);
   }, [user?.currency]);
 
+  useEffect(() => {
+    if (user?.full_name) setFullName(user.full_name);
+  }, [user?.full_name]);
+
   async function updateCurrency(next: string) {
     setCurrency(next);
     setSavingCurrency(true);
@@ -38,6 +45,20 @@ export default function SettingsPage() {
       setUser(data);
     } finally {
       setSavingCurrency(false);
+    }
+  }
+
+  async function handleSaveName(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingName(true);
+    setNameSaved(false);
+    try {
+      const { data } = await api.patch('/users/me', { full_name: fullName });
+      setUser(data);
+      setNameSaved(true);
+      setTimeout(() => setNameSaved(false), 2000);
+    } finally {
+      setSavingName(false);
     }
   }
 
@@ -73,16 +94,26 @@ export default function SettingsPage() {
       <div className="space-y-4 max-w-xl">
         <section className="glass-card p-5">
           <h2 className="font-display font-semibold mb-4">{t('profile')}</h2>
-          <div className="grid grid-cols-1 gap-3 text-sm">
+          <form onSubmit={handleSaveName} className="grid grid-cols-1 gap-3 text-sm">
             <div>
-              <span className="label-text block mb-1">Full name</span>
-              <span>{user?.full_name}</span>
+              <label className="label-text block mb-1">Full name</label>
+              <div className="flex gap-2">
+                <input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="input-field flex-1"
+                  placeholder="Aziz Karimov"
+                />
+                <button type="submit" disabled={savingName || !fullName.trim()} className="btn-secondary shrink-0">
+                  {savingName ? <Loader2 size={16} className="animate-spin" /> : nameSaved ? 'Saved' : 'Save'}
+                </button>
+              </div>
             </div>
             <div>
               <span className="label-text block mb-1">Email</span>
               <span>{user?.email}</span>
             </div>
-          </div>
+          </form>
         </section>
 
         <section className="glass-card p-5">

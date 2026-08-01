@@ -36,15 +36,23 @@ export function AppShell({ children }: { children: ReactNode }) {
     setNow(new Date());
   }, []);
 
-  const navItems = [
+  const regularNavItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { href: '/expenses', label: t('expenses'), icon: Receipt },
     { href: '/income', label: t('income'), icon: Wallet },
     { href: '/goals', label: t('goals'), icon: Target },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
-    ...(user?.is_superuser ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
   ];
+
+  // Admin accounts manage the platform, not their own personal finances - keep
+  // their sidebar limited to that instead of mixing in Expenses/Income/Goals/AI.
+  const navItems = user?.is_superuser
+    ? [
+        { href: '/admin', label: 'Admin', icon: ShieldCheck },
+        { href: '/settings', label: t('settings'), icon: SettingsIcon },
+      ]
+    : regularNavItems;
 
   function handleLogout() {
     logout();
@@ -77,7 +85,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex">
         <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-textmain/[0.06] min-h-screen p-5 relative">
           <Link
-            href="/dashboard"
+            href={user?.is_superuser ? '/admin' : '/dashboard'}
             onClick={() => router.refresh()}
             className="flex items-center gap-2 mb-8 px-1 justify-between"
           >
@@ -145,13 +153,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
               <NotificationsBell />
 
-              <Link
-                href="/assistant"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary text-white font-semibold text-sm px-3 py-2 hover:brightness-95 transition-all"
-              >
-                <Sparkles size={14} />
-                {tb('askAI')}
-              </Link>
+              {!user?.is_superuser && (
+                <Link
+                  href="/assistant"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary text-white font-semibold text-sm px-3 py-2 hover:brightness-95 transition-all"
+                >
+                  <Sparkles size={14} />
+                  {tb('askAI')}
+                </Link>
+              )}
 
               <LanguageSwitcher />
             </div>
