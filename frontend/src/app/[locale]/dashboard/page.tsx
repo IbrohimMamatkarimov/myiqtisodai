@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Plus, Wallet, Sparkles, ArrowRight, Target, Camera, Loader2, UploadCloud,
   ShoppingCart, Car, Utensils, ShoppingBag, CreditCard, Receipt as ReceiptIcon,
+  Eye, EyeOff, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { AchievementToast } from '@/components/AchievementToast';
@@ -34,7 +35,7 @@ type Txn =
 
 function txnVisual(txn: Txn): { Icon: typeof ShoppingCart; bg: string; fg: string } {
   if (txn.type === 'income') {
-    return { Icon: CreditCard, bg: 'bg-secondary/15', fg: 'text-secondary' };
+    return { Icon: CreditCard, bg: 'bg-primary/15', fg: 'text-primary' };
   }
   const text = `${txn.item.merchant_name || ''} ${(txn.item as Expense).ai_category || ''} ${txn.item.description || ''}`.toLowerCase();
   if (/(grocer|market|korzinka|oziq|produkt)/.test(text)) return { Icon: ShoppingCart, bg: 'bg-danger/15', fg: 'text-danger' };
@@ -92,6 +93,7 @@ export default function DashboardPage() {
   const [insightLoading, setInsightLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [hideBalance, setHideBalance] = useState(false);
 
   useEffect(() => {
     if (!checked) return;
@@ -230,7 +232,8 @@ export default function DashboardPage() {
           {/* Main column */}
           <div className="space-y-5 min-w-0">
             {/* Hero: personal greeting + balance */}
-            <div className="hero-balance-card">
+            <div className="hero-balance-card relative overflow-hidden">
+              <Wallet size={140} className="absolute -right-6 -bottom-6 text-white/10 rotate-[-12deg] pointer-events-none" />
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-white/15">
                   <img src="/robotiqtisod.png" alt="" className="h-full w-full object-cover" />
@@ -243,12 +246,23 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <p className="text-sm text-white/75 font-medium">{t('balance')}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm text-white/75 font-medium">{t('balance')}</p>
+                <button
+                  type="button"
+                  onClick={() => setHideBalance((v) => !v)}
+                  aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
+                  className="text-white/60 hover:text-white/90 transition-colors"
+                >
+                  {hideBalance ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
               <p className="mt-1 font-display text-4xl font-bold text-white tabular-nums">
-                {formatAmount(balance, user?.currency || 'UZS')}
+                {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
               </p>
               {balanceDelta !== null ? (
-                <p className="mt-1 text-sm font-medium text-white/85">
+                <p className="mt-1 text-sm font-medium text-white/85 flex items-center gap-1">
+                  {balanceDelta >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                   {balanceDelta >= 0 ? '+' : ''}
                   {formatAmount(balanceDelta, user?.currency || 'UZS')} {t('vsLastMonthShort')}
                 </p>
@@ -258,13 +272,13 @@ export default function DashboardPage() {
                 </p>
               )}
 
-              <div className="flex flex-wrap gap-2 mt-5">
+              <div className="flex flex-wrap gap-2 mt-5 relative">
                 <Link href="/expenses" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-primary font-semibold px-4 py-3 hover:brightness-95 transition-all active:scale-[0.98]">
                   <Plus size={16} />
                   {t('qaAddExpense')}
                 </Link>
                 <Link href="/income" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/15 text-white font-medium px-4 py-3 hover:bg-white/25 transition-colors">
-                  <Wallet size={16} />
+                  <Plus size={16} />
                   {t('qaAddIncome')}
                 </Link>
               </div>
@@ -376,7 +390,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`text-sm font-semibold tabular-nums ${txn.type === 'income' ? 'text-secondary' : 'text-textmain'}`}>
+                          <p className={`text-sm font-semibold tabular-nums ${txn.type === 'income' ? 'text-primary' : 'text-textmain'}`}>
                             {txn.type === 'income' ? '+' : '-'}
                             {txn.item.amount.toLocaleString()} {txn.item.currency}
                           </p>

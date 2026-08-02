@@ -26,6 +26,9 @@ def create_goal(
     db: Session = Depends(get_db),
 ):
     goal = Goal(user_id=current_user.id, **payload.model_dump())
+    # Best-effort cover photo - get_goal_cover_photo() already handles "no key
+    # configured" / "request failed" / "no results" by returning None, so a
+    # goal always saves successfully even if this fails or times out.
     goal.image_url = get_goal_cover_photo(payload.title)
     db.add(goal)
     db.commit()
@@ -51,8 +54,10 @@ def update_goal(
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(goal, field, value)
-    if "title" in update_data:
-        goal.image_url = get_goal_cover_photo(goal.title)
+    if "title" in update_data and update_data["title"]:
+        # Title changed - refresh the cover photo to match, same best-effort
+        # handling as on create (None on any failure, never blocks the save).
+        goal.image_url = get_goal_cover_photo(update_data["title"])
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
     db.commit()

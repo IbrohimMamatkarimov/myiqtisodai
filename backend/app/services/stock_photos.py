@@ -30,19 +30,19 @@ PEXELS_SEARCH_URL = "https://api.pexels.com/v1/search"
 # (keyword pattern, safe English search query) - checked in order, first
 # match wins. Add more as real goal titles reveal gaps.
 _CATEGORY_MAP: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"noutbuk|laptop|ноутбук|kompyuter|computer|компьютер", re.I), "laptop computer"),
-    (re.compile(r"telefon|phone|телефон|smartfon|iphone|smartphone", re.I), "smartphone"),
-    (re.compile(r"sayohat|travel|trip|dam olish|otdix|поездка|путешествие|vacation|holiday", re.I), "travel vacation beach"),
-    (re.compile(r"mashina|avto|car|avtomobil|машина|автомобиль", re.I), "car"),
-    (re.compile(r"\buy\b|dom|house|kvartira|apartment|дом|квартира|home", re.I), "house home"),
-    (re.compile(r"to'y|toy|wedding|свадьба", re.I), "wedding rings"),
-    (re.compile(r"talim|ta'lim|education|study|o'qish|kurs|course|образование|курс|учеба", re.I), "education study books"),
-    (re.compile(r"sog'liq|salomatlik|health|здоровье", re.I), "health wellness"),
-    (re.compile(r"zaxira|jamg'arma|emergency|fund|запас|подушка", re.I), "piggy bank savings"),
-    (re.compile(r"biznes|business|бизнес|startup", re.I), "business startup"),
-    (re.compile(r"sovg'a|gift|present|подарок", re.I), "gift present"),
-    (re.compile(r"velosiped|bicycle|велосипед|bike", re.I), "bicycle"),
-    (re.compile(r"kiyim|clothes|kiyim-kechak|одежда|fashion", re.I), "fashion clothes"),
+    (re.compile(r"noutbuk|laptop|ноутбук|kompyuter|computer|компьютер", re.I), "laptop computer flatlay minimal desk"),
+    (re.compile(r"telefon|phone|телефон|smartfon|iphone|smartphone", re.I), "smartphone flatlay minimal"),
+    (re.compile(r"sayohat|travel|trip|dam olish|otdix|поездка|путешествие|vacation|holiday", re.I), "beach ocean scenic landscape"),
+    (re.compile(r"mashina|avto|car|avtomobil|машина|автомобиль", re.I), "car exterior road scenic"),
+    (re.compile(r"\buy\b|dom|house|kvartira|apartment|дом|квартира|home", re.I), "house exterior architecture"),
+    (re.compile(r"to'y|toy|wedding|свадьба", re.I), "wedding rings flowers"),
+    (re.compile(r"talim|ta'lim|education|study|o'qish|kurs|course|образование|курс|учеба", re.I), "books stack study desk"),
+    (re.compile(r"sog'liq|salomatlik|health|здоровье", re.I), "fitness wellness gym"),
+    (re.compile(r"zaxira|jamg'arma|emergency|fund|запас|подушка", re.I), "piggy bank coins savings"),
+    (re.compile(r"biznes|business|бизнес|startup", re.I), "office desk workspace minimal"),
+    (re.compile(r"sovg'a|gift|present|подарок", re.I), "gift box wrapped present"),
+    (re.compile(r"velosiped|bicycle|велосипед|bike", re.I), "bicycle outdoor scenic"),
+    (re.compile(r"kiyim|clothes|kiyim-kechak|одежда|fashion", re.I), "clothing flatlay minimal"),
 ]
 
 

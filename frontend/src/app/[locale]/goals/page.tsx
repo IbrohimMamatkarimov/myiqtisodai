@@ -13,6 +13,33 @@ import type { Goal } from '@/types/finance';
 const LANGUAGE_NAMES: Record<string, string> = { uz: 'Uzbek', en: 'English', ru: 'Russian' };
 const CURRENCIES = ['UZS', 'USD', 'EUR'];
 
+// Small emoji badge shown next to the title (always present, works even
+// when there's no cover photo). The cover photo itself, when available,
+// comes from the backend via Pexels (app/services/stock_photos.py) - a real
+// moderated stock-photo library, picked by keyword-mapped category rather
+// than a raw title search, specifically to avoid the inappropriate/off-topic
+// results an earlier unmoderated AI image generator used to produce.
+const GOAL_EMOJI: [RegExp, string][] = [
+  [/noutbuk|laptop|kompyuter|computer/i, '\ud83d\udcbb'],
+  [/telefon|phone|smartfon|iphone/i, '\ud83d\udcf1'],
+  [/sayohat|travel|trip|dam olish|vacation|holiday/i, '\u2708\ufe0f'],
+  [/mashina|avto|car|avtomobil/i, '\ud83d\ude97'],
+  [/\buy\b|dom|house|kvartira|apartment|home/i, '\ud83c\udfe0'],
+  [/to'y|toy|wedding/i, '\ud83d\udc8d'],
+  [/talim|ta'lim|education|study|o'qish|kurs|course/i, '\ud83d\udcda'],
+  [/sog'liq|salomatlik|health/i, '\ud83d\udcaa'],
+  [/zaxira|jamg'arma|emergency|fund/i, '\ud83d\udc37'],
+  [/biznes|business|startup/i, '\ud83d\udcbc'],
+  [/sovg'a|gift|present/i, '\ud83c\udf81'],
+  [/velosiped|bicycle|bike/i, '\ud83d\udeb2'],
+  [/kiyim|clothes|fashion/i, '\ud83d\udc55'],
+];
+
+function emojiForGoal(title: string): string {
+  const match = GOAL_EMOJI.find(([pattern]) => pattern.test(title));
+  return match ? match[1] : '\ud83c\udfaf';
+}
+
 export default function GoalsPage() {
   const checked = useRequireAuth();
   const t = useTranslations('goals');
@@ -184,24 +211,22 @@ export default function GoalsPage() {
             const goalAdvice = advice[goal.id];
             return (
               <div key={goal.id} className="glass-card overflow-hidden">
-                {goal.image_url ? (
+                {goal.image_url && (
                   <div className="h-32 w-full overflow-hidden bg-textmain/[0.04]">
                     <img
                       src={goal.image_url}
                       alt=""
                       className="h-full w-full object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      onError={(e) => { e.currentTarget.parentElement!.style.display = 'none'; }}
                     />
                   </div>
-                ) : null}
+                )}
                 <div className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    {!goal.image_url && (
-                      <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                        <Target size={18} />
-                      </span>
-                    )}
+                    <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 text-lg">
+                      {emojiForGoal(goal.title)}
+                    </span>
                     <div className="min-w-0">
                       <h2 className="font-display font-semibold text-textmain truncate">{goal.title}</h2>
                       {goal.deadline && (
