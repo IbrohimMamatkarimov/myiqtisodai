@@ -7,7 +7,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
-import { Loader2, Send, MessageCircle } from 'lucide-react';
+import { Loader2, Send, MessageCircle, ChevronLeft } from 'lucide-react';
 
 interface Conversation {
   user_id: string;
@@ -40,14 +40,33 @@ export default function AdminChatPage() {
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevTotalUnread = useRef(0);
 
   function loadConversations() {
     api
       .get<Conversation[]>('/admin/chat/conversations')
-      .then(({ data }) => setConversations(data))
+      .then(({ data }) => {
+        const total = data.reduce((sum, c) => sum + (c.unread_count || 0), 0);
+        if (total > prevTotalUnread.current) {
+          const newest = [...data].sort(
+            (a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime()
+          )[0];
+          showToast(`New message from ${newest?.full_name || newest?.email || 'a user'}`);
+        }
+        prevTotalUnread.current = total;
+        setConversations(data);
+      })
       .catch(() => {})
       .finally(() => setConvosLoading(false));
+  }
+
+  function showToast(text: string) {
+    setToast(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
   }
 
   function loadMessages(userId: string) {
@@ -72,9 +91,10 @@ export default function AdminChatPage() {
     }
     if (user?.is_superuser) {
       loadConversations();
-      const interval = setInterval(loadConversations, 15000);
+      const interval = setInterval(loadConversations, 12000);
       return () => clearInterval(interval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checked, user]);
 
   // Allow deep-linking straight into a user's thread, e.g. from the Admin
@@ -89,6 +109,7 @@ export default function AdminChatPage() {
     loadMessages(activeUserId);
     const interval = setInterval(() => loadMessages(activeUserId), 8000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeUserId]);
 
   useEffect(() => {
@@ -117,11 +138,28 @@ export default function AdminChatPage() {
 
   return (
     <AppShell>
+      {toast && (
+        <button
+          onClick={() => setToast(null)}
+          className="fixed top-4 right-4 left-4 sm:left-auto sm:w-80 z-40 flex items-center gap-3 rounded-2xl border border-textmain/10 bg-surface shadow-2xl px-4 py-3 text-left"
+        >
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-danger" />
+          </span>
+          <span className="text-sm font-medium text-textmain truncate">{toast}</span>
+        </button>
+      )}
+
       <h1 className="font-display text-2xl font-bold text-textmain mb-6">Support chat</h1>
 
-      <div className="glass-card overflow-hidden flex" style={{ height: '65vh' }}>
-        {/* Conversation list */}
-        <div className="w-72 shrink-0 border-r border-textmain/[0.06] overflow-y-auto">
+      <div className="glass-card overflow-hidden flex h-[75vh] md:h-[65vh]">
+        {/* Conversation list - full width on mobile until one is picked, fixed sidebar on desktop */}
+        <div
+          className={`${
+            activeUserId ? 'hidden md:block' : 'block'
+          } w-full md:w-72 shrink-0 border-r border-textmain/[0.06] overflow-y-auto`}
+        >
           {convosLoading ? (
             <div className="p-6 text-center text-sm text-textmuted">Loading...</div>
           ) : conversations.length === 0 ? (
@@ -140,7 +178,7 @@ export default function AdminChatPage() {
                     {c.full_name || c.email}
                   </p>
                   {c.unread_count > 0 && (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1 shrink-0">
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold px-1 shrink-0">
                       {c.unread_count}
                     </span>
                   )}
@@ -154,8 +192,8 @@ export default function AdminChatPage() {
           )}
         </div>
 
-        {/* Thread */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Thread - full width on mobile once a conversation is picked, with a back button */}
+        <div className={`${activeUserId ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-w-0`}>
           {!activeUserId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-textmuted gap-2">
               <MessageCircle size={28} />
@@ -163,12 +201,21 @@ export default function AdminChatPage() {
             </div>
           ) : (
             <>
-              <div className="px-5 py-3 border-b border-textmain/[0.06]">
-                <p className="text-sm font-semibold text-textmain">{activeName}</p>
-                {activeConvo && <p className="text-xs text-textmuted">{activeConvo.email}</p>}
+              <div className="px-3 md:px-5 py-3 border-b border-textmain/[0.06] flex items-center gap-2">
+                <button
+                  onClick={() => setActiveUserId(null)}
+                  className="md:hidden shrink-0 text-textmuted hover:text-textmain p-1 -ml-1"
+                  aria-label="Back to conversations"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-textmain truncate">{activeName}</p>
+                  {activeConvo && <p className="text-xs text-textmuted truncate">{activeConvo.email}</p>}
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+              <div className="flex-1 overflow-y-auto px-3 md:px-4 py-4 space-y-2">
                 {messagesLoading && messages.length === 0 ? (
                   <div className="flex justify-center pt-8">
                     <Loader2 size={18} className="animate-spin text-textmuted" />
@@ -177,7 +224,7 @@ export default function AdminChatPage() {
                   messages.map((m) => (
                     <div key={m.id} className={`flex ${m.sender_is_admin ? 'justify-end' : 'justify-start'}`}>
                       <div
-                        className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
+                        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words ${
                           m.sender_is_admin
                             ? 'bg-primary text-white rounded-br-sm'
                             : 'bg-textmain/[0.06] text-textmain rounded-bl-sm'
@@ -191,7 +238,7 @@ export default function AdminChatPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <form onSubmit={sendReply} className="p-3 border-t border-textmain/[0.06] flex gap-2">
+              <form onSubmit={sendReply} className="p-2 md:p-3 border-t border-textmain/[0.06] flex gap-2">
                 <input
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}

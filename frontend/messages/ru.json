@@ -63,7 +63,16 @@
     "sendResetLink": "Отправить ссылку",
     "verifyEmail": "Подтвердить email",
     "changePassword": "Изменить пароль",
-    "currentPassword": "Текущий пароль"
+    "currentPassword": "Текущий пароль",
+    "signUpAgain": "Зарегистрироваться снова"
+  },
+  "chat": {
+    "button": "Чат",
+    "title": "Чат поддержки",
+    "subtitle": "Обычно мы отвечаем быстро",
+    "placeholder": "Введите сообщение...",
+    "empty": "Напишите нам, и администратор ответит здесь.",
+    "newMessage": "Новое сообщение от поддержки"
   },
   "dashboard": {
     "greeting": "Привет, {name}",

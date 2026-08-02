@@ -167,7 +167,7 @@ def verify_email(payload: VerifyEmail, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(
             status_code=404,
-            detail="User not found",
+            detail="This verification link is no longer valid. Please sign up again to get a new one.",
         )
 
     user.is_email_verified = True

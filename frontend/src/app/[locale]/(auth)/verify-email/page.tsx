@@ -59,7 +59,10 @@ export default function VerifyEmailPage() {
             <XCircle className="text-coral-500" size={40} />
             <p className="font-medium text-textmain">Couldn't verify your email</p>
             <p className="text-sm text-textmuted">{error}</p>
-            <Link href="/login" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline mt-2">
+            <Link href="/register" className="btn-primary mt-2">
+              {t('signUpAgain')}
+            </Link>
+            <Link href="/login" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline mt-1">
               {t('signIn')}
             </Link>
           </>

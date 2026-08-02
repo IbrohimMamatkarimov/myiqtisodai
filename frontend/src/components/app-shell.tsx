@@ -21,6 +21,7 @@ import { useTheme } from './theme-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationsBell } from './NotificationsBell';
 import { SupportChatWidget } from './SupportChatWidget';
+import { api } from '@/lib/api-client';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('nav');
@@ -36,6 +37,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     setNow(new Date());
   }, []);
+
+  // Admins get a red badge on the Chat nav item whenever a user has an
+  // unreplied message waiting - same idea as the user-facing chat badge.
+  const [adminChatUnread, setAdminChatUnread] = useState(0);
+  useEffect(() => {
+    if (!user?.is_superuser) return;
+    function loadUnread() {
+      api
+        .get<{ unread_count: number }[]>('/admin/chat/conversations')
+        .then(({ data }) => setAdminChatUnread(data.reduce((sum, c: any) => sum + (c.unread_count || 0), 0)))
+        .catch(() => {});
+    }
+    loadUnread();
+    const interval = setInterval(loadUnread, 12000);
+    return () => clearInterval(interval);
+  }, [user?.is_superuser]);
 
   const regularNavItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -110,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative ${
                     active
                       ? 'bg-primary/10 text-primary font-semibold'
                       : 'text-textmuted hover:bg-textmain/5 hover:text-textmain'
@@ -118,6 +135,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 >
                   <Icon size={17} />
                   {label}
+                  {href === '/admin/chat' && adminChatUnread > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold px-1">
+                      {adminChatUnread}
+                    </span>
+                  )}
                 </Link>
               );
             })}

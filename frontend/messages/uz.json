@@ -63,7 +63,16 @@
     "sendResetLink": "Havola yuborish",
     "verifyEmail": "Emailni tasdiqlash",
     "changePassword": "Parolni o'zgartirish",
-    "currentPassword": "Joriy parol"
+    "currentPassword": "Joriy parol",
+    "signUpAgain": "Qayta ro'yxatdan o'tish"
+  },
+  "chat": {
+    "button": "Chat",
+    "title": "Yordam chati",
+    "subtitle": "Odatda tez javob beramiz",
+    "placeholder": "Xabar yozing...",
+    "empty": "Bizga xabar yozing, administrator shu yerda javob beradi.",
+    "newMessage": "Yordam xizmatidan yangi xabar"
   },
   "dashboard": {
     "greeting": "Salom, {name}",

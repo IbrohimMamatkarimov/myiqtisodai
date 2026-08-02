@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api-client';
 
@@ -13,19 +14,37 @@ interface ChatMessage {
 }
 
 export function SupportChatWidget() {
+  const t = useTranslations('chat');
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unread, setUnread] = useState(0);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevUnread = useRef(0);
 
   function loadUnread() {
     api
       .get<{ unread_count: number }>('/chat/unread-count')
-      .then(({ data }) => setUnread(data.unread_count))
+      .then(({ data }) => {
+        if (data.unread_count > prevUnread.current) {
+          // A new admin reply landed while the panel is closed - surface a
+          // toast popup, not just the badge, so it's actually noticed.
+          showToast(t('newMessage'));
+        }
+        prevUnread.current = data.unread_count;
+        setUnread(data.unread_count);
+      })
       .catch(() => {});
+  }
+
+  function showToast(text: string) {
+    setToast(text);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
   }
 
   function loadMessages() {
@@ -35,18 +54,20 @@ export function SupportChatWidget() {
       .then(({ data }) => {
         setMessages(data);
         setUnread(0);
+        prevUnread.current = 0;
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }
 
-  // Poll for the unread badge even while the panel is closed.
+  // Poll for the unread badge/toast even while the panel is closed.
   useEffect(() => {
     loadUnread();
     const interval = setInterval(() => {
       if (!open) loadUnread();
-    }, 30000);
+    }, 12000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Poll the thread itself while the panel is open.
@@ -55,6 +76,7 @@ export function SupportChatWidget() {
     loadMessages();
     const interval = setInterval(loadMessages, 8000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -75,18 +97,37 @@ export function SupportChatWidget() {
     }
   }
 
+  function openFromToast() {
+    setToast(null);
+    setOpen(true);
+  }
+
   return (
     <>
+      {/* Toast popup - shown even if the panel is closed, so a reply is never missed */}
+      {toast && !open && (
+        <button
+          onClick={openFromToast}
+          className="fixed bottom-24 right-4 left-4 sm:left-auto sm:right-6 sm:w-80 z-40 flex items-center gap-3 rounded-2xl border border-textmain/10 bg-surface shadow-2xl px-4 py-3 text-left"
+        >
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-danger" />
+          </span>
+          <span className="text-sm font-medium text-textmain truncate">{toast}</span>
+        </button>
+      )}
+
       {open && (
-        <div className="fixed bottom-24 right-6 z-40 w-80 max-w-[calc(100vw-3rem)] h-[28rem] max-h-[70vh] flex flex-col rounded-2xl border border-textmain/10 bg-surface shadow-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-textmain/10 flex items-center justify-between bg-primary/5">
+        <div className="fixed inset-x-3 bottom-24 sm:inset-x-auto sm:right-6 sm:w-80 sm:max-w-[calc(100vw-3rem)] h-[72vh] sm:h-[28rem] max-h-[80vh] z-40 flex flex-col rounded-2xl border border-textmain/10 bg-surface shadow-2xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-textmain/10 flex items-center justify-between bg-primary/5 shrink-0">
             <div>
-              <p className="text-sm font-semibold text-textmain">Support chat</p>
-              <p className="text-xs text-textmuted">We usually reply soon</p>
+              <p className="text-sm font-semibold text-textmain">{t('title')}</p>
+              <p className="text-xs text-textmuted">{t('subtitle')}</p>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="text-textmuted hover:text-textmain"
+              className="text-textmuted hover:text-textmain p-1"
               aria-label="Close chat"
             >
               <X size={16} />
@@ -101,9 +142,7 @@ export function SupportChatWidget() {
             )}
 
             {!loading && messages.length === 0 && (
-              <p className="text-sm text-textmuted text-center pt-8 px-4">
-                Send us a message and an admin will get back to you here.
-              </p>
+              <p className="text-sm text-textmuted text-center pt-8 px-4">{t('empty')}</p>
             )}
 
             {messages.map((m) => (
@@ -125,11 +164,11 @@ export function SupportChatWidget() {
             <div ref={bottomRef} />
           </div>
 
-          <form onSubmit={sendMessage} className="p-2 border-t border-textmain/10 flex gap-2">
+          <form onSubmit={sendMessage} className="p-2 border-t border-textmain/10 flex gap-2 shrink-0">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Type a message..."
+              placeholder={t('placeholder')}
               className="input-field flex-1 text-sm"
             />
             <button
@@ -145,14 +184,21 @@ export function SupportChatWidget() {
       )}
 
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity"
+        onClick={() => {
+          setToast(null);
+          setOpen((v) => !v);
+        }}
+        className="fixed z-30 flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity"
+        style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))', right: '1.5rem' }}
       >
         {open ? <X size={18} /> : <MessageCircle size={18} />}
-        <span className="text-sm font-medium">Chat</span>
+        <span className="text-sm font-medium">{t('button')}</span>
         {!open && unread > 0 && (
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold px-1">
-            {unread}
+          <span className="absolute -top-1.5 -right-1.5 flex h-5 min-w-5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-danger opacity-75" />
+            <span className="relative flex h-5 min-w-5 items-center justify-center rounded-full bg-danger text-white text-[10px] font-bold px-1">
+              {unread}
+            </span>
           </span>
         )}
       </button>

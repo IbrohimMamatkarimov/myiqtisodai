@@ -63,7 +63,16 @@
     "sendResetLink": "Send reset link",
     "verifyEmail": "Verify email",
     "changePassword": "Change password",
-    "currentPassword": "Current password"
+    "currentPassword": "Current password",
+    "signUpAgain": "Sign up again"
+  },
+  "chat": {
+    "button": "Chat",
+    "title": "Support chat",
+    "subtitle": "We usually reply soon",
+    "placeholder": "Type a message...",
+    "empty": "Send us a message and an admin will get back to you here.",
+    "newMessage": "New message from support"
   },
   "dashboard": {
     "greeting": "Hello, {name}",
