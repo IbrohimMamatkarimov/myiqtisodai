@@ -19,7 +19,11 @@ import sqlalchemy as sa
 revision: str = "0010_clear_generated_images"
 down_revision: Union[str, None] = "0009_admin_dashboard"
 branch_labels = None
-depends_on = None
+# This migration nulls out expenses.ai_image_url, a column only created by
+# 1741b907d593 (an independent branch off the same 0009 parent) - depends_on
+# forces that migration to run first regardless of branch traversal order,
+# so this never runs against a DB that doesn't have the column yet.
+depends_on = "1741b907d593"
 
 
 def upgrade() -> None:
