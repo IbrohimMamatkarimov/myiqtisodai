@@ -6,6 +6,7 @@ import { Plus, Wallet, Sparkles, ArrowRight, Target } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ScanReceiptFab } from '@/components/ScanReceiptFab';
 import { QuickAddExpenseFab } from '@/components/QuickAddExpenseFab';
+import { AchievementToast } from '@/components/AchievementToast';
 import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api } from '@/lib/api-client';
@@ -26,6 +27,17 @@ type Txn =
   | { type: 'expense'; date: string; item: Expense }
   | { type: 'income'; date: string; item: Income };
 
+/** The AI is asked for exactly 3 tips, one per line. Splits + cleans up
+ * common formatting the model might still add (numbering, dashes) despite
+ * being told not to, and falls back gracefully to whatever it got. */
+function parseTips(raw: string): string[] {
+  const lines = raw
+    .split('\n')
+    .map((l) => l.replace(/^[\s\-•*\d.)]+/, '').trim())
+    .filter(Boolean);
+  return lines.length > 0 ? lines.slice(0, 3) : [raw.trim()].filter(Boolean);
+}
+
 export default function DashboardPage() {
   const checked = useRequireAuth();
   const t = useTranslations('dashboard');
@@ -35,7 +47,8 @@ export default function DashboardPage() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [insight, setInsight] = useState<string | null>(null);
+  const [tips, setTips] = useState<string[]>([]);
+  const [activeTip, setActiveTip] = useState(0);
   const [insightLoading, setInsightLoading] = useState(true);
 
   useEffect(() => {
@@ -78,7 +91,7 @@ export default function DashboardPage() {
     }
 
     if (cached && cached.locale === locale && Date.now() - cached.ts < INSIGHT_CACHE_TTL_MS) {
-      setInsight(cached.insight);
+      setTips(parseTips(cached.insight));
       setInsightLoading(false);
       return;
     }
@@ -86,11 +99,11 @@ export default function DashboardPage() {
     const languageName = LANGUAGE_NAMES[locale] || 'English';
     api
       .post('/ai/ask', {
-        question: `Respond only in ${languageName}, regardless of any other instruction. In exactly 1-2 short sentences, tell me how my spending is trending and ONE specific, actionable way to save money, based on my actual numbers. No preamble, no bullet points, just the 1-2 sentences.`,
+        question: `Respond only in ${languageName}, regardless of any other instruction. Give exactly 3 short, distinct, actionable money tips based on my actual numbers - each one specific and useful on its own. Return ONLY the 3 tips, one per line, no numbering, no bullet symbols, no preamble, no extra commentary.`,
         save_history: false,
       })
       .then(({ data }) => {
-        setInsight(data.answer);
+        setTips(parseTips(data.answer));
         try {
           sessionStorage.setItem(
             INSIGHT_CACHE_KEY,
@@ -100,9 +113,18 @@ export default function DashboardPage() {
           // ignore
         }
       })
-      .catch(() => setInsight(null))
+      .catch(() => setTips([]))
       .finally(() => setInsightLoading(false));
   }, [checked, locale]);
+
+  // Auto-rotate through the tips every 6s
+  useEffect(() => {
+    if (tips.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveTip((i) => (i + 1) % tips.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [tips.length]);
 
   if (!checked) return null;
 
@@ -132,6 +154,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
+      <AchievementToast summary={summary} />
       {loading || !summary ? (
         <div className="space-y-4">
           <div className="glass-card animate-pulse" style={{ height: 140 }} />
@@ -147,7 +170,7 @@ export default function DashboardPage() {
               </div>
               <div className="min-w-0">
                 <p className="font-display font-semibold text-textmain truncate">
-                  {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })} 👋
+                  {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
                 </p>
                 <p className="text-xs text-textmuted">{t('heroSubtitle')}</p>
               </div>
@@ -252,15 +275,29 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* AI Coach - short, no fluff */}
+          {/* AI Coach - 3 rotating tips instead of one static paragraph */}
           <div className="glass-card p-6">
             <div className="flex items-center gap-2 mb-2">
               <Sparkles size={16} className="text-primary" />
               <h2 className="font-display font-semibold text-textmain">{t('aiCoachBadge')}</h2>
             </div>
-            <p className="text-sm text-textmuted min-h-[1.5rem]">
-              {insightLoading ? t('aiCoachLoading') : insight || t('aiCoachEmpty')}
+            <p key={activeTip} className="text-sm text-textmuted min-h-[2.5rem] animate-fade-up">
+              {insightLoading ? t('aiCoachLoading') : tips[activeTip] || t('aiCoachEmpty')}
             </p>
+            {tips.length > 1 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {tips.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setActiveTip(i)}
+                    aria-label={`Tip ${i + 1}`}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === activeTip ? 'w-4 bg-primary' : 'w-1.5 bg-textmain/15'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
             <Link href="/assistant" className="inline-flex items-center gap-1 text-sm font-medium text-primary mt-3 hover:underline">
               {t('aiCoachChat')}
               <ArrowRight size={13} />

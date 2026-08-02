@@ -106,6 +106,8 @@ class ExpenseOut(BaseModel):
 
     receipt_image: Optional[str]
 
+    ai_image_url: Optional[str] = None
+
     ai_category: Optional[str]
 
     # ---------- Receipt scanner (Phase 3) ----------

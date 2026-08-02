@@ -25,8 +25,21 @@ def upgrade() -> None:
     op.add_column("users", sa.Column("phone", sa.String(length=30), nullable=True))
     op.add_column("users", sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True))
 
-    report_status = sa.Enum("open", "solved", name="reportstatus")
-    report_status.create(op.get_bind(), checkfirst=True)
+    # Raw SQL with an exception guard instead of SQLAlchemy's checkfirst=True -
+    # this database already has a stray "reportstatus" type from something
+    # outside this migration's own history, and checkfirst wasn't reliably
+    # detecting it, so this makes creation idempotent regardless of why.
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            CREATE TYPE reportstatus AS ENUM ('open', 'solved');
+        EXCEPTION
+            WHEN duplicate_object THEN NULL;
+        END $$;
+        """
+    )
+    report_status = postgresql.ENUM("open", "solved", name="reportstatus", create_type=False)
 
     op.create_table(
         "reports",
@@ -50,6 +63,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_reports_user_id", table_name="reports")
     op.drop_table("reports")
-    sa.Enum(name="reportstatus").drop(op.get_bind(), checkfirst=True)
+    op.execute("DROP TYPE IF EXISTS reportstatus")
     op.drop_column("users", "last_login_at")
     op.drop_column("users", "phone")

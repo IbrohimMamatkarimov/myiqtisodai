@@ -314,6 +314,7 @@ export default function ExpensesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-black/5 text-left">
+                <th className="px-5 py-3"></th>
                 <th className="px-5 py-3 font-medium text-textmuted">{t('date')}</th>
                 <th className="px-5 py-3 font-medium text-textmuted">{t('description')}</th>
                 <th className="px-5 py-3 font-medium text-right text-textmuted">{t('amount')}</th>
@@ -321,8 +322,19 @@ export default function ExpensesPage() {
               </tr>
             </thead>
             <tbody>
-              {data.items.map((expense: Expense) => (
+              {data.items.map((expense: Expense) => {
+                const thumb = expense.receipt_image || expense.ai_image_url;
+                return (
                 <tr key={expense.id} className="border-b border-black/5 last:border-0">
+                  <td className="px-5 py-3">
+                    {thumb ? (
+                      <img src={thumb} alt="" className="h-9 w-9 rounded-lg object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    ) : (
+                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <ReceiptIcon size={15} />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-textmain">{expense.expense_date}</td>
                   <td className="px-5 py-3 text-textmain">
                     {expense.merchant_name || expense.description || '—'}
@@ -349,7 +361,8 @@ export default function ExpensesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}

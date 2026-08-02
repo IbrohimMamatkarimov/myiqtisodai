@@ -65,6 +65,10 @@ class DashboardSummary(BaseModel):
     recent_transactions_count: int
     completed_goals_count: int
 
+    # Achievements - drives small celebratory toasts on the frontend
+    current_streak_days: int
+    total_transactions_all_time: int
+
     # Alerts
     budget_alerts: list[str]
     ai_summary: str

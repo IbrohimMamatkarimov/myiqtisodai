@@ -74,6 +74,11 @@
     "empty": "Send us a message and an admin will get back to you here.",
     "newMessage": "New message from support"
   },
+  "achievements": {
+    "streak": "{days}-day streak! Keep it going 🔥",
+    "firstTransaction": "First transaction logged! 🎉",
+    "goalCompleted": "Goal completed! 🏆"
+  },
   "dashboard": {
     "greeting": "Hello, {name}",
     "heroSubtitle": "Your financial snapshot today",
@@ -136,6 +141,7 @@
     "recurring": "Recurring",
     "noResults": "No expenses found.",
     "scanReceipt": "Scan Receipt",
+    "scanReceiptSubtitle": "1-tap — snap a photo, we fill in the rest",
     "scanning": "Reading your receipt\u2026",
     "scanErrorGeneric": "Couldn't read that receipt. You can still fill in the details manually.",
     "reviewTitle": "Review scanned receipt",

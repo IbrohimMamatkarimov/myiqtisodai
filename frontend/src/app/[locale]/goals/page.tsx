@@ -183,7 +183,18 @@ export default function GoalsPage() {
           {goals.map((goal) => {
             const goalAdvice = advice[goal.id];
             return (
-              <div key={goal.id} className="glass-card p-5">
+              <div key={goal.id} className="glass-card overflow-hidden">
+                {goal.image_url && (
+                  <div className="h-32 w-full overflow-hidden bg-textmain/[0.04]">
+                    <img
+                      src={goal.image_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
+                <div className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="font-display font-semibold text-textmain">{goal.title}</h2>
@@ -264,6 +275,7 @@ export default function GoalsPage() {
                     {goalAdvice.text}
                   </p>
                 )}
+                </div>
               </div>
             );
           })}

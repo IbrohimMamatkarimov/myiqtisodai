@@ -42,6 +42,7 @@ class Expense(UUIDMixin, TimestampMixin, Base):
     payment_method: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     receipt_number: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     receipt_image: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    ai_image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ai_category: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
 
     # ---------- Receipt scanner (Phase 3) ----------

@@ -33,6 +33,7 @@ class GoalOut(BaseModel):
     current_amount: float
     deadline: Optional[date]
     icon: Optional[str]
+    image_url: Optional[str] = None
     currency: str
     is_completed: bool
     progress_percent: float

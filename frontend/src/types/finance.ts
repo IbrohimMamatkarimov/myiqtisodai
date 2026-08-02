@@ -51,6 +51,9 @@ export interface DashboardSummary {
 
   active_goals_count: number;
   recent_transactions_count: number;
+  completed_goals_count?: number;
+  current_streak_days?: number;
+  total_transactions_all_time?: number;
 
   // NEW
   monthly_budget?: number;
@@ -94,6 +97,8 @@ export interface Expense {
   payment_method?: string | null;
 
   receipt_image?: string | null;
+
+  ai_image_url?: string | null;
 
   ai_category?: string | null;
 
@@ -143,6 +148,7 @@ export interface Goal {
   current_amount: number;
   deadline: string | null;
   icon: string | null;
+  image_url?: string | null;
   currency: string;
   is_completed: boolean;
   progress_percent: number;

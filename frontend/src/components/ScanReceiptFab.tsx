@@ -47,7 +47,7 @@ export function ScanReceiptFab({ variant = 'floating' }: { variant?: 'floating' 
   const className =
     variant === 'floating'
       ? 'fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-card hover:brightness-95 transition-all disabled:opacity-70'
-      : 'btn-secondary w-full sm:w-auto';
+      : 'group w-full flex items-center gap-3 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/[0.04] hover:bg-primary/[0.08] hover:border-primary/50 transition-all px-4 py-3.5 text-left disabled:opacity-70';
 
   return (
     <>
@@ -66,10 +66,28 @@ export function ScanReceiptFab({ variant = 'floating' }: { variant?: 'floating' 
         title={te('scanReceipt')}
         className={className}
       >
-        {scanning ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-        <span className={variant === 'floating' ? 'text-sm font-medium hidden sm:inline' : 'text-sm font-medium'}>
-          {scanning ? te('scanning') : te('scanReceipt')}
-        </span>
+        {variant === 'inline' ? (
+          <>
+            <span className="shrink-0 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white group-hover:scale-105 transition-transform">
+              {scanning ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-textmain">
+                {scanning ? te('scanning') : te('scanReceipt')}
+              </span>
+              {!scanning && (
+                <span className="block text-xs text-textmuted truncate">{te('scanReceiptSubtitle')}</span>
+              )}
+            </span>
+          </>
+        ) : (
+          <>
+            {scanning ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+            <span className="text-sm font-medium hidden sm:inline">
+              {scanning ? te('scanning') : te('scanReceipt')}
+            </span>
+          </>
+        )}
       </button>
     </>
   );

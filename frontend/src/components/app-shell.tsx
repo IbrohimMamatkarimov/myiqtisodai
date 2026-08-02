@@ -111,7 +111,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
-                  src="/iqtisod-newphoto.png"
+                  src="/iqtisodaiphoto.jpg"
                   alt="IqtisodAI"
                   className="h-full w-full object-cover"
                 />
@@ -154,8 +154,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </aside>
 
-        <main className="flex-1 min-h-screen">
-          <header className="flex items-center justify-between gap-4 px-8 py-4 border-b border-textmain/[0.06]">
+        <main className="flex-1 min-h-screen pb-16 md:pb-0">
+          <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 border-b border-textmain/[0.06]">
             <div className="flex items-center gap-4 min-w-0">
               <div className="shrink-0">
                 <h1 className="font-display text-base font-semibold text-textmain flex items-center gap-1.5">
@@ -180,9 +180,31 @@ export function AppShell({ children }: { children: ReactNode }) {
               <LanguageSwitcher />
             </div>
           </header>
-          <div className="p-8">{children}</div>
+          <div className="p-4 md:p-8">{children}</div>
         </main>
       </div>
+
+      {/* Mobile bottom nav - horizontal, only shown below md breakpoint */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch justify-around border-t border-textmain/[0.08] bg-surface">
+        {navItems.map(({ href, label, icon: Icon }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] relative ${
+                active ? 'text-primary font-semibold' : 'text-textmuted'
+              }`}
+            >
+              <Icon size={19} />
+              <span className="truncate max-w-full px-1">{label}</span>
+              {href === '/admin/chat' && adminChatUnread > 0 && (
+                <span className="absolute top-1 right-1/4 h-2 w-2 rounded-full bg-danger" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
       {!user?.is_superuser && <SupportChatWidget />}
     </div>

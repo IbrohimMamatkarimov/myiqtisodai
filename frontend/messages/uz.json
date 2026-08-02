@@ -74,6 +74,11 @@
     "empty": "Bizga xabar yozing, administrator shu yerda javob beradi.",
     "newMessage": "Yordam xizmatidan yangi xabar"
   },
+  "achievements": {
+    "streak": "{days} kunlik seriya! Davom eting 🔥",
+    "firstTransaction": "Birinchi tranzaksiya qo'shildi! 🎉",
+    "goalCompleted": "Maqsadga erishildi! 🏆"
+  },
   "dashboard": {
     "greeting": "Salom, {name}",
     "heroSubtitle": "Bugungi moliyaviy holatingiz",
@@ -136,6 +141,7 @@
     "recurring": "Takrorlanuvchi",
     "noResults": "Xarajatlar topilmadi.",
     "scanReceipt": "Chekni skanerlash",
+    "scanReceiptSubtitle": "1 marta bosing — rasmga oling, qolganini biz bajaramiz",
     "scanning": "Chekingiz o'qilmoqda\u2026",
     "scanErrorGeneric": "Chekni o'qib bo'lmadi. Ma'lumotlarni qo'lda kiritishingiz mumkin.",
     "reviewTitle": "Skanerlangan chekni tekshiring",

@@ -180,6 +180,35 @@ def get_dashboard_summary(
         )
     )
 
+    completed_goals_count = db.scalar(
+        select(func.count()).select_from(Goal).where(
+            Goal.user_id == current_user.id, Goal.is_completed.is_(True)
+        )
+    )
+
+    # All-time transaction count, and a Duolingo-style day streak: how many
+    # consecutive days (ending today, or yesterday if nothing's logged yet
+    # today) had at least one expense or income logged.
+    expense_dates = set(
+        db.scalars(select(Expense.expense_date).where(Expense.user_id == current_user.id).distinct())
+    )
+    income_dates = set(
+        db.scalars(select(Income.income_date).where(Income.user_id == current_user.id).distinct())
+    )
+    logged_dates = expense_dates | income_dates
+
+    total_transactions_all_time = db.scalar(
+        select(func.count()).select_from(Expense).where(Expense.user_id == current_user.id)
+    ) + db.scalar(
+        select(func.count()).select_from(Income).where(Income.user_id == current_user.id)
+    )
+
+    current_streak_days = 0
+    cursor = today if today in logged_dates else today - timedelta(days=1)
+    while cursor in logged_dates:
+        current_streak_days += 1
+        cursor -= timedelta(days=1)
+
     return DashboardSummary(
         total_income=total_income,
     total_expenses=total_expenses,
@@ -204,7 +233,10 @@ def get_dashboard_summary(
 
     active_goals_count=len(goals),
     recent_transactions_count=recent_count or 0,
-    completed_goals_count=0,
+    completed_goals_count=completed_goals_count or 0,
+
+    current_streak_days=current_streak_days,
+    total_transactions_all_time=total_transactions_all_time or 0,
 
     budget_alerts=budget_alerts,
     ai_summary="Your financial dashboard is ready.",
