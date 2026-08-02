@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     # OCR
     OCR_SPACE_API_KEY: str = ""
 
+    # Pexels (real, curated, safe stock photos for goal cover images -
+    # https://pexels.com/api, free tier, no approval process needed)
+    PEXELS_API_KEY: str = ""
+
     # Receipt image folder
     UPLOAD_DIR: str = "uploads"
 
@@ -72,9 +76,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings():
     return Settings()
-
-
-settings = get_settings()
 
 
 settings = get_settings()

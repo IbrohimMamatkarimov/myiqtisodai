@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.models.goal import Goal
 from app.models.user import User
 from app.schemas.goal import GoalCreate, GoalOut, GoalUpdate
+from app.services.stock_photos import get_goal_cover_photo
 
 router = APIRouter(prefix="/goals", tags=["Goals"])
 
@@ -25,6 +26,7 @@ def create_goal(
     db: Session = Depends(get_db),
 ):
     goal = Goal(user_id=current_user.id, **payload.model_dump())
+    goal.image_url = get_goal_cover_photo(payload.title)
     db.add(goal)
     db.commit()
     db.refresh(goal)
@@ -49,6 +51,8 @@ def update_goal(
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(goal, field, value)
+    if "title" in update_data:
+        goal.image_url = get_goal_cover_photo(goal.title)
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
     db.commit()

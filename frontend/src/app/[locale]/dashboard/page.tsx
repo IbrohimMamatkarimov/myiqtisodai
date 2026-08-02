@@ -402,6 +402,16 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   {goals.map((goal) => (
                     <Link key={goal.id} href="/goals" className="rounded-2xl overflow-hidden border border-textmain/[0.06] hover:brightness-[0.98] transition-all">
+                      {goal.image_url && (
+                        <div className="h-20 w-full overflow-hidden bg-textmain/[0.04]">
+                          <img
+                            src={goal.image_url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
                       <div className="p-3">
                         <p className="text-sm font-medium text-textmain truncate">{goal.title}</p>
                         <div className="h-1.5 rounded-full bg-textmain/[0.06] overflow-hidden mt-2">

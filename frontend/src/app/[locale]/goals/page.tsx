@@ -184,12 +184,24 @@ export default function GoalsPage() {
             const goalAdvice = advice[goal.id];
             return (
               <div key={goal.id} className="glass-card overflow-hidden">
+                {goal.image_url ? (
+                  <div className="h-32 w-full overflow-hidden bg-textmain/[0.04]">
+                    <img
+                      src={goal.image_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  </div>
+                ) : null}
                 <div className="p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                      <Target size={18} />
-                    </span>
+                    {!goal.image_url && (
+                      <span className="h-10 w-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                        <Target size={18} />
+                      </span>
+                    )}
                     <div className="min-w-0">
                       <h2 className="font-display font-semibold text-textmain truncate">{goal.title}</h2>
                       {goal.deadline && (
