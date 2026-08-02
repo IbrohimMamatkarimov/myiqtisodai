@@ -233,7 +233,11 @@ export default function DashboardPage() {
           <div className="space-y-5 min-w-0">
             {/* Hero: personal greeting + balance */}
             <div className="hero-balance-card relative overflow-hidden">
-              <Wallet size={140} className="absolute -right-6 -bottom-6 text-white/10 rotate-[-12deg] pointer-events-none" />
+              <img
+                src="/wallet-illustration.png"
+                alt=""
+                className="absolute -right-2 bottom-0 h-36 w-36 sm:h-40 sm:w-40 object-contain pointer-events-none select-none"
+              />
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-white/15">
                   <img src="/robotiqtisod.png" alt="" className="h-full w-full object-cover" />
@@ -326,36 +330,6 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-
-            {/* Goal card - only shown once the person actually has an active goal */}
-            {summary && summary.active_goals.length > 0 && (
-              <Link href="/goals" className="glass-card p-6 block hover:brightness-[0.98] transition-all">
-                <div className="flex items-center gap-2 mb-3">
-                  <Target size={16} className="text-primary" />
-                  <h2 className="font-display font-semibold text-textmain">{summary.active_goals[0].title}</h2>
-                  <span className="ml-auto text-sm font-semibold text-primary">
-                    {Math.round(summary.active_goals[0].progress_percent)}%
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-textmain/[0.06] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${Math.min(100, summary.active_goals[0].progress_percent)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-textmuted mt-2">
-                  {formatAmount(summary.active_goals[0].current_amount, user?.currency || 'UZS')} /{' '}
-                  {formatAmount(summary.active_goals[0].target_amount, user?.currency || 'UZS')}
-                  {' — '}
-                  {t('goalCardRemaining', {
-                    amount: formatAmount(
-                      Math.max(0, summary.active_goals[0].target_amount - summary.active_goals[0].current_amount),
-                      user?.currency || 'UZS'
-                    ),
-                  })}
-                </p>
-              </Link>
-            )}
 
             {/* Recent transactions */}
             <div className="glass-card p-6">
