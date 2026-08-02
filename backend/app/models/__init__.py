@@ -7,3 +7,4 @@ from app.models.goal import Goal  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.ai_conversation import AIConversation, MarketQuery  # noqa: F401
 from app.models.chat_message import ChatMessage  # noqa: F401
+from app.models.report import Report  # noqa: F401

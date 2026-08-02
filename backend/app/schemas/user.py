@@ -149,6 +149,9 @@ class AdminUserOut(BaseModel):
     is_superuser: bool
     onboarding_completed: bool
 
+    phone: Optional[str]
+    last_login_at: Optional[datetime]
+
     currency: Currency
     language: Language
     financial_goal: Optional[str]
@@ -179,6 +182,24 @@ class AdminUserDetail(AdminUserOut):
     goal_count: int
 
 
+class AdminUserUpdate(BaseModel):
+    """Admin editing a user's profile fields directly."""
+
+    full_name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    phone: Optional[str] = Field(default=None, max_length=30)
+    country: Optional[str] = Field(default=None, max_length=100)
+    occupation: Optional[str] = Field(default=None, max_length=150)
+    age: Optional[int] = Field(default=None, ge=10, le=100)
+    gender: Optional[Gender] = None
+    monthly_income: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
+    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
+    financial_goal: Optional[str] = None
+
+
+class AdminChangeEmail(BaseModel):
+    new_email: EmailStr
+
+
 class AdminSetPassword(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
@@ -197,6 +218,29 @@ class AdminDeletionDecision(BaseModel):
     decision - e.g. explaining why a deletion request was declined."""
 
     message: Optional[str] = Field(default=None, max_length=2000)
+
+
+class BroadcastNotification(BaseModel):
+    """Same notification sent to every active user at once."""
+
+    title: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=2000)
+
+
+class RecentActivityItem(BaseModel):
+    kind: str
+    label: str
+    at: datetime
+
+
+class AdminDashboardStats(BaseModel):
+    total_users: int
+    active_users: int
+    ai_chats_today: int
+    total_expenses: float
+    total_incomes: float
+    reports_waiting: int
+    recent_activity: list[RecentActivityItem]
 
 
 class ForgotPassword(BaseModel):

@@ -13,6 +13,7 @@ const CURRENCIES = ['UZS', 'USD', 'EUR'];
 export default function SettingsPage() {
   const checked = useRequireAuth();
   const t = useTranslations('settings');
+  const tc = useTranslations('common');
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
 
@@ -96,21 +97,21 @@ export default function SettingsPage() {
           <h2 className="font-display font-semibold mb-4">{t('profile')}</h2>
           <form onSubmit={handleSaveName} className="grid grid-cols-1 gap-3 text-sm">
             <div>
-              <label className="label-text block mb-1">Full name</label>
+              <label className="label-text block mb-1">{t('fullName')}</label>
               <div className="flex gap-2">
                 <input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="input-field flex-1"
-                  placeholder="Aziz Karimov"
+                  placeholder={t('fullNamePlaceholder')}
                 />
                 <button type="submit" disabled={savingName || !fullName.trim()} className="btn-secondary shrink-0">
-                  {savingName ? <Loader2 size={16} className="animate-spin" /> : nameSaved ? 'Saved' : 'Save'}
+                  {savingName ? <Loader2 size={16} className="animate-spin" /> : nameSaved ? t('saved') : tc('save')}
                 </button>
               </div>
             </div>
             <div>
-              <span className="label-text block mb-1">Email</span>
+              <span className="label-text block mb-1">{t('email')}</span>
               <span>{user?.email}</span>
             </div>
           </form>
@@ -138,24 +139,23 @@ export default function SettingsPage() {
           {user?.deletion_requested ? (
             <div>
               <p className="text-sm text-textmain mb-1 font-medium">
-                Waiting for admin approval
+                {t('waitingApproval')}
               </p>
               <p className="text-sm text-textmuted mb-4">
-                Your request has been sent. An admin needs to review it before your account and data are deleted.
+                {t('waitingApprovalDesc')}
               </p>
               <button
                 onClick={handleCancelDeletion}
                 disabled={cancelling}
                 className="btn-secondary"
               >
-                {cancelling ? <Loader2 size={16} className="animate-spin" /> : 'Cancel request'}
+                {cancelling ? <Loader2 size={16} className="animate-spin" /> : t('cancelRequest')}
               </button>
             </div>
           ) : (
             <>
               <p className="text-sm text-textmuted mb-4">
-                This sends a request to the admin to permanently delete your account and all financial data.
-                It won't happen immediately — an admin has to approve it first.
+                {t('deleteAccountDesc')}
               </p>
               {!showReasonForm ? (
                 <button onClick={() => setShowReasonForm(true)} className="btn-secondary text-coral-500">
@@ -164,13 +164,13 @@ export default function SettingsPage() {
               ) : (
                 <form onSubmit={handleRequestDeletion} className="space-y-3">
                   <div>
-                    <label className="label-text">Why do you want to delete your account?</label>
+                    <label className="label-text">{t('deleteReasonLabel')}</label>
                     <textarea
                       required
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                       className="input-field mt-1 min-h-[80px]"
-                      placeholder="Let us know why you're leaving..."
+                      placeholder={t('deleteReasonPlaceholder')}
                     />
                   </div>
                   <div className="flex gap-2">
@@ -179,14 +179,14 @@ export default function SettingsPage() {
                       onClick={() => setShowReasonForm(false)}
                       className="btn-secondary"
                     >
-                      Cancel
+                      {tc('cancel')}
                     </button>
                     <button
                       type="submit"
                       disabled={requesting}
                       className="btn-primary bg-coral-500 dark:bg-coral-500"
                     >
-                      {requesting ? <Loader2 size={16} className="animate-spin" /> : 'Send request'}
+                      {requesting ? <Loader2 size={16} className="animate-spin" /> : t('sendRequest')}
                     </button>
                   </div>
                 </form>

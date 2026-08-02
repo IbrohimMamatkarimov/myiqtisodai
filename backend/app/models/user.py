@@ -57,6 +57,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     is_email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Preferences
     language: Mapped[Language] = mapped_column(Enum(Language), default=Language.uz)
     theme: Mapped[Theme] = mapped_column(Enum(Theme), default=Theme.light)

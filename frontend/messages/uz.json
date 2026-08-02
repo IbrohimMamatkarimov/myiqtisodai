@@ -185,7 +185,18 @@
     "security": "Xavfsizlik",
     "deleteAccount": "Hisobni o'chirish",
     "lightMode": "Yorug'",
-    "darkMode": "Qorong'i"
+    "darkMode": "Qorong'i",
+    "fullName": "To'liq ism",
+    "fullNamePlaceholder": "Aziz Karimov",
+    "email": "Elektron pochta",
+    "saved": "Saqlandi",
+    "waitingApproval": "Administrator tasdig'ini kutmoqda",
+    "waitingApprovalDesc": "So'rovingiz yuborildi. Hisobingiz va ma'lumotlaringiz o'chirilishidan oldin administrator uni ko'rib chiqishi kerak.",
+    "cancelRequest": "So'rovni bekor qilish",
+    "deleteAccountDesc": "Bu administratorga hisobingiz va barcha moliyaviy ma'lumotlaringizni butunlay o'chirish so'rovini yuboradi. Bu darhol amalga oshmaydi — avval administrator tasdiqlashi kerak.",
+    "deleteReasonLabel": "Nega hisobingizni o'chirmoqchisiz?",
+    "deleteReasonPlaceholder": "Nega ketayotganingizni bizga bildiring...",
+    "sendRequest": "So'rov yuborish"
   },
   "onboarding": {
     "screen1Title": "Xush kelibsiz",

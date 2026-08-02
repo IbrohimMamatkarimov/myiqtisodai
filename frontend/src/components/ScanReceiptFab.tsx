@@ -27,7 +27,10 @@ export function ScanReceiptFab({ variant = 'floating' }: { variant?: 'floating' 
       const formData = new FormData();
       formData.append('file', file);
       formData.append('language', locale);
-      const { data } = await api.post<ReceiptScanResult>('/expenses/scan', formData, { timeout: 10000 });
+      // 25s, not 10s: the backend can do one quiet retry (up to ~20s) when it
+      // hits Groq's per-minute rate limit, instead of failing immediately - a
+      // 10s client timeout was cutting that retry off before it finished.
+      const { data } = await api.post<ReceiptScanResult>('/expenses/scan', formData, { timeout: 25000 });
       sessionStorage.setItem(SCAN_DRAFT_STORAGE_KEY, JSON.stringify(data));
       router.push('/expenses');
     } catch {
@@ -51,7 +54,7 @@ export function ScanReceiptFab({ variant = 'floating' }: { variant?: 'floating' 
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
         capture="environment"
         className="hidden"
         onChange={handleFile}

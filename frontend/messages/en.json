@@ -182,7 +182,18 @@
     "currency": "Currency",
     "notifications": "Notifications",
     "security": "Security",
-    "deleteAccount": "Delete account"
+    "deleteAccount": "Delete account",
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Aziz Karimov",
+    "email": "Email",
+    "saved": "Saved",
+    "waitingApproval": "Waiting for admin approval",
+    "waitingApprovalDesc": "Your request has been sent. An admin needs to review it before your account and data are deleted.",
+    "cancelRequest": "Cancel request",
+    "deleteAccountDesc": "This sends a request to the admin to permanently delete your account and all financial data. It won't happen immediately — an admin has to approve it first.",
+    "deleteReasonLabel": "Why do you want to delete your account?",
+    "deleteReasonPlaceholder": "Let us know why you're leaving...",
+    "sendRequest": "Send request"
   },
   "onboarding": {
     "screen1Title": "Welcome",

@@ -21,7 +21,19 @@ from app.services.budget_alerts import check_budget_alerts
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
 MAX_RECEIPT_SIZE = 8 * 1024 * 1024  # 8 MB
-ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic"}
+# Real phones/browsers are inconsistent about the exact MIME string they send for
+# the same photo - iPhones commonly send image/heic OR image/heif depending on iOS
+# version, and some Android camera apps send the nonstandard "image/jpg" instead of
+# "image/jpeg". The old list only covered the "textbook" values, so a real receipt
+# photo would get flat-out rejected before ever reaching the scanner.
+ALLOWED_MIME_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+}
 
 
 @router.get("", response_model=PaginatedExpenses)

@@ -1,5 +1,6 @@
 import uuid
 import logging
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -127,6 +128,9 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
             status_code=403,
             detail="Please verify your email before logging in. Check your inbox for the verification link.",
         )
+
+    user.last_login_at = datetime.utcnow()
+    db.commit()
 
     return Token(
         access_token=create_access_token(str(user.id)),

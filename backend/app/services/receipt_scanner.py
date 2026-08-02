@@ -120,7 +120,12 @@ def _downscale_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str]:
     try:
         img = Image.open(io.BytesIO(image_bytes))
         img = img.convert("RGB")
-        max_dim = 1024
+        # 1024px was needlessly generous for reading printed receipt text - vision
+        # models bill roughly by pixel count, so this was burning a big chunk of
+        # the shared per-minute Groq token budget on every single scan. 900px is
+        # still comfortably readable (receipts are small, high-contrast text) and
+        # meaningfully cheaper, leaving more headroom before hitting rate limits.
+        max_dim = 900
         if max(img.size) > max_dim:
             ratio = max_dim / max(img.size)
             new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
@@ -215,7 +220,7 @@ def scan_receipt(image_bytes: bytes, mime_type: str, category_names: list[str], 
                 retry_after = float(e.response.headers.get("retry-after", ""))
             except (AttributeError, ValueError):
                 pass
-            if retry_after is not None and retry_after <= 12:
+            if retry_after is not None and retry_after <= 20:
                 logger.info("Rate limited; waiting %.1fs and retrying once", retry_after)
                 time.sleep(retry_after + 0.5)
                 completion = _call()

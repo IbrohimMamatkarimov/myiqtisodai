@@ -33,7 +33,7 @@ export function QuickActions() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('language', locale);
-      const { data } = await api.post<ReceiptScanResult>('/expenses/scan', formData, { timeout: 10000 });
+      const { data } = await api.post<ReceiptScanResult>('/expenses/scan', formData, { timeout: 25000 });
       sessionStorage.setItem(SCAN_DRAFT_STORAGE_KEY, JSON.stringify(data));
       router.push('/expenses');
     } catch {
@@ -52,7 +52,7 @@ export function QuickActions() {
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
         capture="environment"
         className="hidden"
         onChange={handleFile}
