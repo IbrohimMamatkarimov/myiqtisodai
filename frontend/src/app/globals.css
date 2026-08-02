@@ -38,7 +38,7 @@ body {
 
   /* Main Cards - flat white, calm, no blur/gradient/glow */
   .glass-card {
-    @apply bg-surface rounded-2xl border border-textmain/[0.06] shadow-card;
+    @apply bg-surface rounded-3xl border border-textmain/[0.06] shadow-card;
   }
 
   /* Primary Button */
@@ -101,7 +101,7 @@ body {
 
   /* Small Card */
   .card {
-    @apply rounded-2xl
+    @apply rounded-3xl
     bg-surface
     border
     border-textmain/[0.06]
@@ -110,7 +110,7 @@ body {
 
   /* Dashboard Cards */
   .dashboard-card {
-    @apply rounded-2xl
+    @apply rounded-3xl
     bg-surface
     border
     border-textmain/[0.06]
@@ -120,7 +120,7 @@ body {
 
   /* Statistics Cards */
   .stat-card {
-    @apply rounded-2xl
+    @apply rounded-3xl
     bg-surface
     border
     border-textmain/[0.06]

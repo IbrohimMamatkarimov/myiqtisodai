@@ -6,7 +6,7 @@ import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { api } from '@/lib/api-client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 
 const CURRENCIES = ['UZS', 'USD', 'EUR'];
 
@@ -130,6 +130,16 @@ export default function SettingsPage() {
               </button>
             ))}
             {savingCurrency && <Loader2 size={16} className="animate-spin" />}
+          </div>
+        </section>
+
+        <section className="glass-card p-5">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={18} className="text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-textmain">{t('trustTitle')}</p>
+              <p className="text-xs text-textmuted mt-0.5">{t('trustDesc')}</p>
+            </div>
           </div>
         </section>
 

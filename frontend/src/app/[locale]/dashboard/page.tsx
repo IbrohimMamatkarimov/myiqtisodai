@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Plus, Wallet, Sparkles, Coffee, ArrowRight } from 'lucide-react';
+import { Plus, Wallet, Sparkles, ArrowRight, Target } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { ScanReceiptFab } from '@/components/ScanReceiptFab';
+import { QuickAddExpenseFab } from '@/components/QuickAddExpenseFab';
 import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api } from '@/lib/api-client';
@@ -138,16 +139,32 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-5 max-w-2xl">
-          {/* Balance */}
+          {/* Hero: personal greeting + balance, warmer than a bare number */}
           <div className="glass-card p-6">
-            <p className="label-text">{t('thisMonth')}</p>
-            <p className="mt-2 font-display text-4xl font-bold text-textmain tabular-nums">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-10 w-10 rounded-full overflow-hidden shrink-0">
+                <img src="/iqtisod-newphoto.png" alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display font-semibold text-textmain truncate">
+                  {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })} 👋
+                </p>
+                <p className="text-xs text-textmuted">{t('heroSubtitle')}</p>
+              </div>
+            </div>
+
+            <p className="label-text">{t('balance')}</p>
+            <p className="mt-1 font-display text-4xl font-bold text-textmain tabular-nums">
               {formatAmount(balance, user?.currency || 'UZS')}
             </p>
-            {balanceDelta !== null && (
+            {balanceDelta !== null ? (
               <p className={`mt-1 text-sm font-medium ${balanceDelta >= 0 ? 'text-secondary' : 'text-danger'}`}>
                 {balanceDelta >= 0 ? '+' : ''}
                 {formatAmount(balanceDelta, user?.currency || 'UZS')} {t('vsLastMonthShort')}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-textmuted">
+                {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
               </p>
             )}
 
@@ -166,6 +183,36 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          {/* Goal card - only shown once the person actually has an active goal */}
+          {summary && summary.active_goals.length > 0 && (
+            <Link href="/goals" className="glass-card p-6 block hover:brightness-[0.98] transition-all">
+              <div className="flex items-center gap-2 mb-3">
+                <Target size={16} className="text-primary" />
+                <h2 className="font-display font-semibold text-textmain">{summary.active_goals[0].title}</h2>
+                <span className="ml-auto text-sm font-semibold text-primary">
+                  {Math.round(summary.active_goals[0].progress_percent)}%
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-textmain/[0.06] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${Math.min(100, summary.active_goals[0].progress_percent)}%` }}
+                />
+              </div>
+              <p className="text-xs text-textmuted mt-2">
+                {formatAmount(summary.active_goals[0].current_amount, user?.currency || 'UZS')} /{' '}
+                {formatAmount(summary.active_goals[0].target_amount, user?.currency || 'UZS')}
+                {' — '}
+                {t('goalCardRemaining', {
+                  amount: formatAmount(
+                    Math.max(0, summary.active_goals[0].target_amount - summary.active_goals[0].current_amount),
+                    user?.currency || 'UZS'
+                  ),
+                })}
+              </p>
+            </Link>
+          )}
 
           {/* Recent transactions */}
           <div className="glass-card p-6">
@@ -221,6 +268,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      <QuickAddExpenseFab />
     </AppShell>
   );
 }

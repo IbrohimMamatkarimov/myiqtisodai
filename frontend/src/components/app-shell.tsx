@@ -177,16 +177,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
               <NotificationsBell />
 
-              {!user?.is_superuser && (
-                <Link
-                  href="/assistant"
-                  className="hidden sm:inline-flex items-center gap-1.5 rounded-lg bg-primary text-white font-semibold text-sm px-3 py-2 hover:brightness-95 transition-all"
-                >
-                  <Sparkles size={14} />
-                  {tb('askAI')}
-                </Link>
-              )}
-
               <LanguageSwitcher />
             </div>
           </header>

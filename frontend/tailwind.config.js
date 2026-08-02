@@ -18,7 +18,7 @@ module.exports = {
 
         // Fixed accent/utility colors - intentionally the same in both themes.
         bgdark: '#1F3044',
-        primary: '#5B6472',
+        primary: '#16A34A',
         secondary: '#7DA2A9',
         accentx: '#7DA2A9',
         danger: '#EF4444',
