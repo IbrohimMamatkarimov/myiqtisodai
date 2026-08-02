@@ -18,12 +18,16 @@
   },
   "nav": {
     "dashboard": "Панель управления",
+    "accounts": "Счета",
+    "transactions": "Транзакции",
+    "receipts": "Чеки",
     "expenses": "Расходы",
     "income": "Доходы",
     "budgets": "Бюджеты",
     "goals": "Цели",
+    "investments": "Инвестиции",
     "reports": "Отчёты",
-    "assistant": "AI Коуч",
+    "assistant": "AI Помощник",
     "settings": "Настройки",
     "logout": "Выйти",
     "dashboardDesc": "Ваш финансовый обзор",
@@ -90,6 +94,14 @@
     "thisMonth": "В этом месяце",
     "vsLastMonthShort": "к прошлому месяцу",
     "seeAll": "Смотреть все",
+    "quickActionsTitle": "Быстрые действия",
+    "quickLinksTitle": "Быстрые ссылки",
+    "uploadReceiptTitle": "Загрузить чек",
+    "uploadReceiptHint": "Загрузите чек или фото",
+    "uploadReceiptMaxSize": "макс. 10МБ",
+    "scanWithCamera": "Сканировать камерой",
+    "myGoalsTitle": "Мои цели",
+    "today": "Сегодня",
     "income": "Доход",
     "expenses": "Расход",
     "remaining": "Остаток",
@@ -264,5 +276,39 @@
     "error": "Что-то пошло не так при сохранении данных. Попробуйте снова.",
     "welcomeTitle": "Добро пожаловать в семью IqtisodAI, {name}!",
     "welcomeSubtitle": "Ваш персональный финансовый путь начинается."
+  },
+  "accounts": {
+    "title": "Мои счета",
+    "subtitle": "Из чего складывается ваш баланс",
+    "mainAccount": "Основной счёт",
+    "cash": "Наличные",
+    "totalIncome": "Общий доход",
+    "totalExpenses": "Общие расходы",
+    "totalSavings": "Накопления",
+    "currentBalance": "Текущий баланс",
+    "empty": "Добавьте доходы и расходы, чтобы увидеть свои счета здесь."
+  },
+  "transactions": {
+    "title": "Транзакции",
+    "subtitle": "Все ваши доходы и расходы в одном месте",
+    "all": "Все",
+    "expensesOnly": "Расходы",
+    "incomeOnly": "Доходы",
+    "empty": "Пока нет транзакций"
+  },
+  "receipts": {
+    "title": "Чеки",
+    "subtitle": "Загрузите чек, остальное сделает AI",
+    "uploadTitle": "Загрузите чек или фото",
+    "uploadHint": "JPG, PNG, PDF (макс. 10МБ)",
+    "scanWithCamera": "Сканировать камерой",
+    "recentScans": "Недавно отсканированные чеки",
+    "empty": "Пока нет отсканированных чеков"
+  },
+  "investments": {
+    "title": "Инвестиции",
+    "subtitle": "Отслеживайте свои инвестиции",
+    "comingSoonTitle": "Скоро",
+    "comingSoonDesc": "Отслеживание инвестиций пока в разработке. Скоро здесь можно будет увидеть акции, вклады и другие инвестиции."
   }
 }

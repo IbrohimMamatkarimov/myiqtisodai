@@ -74,8 +74,8 @@ export function GlobalSearch() {
   const showDropdown = open && query.trim().length >= 2;
 
   return (
-    <div ref={containerRef} className="relative w-64">
-      <div className="flex items-center gap-2 rounded-xl border border-black/5 bg-white/40 backdrop-blur-sm px-3 py-2 text-sm text-textmuted">
+    <div ref={containerRef} className="relative w-full max-w-xs">
+      <div className="flex items-center gap-2 rounded-xl border border-textmain/10 bg-textmain/[0.04] px-3 py-2 text-sm text-textmuted">
         <Search size={15} />
         <input
           value={query}

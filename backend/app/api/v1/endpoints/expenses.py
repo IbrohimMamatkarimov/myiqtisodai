@@ -17,7 +17,6 @@ from app.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate, PaginatedExpenses, ReceiptScanResult
 from app.services.receipt_scanner import scan_receipt, _downscale_image
 from app.services.budget_alerts import check_budget_alerts
-from app.services.image_gen import generate_image_url
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
 
@@ -95,11 +94,6 @@ def create_expense(
 ):
     data = _serialize_products(payload.model_dump())
     expense = Expense(user_id=current_user.id, **data)
-    # Only generate an illustrative AI image for manually-entered expenses -
-    # never overwrite/duplicate a real uploaded receipt photo.
-    if not expense.receipt_image:
-        subject = expense.description or expense.merchant_name or expense.ai_category
-        expense.ai_image_url = generate_image_url(subject, kind="expense") if subject else None
     db.add(expense)
     db.commit()
     db.refresh(expense)

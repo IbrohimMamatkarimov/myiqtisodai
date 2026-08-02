@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { Loader2 } from 'lucide-react';
 
@@ -45,9 +45,9 @@ export default function LoginPage() {
             : '/onboarding'
       );
     } catch (err: any) {
-      const detail = err?.response?.data?.detail || 'Something went wrong. Please try again.';
+      const detail = getErrorMessage(err);
       setError(detail);
-      if (typeof detail === 'string' && detail.toLowerCase().includes('verify your email')) {
+      if (detail.toLowerCase().includes('verify your email')) {
         setNeedsVerification(true);
       }
     } finally {

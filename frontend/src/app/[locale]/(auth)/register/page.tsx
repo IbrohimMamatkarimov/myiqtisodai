@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { Loader2, MailCheck } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -33,13 +33,7 @@ export default function RegisterPage() {
 
       setSent(true);
     } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-
-      setError(
-        typeof detail === 'string'
-          ? detail
-          : 'Please check your information and try again.'
-      );
+      setError(getErrorMessage(err, 'Please check your information and try again.'));
     } finally {
       setLoading(false);
     }

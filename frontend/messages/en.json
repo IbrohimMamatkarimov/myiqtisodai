@@ -18,12 +18,16 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "accounts": "Accounts",
+    "transactions": "Transactions",
+    "receipts": "Receipts",
     "expenses": "Expenses",
     "income": "Income",
     "budgets": "Budgets",
     "goals": "Goals",
+    "investments": "Investments",
     "reports": "Reports",
-    "assistant": "AI Coach",
+    "assistant": "AI Assistant",
     "settings": "Settings",
     "logout": "Log out",
     "dashboardDesc": "Your financial overview",
@@ -90,6 +94,14 @@
     "thisMonth": "This month",
     "vsLastMonthShort": "vs last month",
     "seeAll": "See all",
+    "quickActionsTitle": "Quick actions",
+    "quickLinksTitle": "Quick links",
+    "uploadReceiptTitle": "Upload receipt",
+    "uploadReceiptHint": "Upload a receipt or photo",
+    "uploadReceiptMaxSize": "max 10MB",
+    "scanWithCamera": "Scan with camera",
+    "myGoalsTitle": "My goals",
+    "today": "Today",
     "income": "Income",
     "expenses": "Expenses",
     "remaining": "Remaining balance",
@@ -261,5 +273,39 @@
     "error": "Something went wrong saving your information. Please try again.",
     "welcomeTitle": "Welcome to the IqtisodAI family, {name}!",
     "welcomeSubtitle": "Your personalized financial journey starts now."
+  },
+  "accounts": {
+    "title": "My accounts",
+    "subtitle": "Where your balance breaks down",
+    "mainAccount": "Main account",
+    "cash": "Cash",
+    "totalIncome": "Total income",
+    "totalExpenses": "Total expenses",
+    "totalSavings": "Savings",
+    "currentBalance": "Current balance",
+    "empty": "Add income and expenses to see your accounts here."
+  },
+  "transactions": {
+    "title": "Transactions",
+    "subtitle": "All your income and expenses in one place",
+    "all": "All",
+    "expensesOnly": "Expenses",
+    "incomeOnly": "Income",
+    "empty": "No transactions yet"
+  },
+  "receipts": {
+    "title": "Receipts",
+    "subtitle": "Upload a receipt, AI handles the rest",
+    "uploadTitle": "Upload a receipt or photo",
+    "uploadHint": "JPG, PNG, PDF (max 10MB)",
+    "scanWithCamera": "Scan with camera",
+    "recentScans": "Recently scanned receipts",
+    "empty": "No scanned receipts yet"
+  },
+  "investments": {
+    "title": "Investments",
+    "subtitle": "Track your investments",
+    "comingSoonTitle": "Coming soon",
+    "comingSoonDesc": "Investment tracking is still in the works. Soon you'll be able to see stocks, deposits, and other investments here."
   }
 }

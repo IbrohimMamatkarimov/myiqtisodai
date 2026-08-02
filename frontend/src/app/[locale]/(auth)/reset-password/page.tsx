@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { Loader2 } from 'lucide-react';
 
 export default function ResetPasswordPage() {
@@ -26,7 +26,7 @@ export default function ResetPasswordPage() {
       await api.post('/auth/reset-password', { token, new_password: newPassword });
       router.push('/login');
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'This reset link is invalid or expired.');
+      setError(getErrorMessage(err, 'This reset link is invalid or expired.'));
     } finally {
       setLoading(false);
     }

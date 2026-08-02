@@ -18,12 +18,16 @@
   },
   "nav": {
     "dashboard": "Boshqaruv paneli",
+    "accounts": "Hisoblar",
+    "transactions": "Tranzaksiyalar",
+    "receipts": "Cheklar",
     "expenses": "Xarajatlar",
     "income": "Daromadlar",
     "budgets": "Byudjetlar",
     "goals": "Maqsadlar",
+    "investments": "Investitsiyalar",
     "reports": "Hisobotlar",
-    "assistant": "AI Murabbiy",
+    "assistant": "AI Yordamchi",
     "settings": "Sozlamalar",
     "logout": "Chiqish",
     "dashboardDesc": "Moliyaviy holatingiz",
@@ -90,6 +94,14 @@
     "thisMonth": "Shu oyda",
     "vsLastMonthShort": "o'tgan oyga nisbatan",
     "seeAll": "Barchasini ko'rish",
+    "quickActionsTitle": "Tezkor amallar",
+    "quickLinksTitle": "Tezkor havolalar",
+    "uploadReceiptTitle": "Chekni yuklash",
+    "uploadReceiptHint": "Chek yoki rasm yuklang",
+    "uploadReceiptMaxSize": "max 10MB",
+    "scanWithCamera": "Kamera bilan skanerlash",
+    "myGoalsTitle": "Maqsadlarim",
+    "today": "Bugun",
     "income": "Daromad",
     "expenses": "Xarajat",
     "remaining": "Qolgan mablag'",
@@ -264,5 +276,39 @@
     "error": "Ma'lumotlaringizni saqlashda xatolik yuz berdi. Qaytadan urinib ko'ring.",
     "welcomeTitle": "IqtisodAI oilasiga xush kelibsiz, {name}!",
     "welcomeSubtitle": "Sizning shaxsiy moliyaviy sayohatingiz endi boshlanadi."
+  },
+  "accounts": {
+    "title": "Hisoblarim",
+    "subtitle": "Balansingiz taqsimoti",
+    "mainAccount": "Asosiy hisob",
+    "cash": "Naqd pul",
+    "totalIncome": "Jami daromad",
+    "totalExpenses": "Jami xarajat",
+    "totalSavings": "Jamg'arma",
+    "currentBalance": "Joriy balans",
+    "empty": "Hisoblar haqida ma'lumot uchun daromad va xarajat qo'shing."
+  },
+  "transactions": {
+    "title": "Tranzaksiyalar",
+    "subtitle": "Barcha daromad va xarajatlaringiz bir joyda",
+    "all": "Barchasi",
+    "expensesOnly": "Xarajatlar",
+    "incomeOnly": "Daromadlar",
+    "empty": "Hozircha tranzaksiya yo'q"
+  },
+  "receipts": {
+    "title": "Cheklar",
+    "subtitle": "Cheklaringizni yuklang, qolganini AI bajaradi",
+    "uploadTitle": "Chek yoki rasm yuklang",
+    "uploadHint": "JPG, PNG, PDF (max 10MB)",
+    "scanWithCamera": "Kamera bilan skanerlash",
+    "recentScans": "So'nggi skanerlangan cheklar",
+    "empty": "Hali skanerlangan chek yo'q"
+  },
+  "investments": {
+    "title": "Investitsiyalar",
+    "subtitle": "Sarmoyalaringizni kuzatib boring",
+    "comingSoonTitle": "Tez kunda",
+    "comingSoonDesc": "Investitsiyalarni kuzatish funksiyasi hozircha ishlab chiqilmoqda. Tez orada bu yerda aksiyalar, jamg'arma depozitlari va boshqa sarmoyalaringizni ko'rishingiz mumkin bo'ladi."
   }
 }

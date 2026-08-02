@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Send, Loader2 } from 'lucide-react';
+import { X, Send, Loader2, Headset } from 'lucide-react';
 import { api } from '@/lib/api-client';
 
 interface ChatMessage {
@@ -122,8 +122,8 @@ export function SupportChatWidget() {
         <div className="fixed inset-x-3 bottom-24 sm:inset-x-auto sm:right-6 sm:w-80 sm:max-w-[calc(100vw-3rem)] h-[72vh] sm:h-[28rem] max-h-[80vh] z-40 flex flex-col rounded-2xl border border-textmain/10 bg-surface shadow-2xl overflow-hidden">
           <div className="px-4 py-3 border-b border-textmain/10 flex items-center justify-between bg-primary/5 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 bg-white">
-                <img src="/robotiqtisod.png" alt="" className="h-full w-full object-cover" />
+              <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                <Headset size={16} />
               </div>
               <div>
                 <p className="text-sm font-semibold text-textmain">{t('title')}</p>
@@ -199,9 +199,7 @@ export function SupportChatWidget() {
         {open ? (
           <X size={18} />
         ) : (
-          <span className="h-6 w-6 rounded-full overflow-hidden shrink-0 bg-white -ml-0.5">
-            <img src="/robotiqtisod.png" alt="" className="h-full w-full object-cover" />
-          </span>
+          <Headset size={18} />
         )}
         <span className="text-sm font-medium">{t('button')}</span>
         {!open && unread > 0 && (

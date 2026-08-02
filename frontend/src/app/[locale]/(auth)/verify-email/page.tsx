@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export default function VerifyEmailPage() {
@@ -28,7 +28,7 @@ export default function VerifyEmailPage() {
       .then(() => setStatus('success'))
       .catch((err) => {
         setStatus('error');
-        setError(err?.response?.data?.detail || 'This verification link is invalid or expired.');
+        setError(getErrorMessage(err, 'This verification link is invalid or expired.'));
       });
     // Only ever needs to run once per page load with whatever token is in the URL.
     // eslint-disable-next-line react-hooks/exhaustive-deps

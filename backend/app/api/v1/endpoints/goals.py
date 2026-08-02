@@ -9,7 +9,6 @@ from app.db.session import get_db
 from app.models.goal import Goal
 from app.models.user import User
 from app.schemas.goal import GoalCreate, GoalOut, GoalUpdate
-from app.services.image_gen import generate_image_url
 
 router = APIRouter(prefix="/goals", tags=["Goals"])
 
@@ -26,9 +25,6 @@ def create_goal(
     db: Session = Depends(get_db),
 ):
     goal = Goal(user_id=current_user.id, **payload.model_dump())
-    # Best-effort AI cover image from the goal title - never blocks saving
-    # the goal itself if the image service is unreachable.
-    goal.image_url = generate_image_url(payload.title, kind="goal")
     db.add(goal)
     db.commit()
     db.refresh(goal)
@@ -53,9 +49,6 @@ def update_goal(
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(goal, field, value)
-    # Title changed - regenerate the cover image to match the new title.
-    if "title" in update_data:
-        goal.image_url = generate_image_url(goal.title, kind="goal")
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
     db.commit()

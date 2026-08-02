@@ -5,38 +5,36 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/navigation';
 import {
   LayoutDashboard,
+  Landmark,
+  ArrowLeftRight,
   Receipt,
-  Wallet,
+  Target,
+  LineChart,
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
-  Target,
   Moon,
   Sun,
   ShieldCheck,
   MessageCircle,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useTheme } from './theme-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationsBell } from './NotificationsBell';
+import { GlobalSearch } from './GlobalSearch';
 import { SupportChatWidget } from './SupportChatWidget';
 import { api } from '@/lib/api-client';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('nav');
-  const tb = useTranslations('topbar');
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const { theme, toggleTheme } = useTheme();
-
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
 
   // Admins get a red badge on the Chat nav item whenever a user has an
   // unreplied message waiting - same idea as the user-facing chat badge.
@@ -56,15 +54,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const regularNavItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { href: '/expenses', label: t('expenses'), icon: Receipt },
-    { href: '/income', label: t('income'), icon: Wallet },
+    { href: '/accounts', label: t('accounts'), icon: Landmark },
+    { href: '/transactions', label: t('transactions'), icon: ArrowLeftRight },
+    { href: '/receipts', label: t('receipts'), icon: Receipt },
     { href: '/goals', label: t('goals'), icon: Target },
+    { href: '/investments', label: t('investments'), icon: LineChart },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
   ];
 
   // Admin accounts manage the platform, not their own personal finances - keep
-  // their sidebar limited to that instead of mixing in Expenses/Income/Goals/AI.
+  // their sidebar limited to that instead of mixing in the personal-finance nav.
   const navItems = user?.is_superuser
     ? [
         { href: '/admin', label: 'Admin', icon: ShieldCheck },
@@ -78,26 +78,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     router.push('/login');
   }
 
-  const hour = now?.getHours() ?? 9;
-  const greeting = hour < 12 ? tb('morning') : hour < 18 ? tb('afternoon') : tb('evening');
-
-  // The browser's own Intl date formatting has spotty/broken Uzbek locale data
-  // (was rendering garbage like "M07 31, Fri"), so we format weekday/month
-  // names ourselves instead of trusting toLocaleDateString for 'uz'.
-  const WEEKDAYS: Record<string, string[]> = {
-    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-    ru: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'],
-    uz: ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba'],
-  };
-  const MONTHS: Record<string, string[]> = {
-    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-    ru: ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'],
-    uz: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr'],
-  };
-  const dateStr = now
-    ? `${WEEKDAYS[locale]?.[now.getDay()] ?? WEEKDAYS.en[now.getDay()]}, ${now.getDate()} ${MONTHS[locale]?.[now.getMonth()] ?? MONTHS.en[now.getMonth()]}`
-    : '';
-  const firstName = user?.full_name?.split(' ')[0] || '';
+  const initials = (user?.full_name || user?.email || '?')
+    .split(' ')
+    .map((p) => p[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   return (
     <div className="min-h-screen">
@@ -114,6 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   src="/iqtisodaiphoto.jpg"
                   alt="IqtisodAI"
                   className="h-full w-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               </div>
               <span className="font-display font-semibold text-textmain">IqtisodAI</span>
@@ -155,17 +143,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="flex-1 min-h-screen pb-16 md:pb-0">
-          <header className="flex items-center justify-between gap-4 px-4 md:px-8 py-4 border-b border-textmain/[0.06]">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="shrink-0">
-                <h1 className="font-display text-base font-semibold text-textmain flex items-center gap-1.5">
-                  <span>{greeting}{firstName ? `, ${firstName}` : ''}</span>
-                </h1>
-                <p className="text-xs text-textmuted mt-0.5">{dateStr}</p>
-              </div>
+          <header className="flex items-center justify-between gap-3 px-4 md:px-8 py-4 border-b border-textmain/[0.06]">
+            <div className="min-w-0 flex-1">
+              <GlobalSearch />
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -178,6 +161,21 @@ export function AppShell({ children }: { children: ReactNode }) {
               <NotificationsBell />
 
               <LanguageSwitcher />
+
+              <Link
+                href="/settings"
+                className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-textmain/5 transition-colors"
+              >
+                <div className="h-8 w-8 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center shrink-0 overflow-hidden">
+                  {initials}
+                </div>
+                <span className="hidden lg:block text-left">
+                  <span className="block text-sm font-medium text-textmain leading-tight truncate max-w-[9rem]">
+                    {user?.full_name || user?.email}
+                  </span>
+                </span>
+                <ChevronDown size={14} className="hidden lg:block text-textmuted" />
+              </Link>
             </div>
           </header>
           <div className="p-4 md:p-8">{children}</div>
@@ -185,18 +183,18 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile bottom nav - horizontal, only shown below md breakpoint */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch justify-around border-t border-textmain/[0.08] bg-surface">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch justify-around border-t border-textmain/[0.08] bg-surface overflow-x-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] relative ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] relative min-w-[3.5rem] ${
                 active ? 'text-primary font-semibold' : 'text-textmuted'
               }`}
             >
-              <Icon size={19} />
+              <Icon size={18} />
               <span className="truncate max-w-full px-1">{label}</span>
               {href === '/admin/chat' && adminChatUnread > 0 && (
                 <span className="absolute top-1 right-1/4 h-2 w-2 rounded-full bg-danger" />

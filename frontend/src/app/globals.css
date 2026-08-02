@@ -14,10 +14,10 @@
 }
 
 .dark {
-  --color-bgpage: 15 23 32;
-  --color-surface: 27 38 52;
-  --color-textmain: 232 236 241;
-  --color-textmuted: 148 160 175;
+  --color-bgpage: 10 12 11;
+  --color-surface: 19 23 20;
+  --color-textmain: 235 240 236;
+  --color-textmuted: 142 152 145;
 }
 
 html {
@@ -39,6 +39,12 @@ body {
   /* Main Cards - flat white, calm, no blur/gradient/glow */
   .glass-card {
     @apply bg-surface rounded-3xl border border-textmain/[0.06] shadow-card;
+  }
+
+  /* Balance hero - green gradient card used on the dashboard */
+  .hero-balance-card {
+    @apply rounded-3xl p-6 relative overflow-hidden text-white;
+    background: linear-gradient(135deg, #16A34A 0%, #0F5C2A 100%);
   }
 
   /* Primary Button */
