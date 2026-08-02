@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './language-switcher';
 import { Send, Sun, Moon } from 'lucide-react';
 import { useTheme } from './theme-provider';
+import { Link, useRouter } from '@/navigation';
 
 export function AuthShell({
   title,
@@ -19,6 +20,7 @@ export function AuthShell({
   const common = useTranslations('common');
   const settingsT = useTranslations('settings');
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E4D9F7] via-[#DCD3F5] to-[#C9E9E4] dark:from-bgpage dark:via-bgpage dark:to-bgdark flex items-center justify-center px-6 py-12">
@@ -27,10 +29,14 @@ export function AuthShell({
       <div className="absolute top-6 left-8 right-8 flex items-center justify-between z-50">
 
         {/* Logo */}
-        <h2 className="text-3xl font-extrabold tracking-tight select-none">
+        <Link
+          href="/login"
+          onClick={() => router.refresh()}
+          className="text-3xl font-extrabold tracking-tight select-none"
+        >
           <span className="text-textmain">Iqtisod</span>
           <span className="text-emerald-500">AI</span>
-        </h2>
+        </Link>
 
         <div className="flex items-center gap-2">
           <button

@@ -129,6 +129,7 @@ export default function AdminPage() {
   // Dashboard
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   // Users
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -166,7 +167,14 @@ export default function AdminPage() {
 
   function loadStats() {
     setStatsLoading(true);
-    api.get<DashboardStats>('/admin/dashboard').then(({ data }) => setStats(data)).finally(() => setStatsLoading(false));
+    setStatsError(null);
+    api
+      .get<DashboardStats>('/admin/dashboard')
+      .then(({ data }) => setStats(data))
+      .catch((err) => {
+        setStatsError(err?.response?.data?.detail || err?.message || 'Failed to load dashboard stats.');
+      })
+      .finally(() => setStatsLoading(false));
   }
 
   function loadUsers(q?: string) {
@@ -433,11 +441,17 @@ export default function AdminPage() {
       {/* -------------------- Dashboard -------------------- */}
       {tab === 'dashboard' && (
         <div>
-          {statsLoading || !stats ? (
+          {statsLoading ? (
             <div className="p-8 text-center text-sm text-textmuted">
               <Loader2 className="animate-spin mx-auto" />
             </div>
-          ) : (
+          ) : statsError ? (
+            <div className="glass-card p-8 text-center">
+              <p className="text-sm text-danger font-medium mb-1">Couldn't load dashboard stats</p>
+              <p className="text-xs text-textmuted mb-4">{statsError}</p>
+              <button onClick={loadStats} className="btn-secondary text-sm">Try again</button>
+            </div>
+          ) : !stats ? null : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 <StatCard label="Total users" value={stats.total_users} icon={<UsersIcon size={14} />} />
