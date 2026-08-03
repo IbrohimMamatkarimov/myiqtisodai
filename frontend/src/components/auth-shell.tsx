@@ -3,7 +3,7 @@
 import { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './language-switcher';
-import { Send, Sun, Moon } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import { Link, useRouter } from '@/navigation';
 
@@ -103,20 +103,6 @@ export function AuthShell({
         </div>
 
       </div>
-
-      {/* Telegram Support */}
-      <a
-        href="https://t.me/ibrohimmamatkarimov"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-teal-500 hover:brightness-110 text-white px-5 py-3 shadow-xl transition-all duration-300 hover:scale-105"
-      >
-        <Send size={18} />
-
-        <span className="text-sm font-semibold">
-          {common('support')}
-        </span>
-      </a>
 
     </div>
   );

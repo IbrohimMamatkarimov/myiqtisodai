@@ -27,6 +27,10 @@ class Expense(UUIDMixin, TimestampMixin, Base):
     category_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         GUID(), ForeignKey("categories.id", ondelete="SET NULL"), index=True, nullable=True
     )
+    goal_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        GUID(), ForeignKey("goals.id", ondelete="SET NULL"), index=True, nullable=True
+    )
+    is_goal_transfer: Mapped[bool] = mapped_column(default=False)
 
     amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(8), default="UZS")

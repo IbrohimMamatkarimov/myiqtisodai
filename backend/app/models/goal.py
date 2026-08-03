@@ -25,6 +25,10 @@ class Goal(UUIDMixin, TimestampMixin, Base):
     currency: Mapped[str] = mapped_column(String(8), default="UZS", nullable=False)
     is_completed: Mapped[bool] = mapped_column(default=False)
 
+    # ---------- Fund locking (allocate money from balance into the goal) ----------
+    pin_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    is_locked: Mapped[bool] = mapped_column(default=False)
+
     user = relationship("User", back_populates="goals")
 
     @property

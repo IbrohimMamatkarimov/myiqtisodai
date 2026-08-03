@@ -36,4 +36,14 @@ class GoalOut(BaseModel):
     image_url: Optional[str] = None
     currency: str
     is_completed: bool
+    is_locked: bool
     progress_percent: float
+
+
+class GoalAllocate(BaseModel):
+    amount: float = Field(gt=0)
+    pin: str = Field(min_length=4, max_length=32)
+
+
+class GoalWithdraw(BaseModel):
+    pin: str = Field(min_length=4, max_length=32)

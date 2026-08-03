@@ -151,6 +151,7 @@ export interface Goal {
   image_url?: string | null;
   currency: string;
   is_completed: boolean;
+  is_locked: boolean;
   progress_percent: number;
 }
 
