@@ -13,7 +13,6 @@ from app.models.goal import Goal
 from app.models.income import Income
 from app.models.user import User
 from app.schemas.goal import GoalAllocate, GoalCreate, GoalOut, GoalUpdate, GoalWithdraw
-from app.services.stock_photos import get_goal_cover_photo
 from app.utils.currency import RATES_TO_UZS, amount_in_uzs
 
 router = APIRouter(prefix="/goals", tags=["Goals"])
@@ -31,9 +30,11 @@ def create_goal(
     db: Session = Depends(get_db),
 ):
     goal = Goal(user_id=current_user.id, **payload.model_dump())
-    # Best-effort cover photo from a moderated stock library - never blocks
-    # saving the goal itself if the image service is unreachable.
-    goal.image_url = get_goal_cover_photo(payload.title)
+    # Deliberately no photo cover here (see stock_photos.py's docstring for
+    # the full history) - even a moderated stock library can return an
+    # off-topic or inappropriate photo for a short, non-English title, and
+    # it happened again after this was re-enabled once already. The emoji
+    # badge (frontend, keyword-matched) is the permanent, always-safe cover.
     db.add(goal)
     db.commit()
     db.refresh(goal)
@@ -86,9 +87,6 @@ def update_goal(
         )
     for field, value in update_data.items():
         setattr(goal, field, value)
-    # Title changed - regenerate the cover image to match the new title.
-    if "title" in update_data:
-        goal.image_url = get_goal_cover_photo(goal.title)
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
     db.commit()
