@@ -328,15 +328,20 @@ export default function GoalsPage() {
                 {allocateFor === goal.id ? (
                   <div className="mt-4 space-y-2.5 bg-textmain/[0.03] rounded-xl p-3.5">
                     <div>
-                      <label className="label-text">{t('amountLabel')}</label>
-                      <input
-                        type="number"
-                        autoFocus
-                        value={fundsAmount}
-                        onChange={(e) => setFundsAmount(e.target.value)}
-                        className="input-field mt-1"
-                        placeholder="100000"
-                      />
+                      <label className="label-text">{t('amountLabel')} ({goalCurrency})</label>
+                      <div className="relative mt-1">
+                        <input
+                          type="number"
+                          autoFocus
+                          value={fundsAmount}
+                          onChange={(e) => setFundsAmount(e.target.value)}
+                          className="input-field pr-16"
+                          placeholder="100000"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-textmuted">
+                          {goalCurrency}
+                        </span>
+                      </div>
                     </div>
                     {!goal.is_locked && (
                       <>

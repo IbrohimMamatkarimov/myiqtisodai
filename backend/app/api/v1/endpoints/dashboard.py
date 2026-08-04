@@ -15,7 +15,7 @@ from app.models.income import Income
 from app.models.user import User
 from app.schemas.dashboard import BudgetStatus, CategoryBreakdown, DashboardSummary, GoalProgress, WeeklyTrend
 from app.services.financial_health import calculate_financial_health_score
-from app.utils.currency import amount_in_uzs
+from app.utils.currency import RATES_TO_UZS, amount_in_uzs
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -75,6 +75,12 @@ def get_dashboard_summary(
 
     goals = db.scalars(select(Goal).where(Goal.user_id == current_user.id, Goal.is_completed.is_(False))).all()
     goals_on_track = sum(1 for g in goals if g.progress_percent >= 50)
+
+    total_locked_in_goals = sum(
+        float(g.current_amount) * RATES_TO_UZS.get(g.currency, 1)
+        for g in goals
+        if g.is_locked
+    )
 
     budgets_rows = db.scalars(select(Budget).where(Budget.user_id == current_user.id)).all()
     budgets_over_limit = 0
@@ -214,6 +220,7 @@ def get_dashboard_summary(
     total_expenses=total_expenses,
     remaining_balance=total_income - total_expenses,
     total_savings=total_savings,
+    total_locked_in_goals=total_locked_in_goals,
     financial_health_score=score,
 
     month_over_month_income_change_percent=pct_change(total_income, prev_income),

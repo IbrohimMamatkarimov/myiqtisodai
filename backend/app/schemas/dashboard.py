@@ -40,6 +40,7 @@ class DashboardSummary(BaseModel):
     total_expenses: float
     remaining_balance: float
     total_savings: float
+    total_locked_in_goals: float
     financial_health_score: int
 
     # Month comparison

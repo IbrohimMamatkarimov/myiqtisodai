@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Plus, Wallet, Sparkles, ArrowRight, Target, Camera, Loader2, UploadCloud,
   ShoppingCart, Car, Utensils, ShoppingBag, CreditCard, Receipt as ReceiptIcon,
-  Eye, EyeOff, TrendingUp, TrendingDown,
+  Eye, EyeOff, TrendingUp, TrendingDown, Lock,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { AchievementToast } from '@/components/AchievementToast';
@@ -501,7 +501,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
               <div className="space-y-1">
-                <div className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                <Link href="/transactions" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
                   <span className="flex items-center gap-2.5 text-sm text-textmain">
                     <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
                       <Wallet size={15} />
@@ -511,18 +511,18 @@ export default function DashboardPage() {
                   <span className="text-sm font-semibold tabular-nums text-textmain">
                     {formatAmount(balance, user?.currency || 'UZS')}
                   </span>
-                </div>
-                <div className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                </Link>
+                <Link href="/goals" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
                   <span className="flex items-center gap-2.5 text-sm text-textmain">
                     <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
-                      <Target size={15} />
+                      <Lock size={15} />
                     </span>
                     {ta('totalSavings')}
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-textmain">
-                    {formatAmount(summary.total_savings, user?.currency || 'UZS')}
+                    {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
                   </span>
-                </div>
+                </Link>
               </div>
             </div>
           </div>
