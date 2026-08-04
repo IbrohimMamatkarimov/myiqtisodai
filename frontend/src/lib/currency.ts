@@ -39,3 +39,23 @@ export function formatAmount(amountUZS: number, currency: string): string {
   }
   return `${symbol}${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
+
+/**
+ * Formats an amount that's already denominated in `currency` - no UZS
+ * conversion. Use this for anything stored per-record in its own currency
+ * (goal target/current amounts, expense/income amounts): those numbers are
+ * exactly what the user typed, in the currency they picked at the time.
+ * formatAmount() is for the opposite case - dashboard/account totals, which
+ * the backend always normalizes to UZS before sending. Mixing the two up
+ * silently divides goal amounts by ~12700 for USD/EUR goals.
+ */
+export function formatCurrency(amount: number, currency: string): string {
+  const code = (currency as CurrencyCode) in RATES_TO_UZS ? (currency as CurrencyCode) : 'UZS';
+  const symbol = CURRENCY_SYMBOLS[code];
+  const rounded = code === 'UZS' ? Math.round(amount) : Math.round(amount * 100) / 100;
+
+  if (code === 'UZS') {
+    return `${rounded.toLocaleString()} ${symbol}`;
+  }
+  return `${symbol}${rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}

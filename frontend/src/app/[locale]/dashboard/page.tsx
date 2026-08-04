@@ -13,7 +13,7 @@ import { Link, useRouter } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
-import { formatAmount } from '@/lib/currency';
+import { formatAmount, formatCurrency } from '@/lib/currency';
 import { SCAN_DRAFT_STORAGE_KEY } from '@/components/quick-actions';
 import type { DashboardSummary, Expense, Income, Goal, ReceiptScanResult } from '@/types/finance';
 
@@ -406,7 +406,7 @@ export default function DashboardPage() {
                           <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(goal.progress_percent, 100)}%` }} />
                         </div>
                         <p className="text-xs text-textmuted mt-1.5">
-                          {formatAmount(goal.current_amount, goal.currency || user?.currency || 'UZS')} / {formatAmount(goal.target_amount, goal.currency || user?.currency || 'UZS')}
+                          {formatCurrency(goal.current_amount, goal.currency || user?.currency || 'UZS')} / {formatCurrency(goal.target_amount, goal.currency || user?.currency || 'UZS')}
                         </p>
                       </div>
                     </Link>

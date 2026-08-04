@@ -7,7 +7,7 @@ import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
-import { formatAmount } from '@/lib/currency';
+import { formatAmount, formatCurrency } from '@/lib/currency';
 import type { Goal } from '@/types/finance';
 
 const LANGUAGE_NAMES: Record<string, string> = { uz: 'Uzbek', en: 'English', ru: 'Russian' };
@@ -302,10 +302,10 @@ export default function GoalsPage() {
                 <div className="mt-4">
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="font-semibold text-textmain tabular-nums">
-                      {formatAmount(goal.current_amount, goalCurrency)}
+                      {formatCurrency(goal.current_amount, goalCurrency)}
                     </span>
                     <span className="text-textmuted tabular-nums">
-                      / {formatAmount(goal.target_amount, goalCurrency)}
+                      / {formatCurrency(goal.target_amount, goalCurrency)}
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-textmain/[0.06] overflow-hidden">
