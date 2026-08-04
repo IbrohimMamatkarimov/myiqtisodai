@@ -5,13 +5,13 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Plus, Wallet, Sparkles, ArrowRight, Target, Camera, Loader2, UploadCloud,
   ShoppingCart, Car, Utensils, ShoppingBag, CreditCard, Receipt as ReceiptIcon,
-  Eye, EyeOff, TrendingUp, TrendingDown, Lock,
+  Eye, EyeOff, Lock, X,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { AchievementToast } from '@/components/AchievementToast';
 import { Link, useRouter } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatAmount, formatCurrency } from '@/lib/currency';
 import { SCAN_DRAFT_STORAGE_KEY } from '@/components/quick-actions';
@@ -80,6 +80,8 @@ export default function DashboardPage() {
   const te = useTranslations('expenses');
   const ta = useTranslations('accounts');
   const tr = useTranslations('receipts');
+  const tg = useTranslations('goals');
+  const tc = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -94,6 +96,61 @@ export default function DashboardPage() {
   const [scanning, setScanning] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
+
+  // Allocate (add funds to a goal) - inline on the dashboard so people don't
+  // have to leave it just to lock money away toward a goal.
+  const [allocateFor, setAllocateFor] = useState<string | null>(null);
+  const [fundsAmount, setFundsAmount] = useState('');
+  const [pin, setPin] = useState('');
+  const [pinConfirm, setPinConfirm] = useState('');
+  const [allocateError, setAllocateError] = useState('');
+  const [allocating, setAllocating] = useState(false);
+
+  function loadGoals() {
+    api
+      .get<Goal[]>('/goals')
+      .then(({ data }) => setGoals(data.filter((g) => !g.is_completed).slice(0, 2)))
+      .catch(() => setGoals([]));
+  }
+
+  function openAllocate(goal: Goal) {
+    setAllocateFor(goal.id);
+    setFundsAmount('');
+    setPin('');
+    setPinConfirm('');
+    setAllocateError('');
+  }
+
+  async function handleAllocate(goal: Goal) {
+    setAllocateError('');
+    const amount = parseFloat(fundsAmount);
+    if (!amount || amount <= 0) return;
+
+    if (!goal.is_locked) {
+      if (pin.length < 4) {
+        setAllocateError(tg('pinPlaceholder'));
+        return;
+      }
+      if (pin !== pinConfirm) {
+        setAllocateError(tg('pinMismatch'));
+        return;
+      }
+    }
+
+    setAllocating(true);
+    try {
+      await api.post(`/goals/${goal.id}/allocate`, {
+        amount,
+        pin: goal.is_locked ? '0000' : pin,
+      });
+      setAllocateFor(null);
+      loadGoals();
+    } catch (err: any) {
+      setAllocateError(getErrorMessage(err, tg('pinMismatch')));
+    } finally {
+      setAllocating(false);
+    }
+  }
 
   useEffect(() => {
     if (!checked) return;
@@ -207,16 +264,8 @@ export default function DashboardPage() {
   }
 
   let balance = 0;
-  let balanceDelta: number | null = null;
   if (summary) {
     balance = summary.total_income - summary.total_expenses;
-    const incomePct = summary.month_over_month_income_change_percent;
-    const expensePct = summary.month_over_month_expense_change_percent;
-    if (incomePct > -100 && expensePct > -100) {
-      const prevIncome = summary.total_income / (1 + incomePct / 100);
-      const prevExpenses = summary.total_expenses / (1 + expensePct / 100);
-      balanceDelta = Math.round(balance - (prevIncome - prevExpenses));
-    }
   }
 
   return (
@@ -264,17 +313,9 @@ export default function DashboardPage() {
               <p className="mt-1 font-display text-4xl font-bold text-white tabular-nums">
                 {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
               </p>
-              {balanceDelta !== null ? (
-                <p className="mt-1 text-sm font-medium text-white/85 flex items-center gap-1">
-                  {balanceDelta >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                  {balanceDelta >= 0 ? '+' : ''}
-                  {formatAmount(balanceDelta, user?.currency || 'UZS')} {t('vsLastMonthShort')}
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-white/75">
-                  {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
-                </p>
-              )}
+              <p className="mt-1 text-sm text-white/75">
+                {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
+              </p>
 
               <div className="flex flex-wrap gap-2 mt-5 relative">
                 <Link href="/expenses" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-primary font-semibold px-4 py-3 hover:brightness-95 transition-all active:scale-[0.98]">
@@ -389,27 +430,92 @@ export default function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {goals.map((goal) => (
-                    <Link key={goal.id} href="/goals" className="rounded-2xl overflow-hidden border border-textmain/[0.06] hover:brightness-[0.98] transition-all">
-                      {goal.image_url && (
-                        <div className="h-20 w-full overflow-hidden bg-textmain/[0.04]">
-                          <img
-                            src={goal.image_url}
-                            alt=""
-                            className="h-full w-full object-cover"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
+                    <div key={goal.id} className="rounded-2xl overflow-hidden border border-textmain/[0.06]">
+                      <Link href="/goals" className="block hover:brightness-[0.98] transition-all">
+                        {goal.image_url && (
+                          <div className="h-20 w-full overflow-hidden bg-textmain/[0.04]">
+                            <img
+                              src={goal.image_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                          </div>
+                        )}
+                        <div className="p-3 pb-2">
+                          <p className="text-sm font-medium text-textmain truncate">{goal.title}</p>
+                          <div className="h-1.5 rounded-full bg-textmain/[0.06] overflow-hidden mt-2">
+                            <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(goal.progress_percent, 100)}%` }} />
+                          </div>
+                          <p className="text-xs text-textmuted mt-1.5">
+                            {formatCurrency(goal.current_amount, goal.currency || user?.currency || 'UZS')} / {formatCurrency(goal.target_amount, goal.currency || user?.currency || 'UZS')}
+                          </p>
+                        </div>
+                      </Link>
+
+                      {allocateFor === goal.id ? (
+                        <div className="px-3 pb-3 space-y-2">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              autoFocus
+                              value={fundsAmount}
+                              onChange={(e) => setFundsAmount(e.target.value)}
+                              className="input-field text-sm pr-14"
+                              placeholder="100000"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-textmuted">
+                              {goal.currency || user?.currency || 'UZS'}
+                            </span>
+                          </div>
+                          {!goal.is_locked && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="password"
+                                inputMode="numeric"
+                                value={pin}
+                                onChange={(e) => setPin(e.target.value)}
+                                className="input-field text-sm"
+                                placeholder={tg('setPinLabel')}
+                                maxLength={32}
+                              />
+                              <input
+                                type="password"
+                                inputMode="numeric"
+                                value={pinConfirm}
+                                onChange={(e) => setPinConfirm(e.target.value)}
+                                className="input-field text-sm"
+                                placeholder={tg('confirmPinLabel')}
+                                maxLength={32}
+                              />
+                            </div>
+                          )}
+                          {allocateError && <p className="text-xs text-danger">{allocateError}</p>}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleAllocate(goal)}
+                              disabled={allocating}
+                              className="btn-primary flex-1 text-sm py-2"
+                            >
+                              {allocating ? <Loader2 size={14} className="animate-spin" /> : tc('save')}
+                            </button>
+                            <button onClick={() => setAllocateFor(null)} className="btn-secondary px-2.5 py-2">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-3 pb-3">
+                          <button
+                            onClick={() => openAllocate(goal)}
+                            className="btn-secondary w-full text-xs py-2"
+                          >
+                            <Plus size={13} />
+                            {goal.is_locked ? tg('addMore') : tg('allocate')}
+                          </button>
                         </div>
                       )}
-                      <div className="p-3">
-                        <p className="text-sm font-medium text-textmain truncate">{goal.title}</p>
-                        <div className="h-1.5 rounded-full bg-textmain/[0.06] overflow-hidden mt-2">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(goal.progress_percent, 100)}%` }} />
-                        </div>
-                        <p className="text-xs text-textmuted mt-1.5">
-                          {formatCurrency(goal.current_amount, goal.currency || user?.currency || 'UZS')} / {formatCurrency(goal.target_amount, goal.currency || user?.currency || 'UZS')}
-                        </p>
-                      </div>
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
