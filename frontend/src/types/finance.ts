@@ -33,6 +33,7 @@ export interface DashboardSummary {
   total_expenses: number;
   remaining_balance: number;
   total_savings: number;
+  total_locked_in_goals: number;
 
   financial_health_score: number;
 
