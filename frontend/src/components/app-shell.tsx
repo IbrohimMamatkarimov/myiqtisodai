@@ -14,11 +14,8 @@ import {
   ShieldCheck,
   MessageCircle,
   ChevronDown,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useTheme } from './theme-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { NotificationsBell } from './NotificationsBell';
 import { GlobalSearch } from './GlobalSearch';
@@ -32,7 +29,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const { theme, toggleTheme } = useTheme();
 
   // Admins get a red badge on the Chat nav item whenever a user has an
   // unreplied message waiting - same idea as the user-facing chat badge.
@@ -146,14 +142,6 @@ export function AppShell({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-2.5 shrink-0">
               <NotificationsBell />
-
-              <button
-                onClick={toggleTheme}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
 
               <LanguageSwitcher />
 

@@ -88,7 +88,7 @@ export function GlobalSearch() {
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full mt-2 w-80 left-0 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full mt-2 left-0 right-0 sm:right-auto sm:w-80 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-80 overflow-y-auto">
           {!loading && results.length === 0 && (
             <p className="text-sm text-textmuted px-4 py-4 text-center">{t('searchNoResults')}</p>
           )}
