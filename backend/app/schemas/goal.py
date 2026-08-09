@@ -62,12 +62,29 @@ class GoalMemberOut(BaseModel):
     email: str
     contributed_amount: float
     is_owner: bool = False
+    status: str = "accepted"
+
+
+class GoalInviteOut(BaseModel):
+    """A pending invite from the invited person's own point of view - what
+    goal, whose invite, so they can decide whether to accept it."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    goal_id: uuid.UUID
+    goal_title: str
+    owner_name: str
+    created_at: datetime
 
 
 class GoalMemberInvite(BaseModel):
     # Either the person's account email or their phone number, whichever
     # they registered with - matched against both.
     identifier: str = Field(min_length=3, max_length=255)
+
+
+class GoalInviteRespond(BaseModel):
+    accept: bool
 
 
 class GoalAllocate(BaseModel):

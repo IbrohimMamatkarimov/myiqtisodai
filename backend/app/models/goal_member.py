@@ -1,17 +1,28 @@
+import enum
 import uuid
 
-from sqlalchemy import ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
 from app.db.types import GUID
 
 
+class GoalMemberStatus(str, enum.Enum):
+    pending = "pending"
+    accepted = "accepted"
+
+
 class GoalMember(UUIDMixin, TimestampMixin, Base):
     """One person's stake in a family/group goal. contributed_amount is
     THIS member's own money in the shared box - the goal's total
     current_amount is the sum across all members, but each person can only
-    ever request back what's in their own row here, never anyone else's."""
+    ever request back what's in their own row here, never anyone else's.
+
+    Every invite starts as pending - the invited person has to explicitly
+    accept before they're a real member. Owner adds a pending row +
+    notification; a pending member can't contribute or see the goal in
+    their own list until they accept."""
 
     __tablename__ = "goal_members"
     __table_args__ = (UniqueConstraint("goal_id", "user_id", name="uq_goal_members_goal_user"),)
@@ -23,6 +34,9 @@ class GoalMember(UUIDMixin, TimestampMixin, Base):
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
     )
     contributed_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[GoalMemberStatus] = mapped_column(
+        Enum(GoalMemberStatus, name="goalmemberstatus"), default=GoalMemberStatus.pending, nullable=False
+    )
 
     goal = relationship("Goal", back_populates="members")
     user = relationship("User")

@@ -13,7 +13,7 @@ from app.db.session import get_db
 from app.models.chat_message import ChatMessage
 from app.models.expense import Expense
 from app.models.goal import Goal
-from app.models.goal_member import GoalMember
+from app.models.goal_member import GoalMember, GoalMemberStatus
 from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
@@ -21,6 +21,8 @@ from app.models.user import User
 from app.schemas.goal import (
     GoalAllocate,
     GoalCreate,
+    GoalInviteOut,
+    GoalInviteRespond,
     GoalMemberInvite,
     GoalMemberOut,
     GoalMemberWithdrawRequestCreate,
@@ -50,10 +52,74 @@ ALLOWED_GOAL_IMAGE_MIME_TYPES = {
 
 @router.get("", response_model=list[GoalOut])
 def list_goals(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Includes goals they own AND group goals someone else invited them to.
+    # Includes goals they own AND group goals they've actually accepted an
+    # invite to - pending invites live separately (GET /goals/invites) so
+    # they don't show up here until the person explicitly accepts.
     owned = select(Goal.id).where(Goal.user_id == current_user.id)
-    member_of = select(GoalMember.goal_id).where(GoalMember.user_id == current_user.id)
+    member_of = select(GoalMember.goal_id).where(
+        GoalMember.user_id == current_user.id, GoalMember.status == GoalMemberStatus.accepted
+    )
     return db.scalars(select(Goal).where(Goal.id.in_(owned) | Goal.id.in_(member_of))).all()
+
+
+@router.get("/invites", response_model=list[GoalInviteOut])
+def list_pending_invites(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Group-goal invites this user hasn't responded to yet."""
+    rows = db.execute(
+        select(GoalMember, Goal, User)
+        .join(Goal, Goal.id == GoalMember.goal_id)
+        .join(User, User.id == Goal.user_id)
+        .where(GoalMember.user_id == current_user.id, GoalMember.status == GoalMemberStatus.pending)
+    ).all()
+    return [
+        GoalInviteOut(
+            id=member.id,
+            goal_id=goal.id,
+            goal_title=goal.title,
+            owner_name=owner.full_name,
+            created_at=member.created_at,
+        )
+        for member, goal, owner in rows
+    ]
+
+
+@router.post("/invites/{member_id}/respond", status_code=status.HTTP_200_OK)
+def respond_to_invite(
+    member_id: uuid.UUID,
+    payload: GoalInviteRespond,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    member = db.get(GoalMember, member_id)
+    if not member or member.user_id != current_user.id or member.status != GoalMemberStatus.pending:
+        raise HTTPException(status_code=404, detail="Taklif topilmadi")
+
+    goal = db.get(Goal, member.goal_id)
+
+    if payload.accept:
+        member.status = GoalMemberStatus.accepted
+        db.add(
+            Notification(
+                user_id=goal.user_id,
+                type=NotificationType.system,
+                title="Taklif qabul qilindi",
+                message=f"{current_user.full_name} «{goal.title}» maqsadiga qo'shildi.",
+            )
+        )
+        db.commit()
+        return {"message": "Taklif qabul qilindi"}
+    else:
+        db.add(
+            Notification(
+                user_id=goal.user_id,
+                type=NotificationType.system,
+                title="Taklif rad etildi",
+                message=f"{current_user.full_name} «{goal.title}» maqsadiga taklifni rad etdi.",
+            )
+        )
+        db.delete(member)
+        db.commit()
+        return {"message": "Taklif rad etildi"}
 
 
 @router.post("", response_model=GoalOut, status_code=status.HTTP_201_CREATED)
@@ -81,7 +147,7 @@ def create_goal(
         # The creator is always a member too, at 0 contributed - so
         # "contribute" logic can treat owner and invited members exactly
         # the same way from here on.
-        db.add(GoalMember(goal_id=goal.id, user_id=current_user.id, contributed_amount=0))
+        db.add(GoalMember(goal_id=goal.id, user_id=current_user.id, contributed_amount=0, status=GoalMemberStatus.accepted))
     db.commit()
     db.refresh(goal)
     return goal
@@ -127,6 +193,7 @@ def list_goal_members(
             email=user.email,
             contributed_amount=float(member.contributed_amount),
             is_owner=(user.id == goal.user_id),
+            status=member.status.value,
         )
         for member, user in rows
     ]
@@ -139,9 +206,10 @@ def invite_goal_member(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Owner invites someone by their account email or phone number. Adding
-    them is immediate (no separate accept step) - they show up as a member
-    right away, at 0 contributed until they add their own money."""
+    """Owner invites someone by their account email or phone number. Starts
+    as a pending invite - the invited person has to explicitly accept
+    (GET /goals/invites, POST /goals/invites/{id}/respond) before they're a
+    real member with any access to contribute or view the shared goal."""
     goal = _get_owned_goal(db, goal_id, current_user.id)
     if not goal.is_group:
         raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
@@ -150,22 +218,29 @@ def invite_goal_member(
     invitee = db.scalar(select(User).where((User.email == identifier) | (User.phone == identifier)))
     if not invitee:
         raise HTTPException(status_code=404, detail="Bu email yoki telefon raqami bilan foydalanuvchi topilmadi")
+    if invitee.id == current_user.id:
+        raise HTTPException(status_code=400, detail="O'zingizni taklif qila olmaysiz")
 
     existing = db.scalar(
         select(GoalMember).where(GoalMember.goal_id == goal.id, GoalMember.user_id == invitee.id)
     )
     if existing:
-        raise HTTPException(status_code=400, detail="Bu foydalanuvchi allaqachon a'zo")
+        detail = (
+            "Bu foydalanuvchi allaqachon a'zo"
+            if existing.status == GoalMemberStatus.accepted
+            else "Bu foydalanuvchiga taklif allaqachon yuborilgan"
+        )
+        raise HTTPException(status_code=400, detail=detail)
 
-    member = GoalMember(goal_id=goal.id, user_id=invitee.id, contributed_amount=0)
+    member = GoalMember(goal_id=goal.id, user_id=invitee.id, contributed_amount=0, status=GoalMemberStatus.pending)
     db.add(member)
 
     db.add(
         Notification(
             user_id=invitee.id,
             type=NotificationType.system,
-            title=f"Sizni \u00ab{goal.title}\u00bb oilaviy maqsadiga qo'shishdi",
-            message=f"{current_user.full_name} sizni birgalikdagi jamg'arma maqsadiga taklif qildi.",
+            title=f"\u00ab{goal.title}\u00bb oilaviy maqsadiga taklif",
+            message=f"{current_user.full_name} sizni birgalikdagi jamg'arma maqsadiga taklif qildi. Qabul qilish yoki rad etish uchun Maqsadlar bo'limiga o'ting.",
         )
     )
 
@@ -176,6 +251,7 @@ def invite_goal_member(
         email=invitee.email,
         contributed_amount=0,
         is_owner=False,
+        status="pending",
     )
 
 
@@ -402,8 +478,8 @@ def allocate_funds(
         raise HTTPException(status_code=400, detail="Balansingizda yetarli mablag' yo'q")
 
     if goal.is_group:
-        if member is None:
-            raise HTTPException(status_code=404, detail="Goal not found")
+        if member is None or member.status != GoalMemberStatus.accepted:
+            raise HTTPException(status_code=403, detail="Siz hali bu maqsadga taklifni qabul qilmagansiz")
         member.contributed_amount = float(member.contributed_amount) + payload.amount
     else:
         # Legacy goals created before PIN-at-creation existed have no
@@ -451,6 +527,8 @@ def request_member_withdraw(
     goal, member = _get_member_goal(db, goal_id, current_user.id)
     if not goal.is_group or member is None:
         raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+    if member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=403, detail="Siz hali bu maqsadga taklifni qabul qilmagansiz")
     if payload.amount > float(member.contributed_amount) + 0.01:
         raise HTTPException(status_code=400, detail="Bu summa sizning ulushingizdan ko'p")
 

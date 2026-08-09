@@ -167,6 +167,15 @@ export interface GoalMember {
   email: string;
   contributed_amount: number;
   is_owner: boolean;
+  status: 'pending' | 'accepted';
+}
+
+export interface GoalInvite {
+  id: string;
+  goal_id: string;
+  goal_title: string;
+  owner_name: string;
+  created_at: string;
 }
 
 export interface Income {

@@ -8,7 +8,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatAmount, formatCurrency, convertBetween } from '@/lib/currency';
-import type { Goal, GoalMember } from '@/types/finance';
+import type { Goal, GoalInvite, GoalMember } from '@/types/finance';
 
 const LANGUAGE_NAMES: Record<string, string> = { uz: 'Uzbek', en: 'English', ru: 'Russian' };
 const CURRENCIES = ['UZS', 'USD', 'EUR'];
@@ -152,6 +152,27 @@ export default function GoalsPage() {
 
   const [advice, setAdvice] = useState<Record<string, { loading: boolean; text?: string }>>({});
 
+  // Pending invites addressed to ME - shown above the goals grid until I
+  // accept or decline. A goal I've been invited to doesn't appear in the
+  // main list at all until accepted (backend gate, not just hidden here).
+  const [invites, setInvites] = useState<GoalInvite[]>([]);
+  const [respondingTo, setRespondingTo] = useState<string | null>(null);
+
+  function loadInvites() {
+    api.get<GoalInvite[]>('/goals/invites').then(({ data }) => setInvites(data)).catch(() => setInvites([]));
+  }
+
+  async function respondToInvite(inviteId: string, accept: boolean) {
+    setRespondingTo(inviteId);
+    try {
+      await api.post(`/goals/invites/${inviteId}/respond`, { accept });
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      if (accept) loadGoals();
+    } finally {
+      setRespondingTo(null);
+    }
+  }
+
   function loadGoals() {
     setLoading(true);
     api.get<Goal[]>('/goals').then(({ data }) => setGoals(data)).finally(() => setLoading(false));
@@ -160,6 +181,7 @@ export default function GoalsPage() {
   useEffect(() => {
     if (!checked) return;
     loadGoals();
+    loadInvites();
   }, [checked]);
 
   if (!checked) return null;
@@ -484,6 +506,39 @@ export default function GoalsPage() {
           {t('addGoal')}
         </button>
       </div>
+
+      {invites.length > 0 && (
+        <div className="space-y-2 mb-6">
+          {invites.map((inv) => (
+            <div key={inv.id} className="glass-card p-4 flex items-center justify-between gap-3 border border-primary/20">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Users size={16} />
+                </span>
+                <p className="text-sm text-textmain min-w-0">
+                  {t('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => respondToInvite(inv.id, false)}
+                  disabled={respondingTo === inv.id}
+                  className="btn-secondary text-sm px-3 py-1.5"
+                >
+                  {t('declineInvite')}
+                </button>
+                <button
+                  onClick={() => respondToInvite(inv.id, true)}
+                  disabled={respondingTo === inv.id}
+                  className="btn-primary text-sm px-3 py-1.5"
+                >
+                  {respondingTo === inv.id ? <Loader2 size={14} className="animate-spin" /> : t('acceptInvite')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={handleCreate} className="glass-card p-6 mb-6 space-y-4 max-w-lg">
@@ -1083,6 +1138,11 @@ export default function GoalsPage() {
                         {m.is_owner && (
                           <span className="text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
                             {t('ownerBadge')}
+                          </span>
+                        )}
+                        {m.status === 'pending' && (
+                          <span className="text-[10px] font-semibold text-textmuted bg-textmain/[0.06] rounded-full px-1.5 py-0.5">
+                            {t('pendingBadge')}
                           </span>
                         )}
                         {m.user_id === user?.id && (
