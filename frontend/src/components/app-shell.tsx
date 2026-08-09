@@ -5,19 +5,17 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link, usePathname, useRouter } from '@/navigation';
 import {
   LayoutDashboard,
-  Landmark,
   ArrowLeftRight,
-  Receipt,
   Target,
-  LineChart,
+  BookUser,
   Sparkles,
   Settings as SettingsIcon,
   LogOut,
-  Moon,
-  Sun,
   ShieldCheck,
   MessageCircle,
   ChevronDown,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useTheme } from './theme-provider';
@@ -54,11 +52,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const regularNavItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { href: '/accounts', label: t('accounts'), icon: Landmark },
     { href: '/transactions', label: t('transactions'), icon: ArrowLeftRight },
-    { href: '/receipts', label: t('receipts'), icon: Receipt },
     { href: '/goals', label: t('goals'), icon: Target },
-    { href: '/investments', label: t('investments'), icon: LineChart },
+    { href: '/debts', label: t('debts'), icon: BookUser },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },
   ];
@@ -149,16 +145,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
 
             <div className="flex items-center gap-2.5 shrink-0">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label="Toggle theme"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-primary hover:border-primary/30 transition-colors"
-              >
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-              </button>
-
               <NotificationsBell />
+
+              <button
+                onClick={toggleTheme}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border border-textmain/10 text-textmuted hover:text-textmain hover:bg-textmain/5 transition-colors"
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
 
               <LanguageSwitcher />
 

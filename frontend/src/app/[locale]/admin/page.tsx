@@ -28,6 +28,10 @@ import {
   Wallet,
   Receipt,
   Sparkles,
+  Unlock,
+  Lock,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 interface AdminUser {
@@ -74,6 +78,34 @@ interface DeletionRequest {
   deletion_requested_at: string | null;
 }
 
+interface UnlockRequest {
+  id: string;
+  goal_id: string;
+  goal_title: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_note: string | null;
+  created_at: string;
+  user_id: string;
+  user_email: string;
+  user_full_name: string;
+  goal_still_locked: boolean;
+}
+
+interface AdminGoal {
+  id: string;
+  title: string;
+  target_amount: number;
+  current_amount: number;
+  currency: string;
+  is_completed: boolean;
+  is_locked: boolean;
+  has_pin: boolean;
+  lock_days: number | null;
+  locked_until: string | null;
+  progress_percent: number;
+}
+
 interface DashboardStats {
   total_users: number;
   active_users: number;
@@ -117,7 +149,7 @@ function StatCard({ label, value, icon }: { label: string; value: string | numbe
   );
 }
 
-type Tab = 'dashboard' | 'users' | 'reports';
+type Tab = 'dashboard' | 'users' | 'unlocks' | 'reports';
 
 export default function AdminPage() {
   const checked = useRequireAuth();
@@ -153,6 +185,22 @@ export default function AdminPage() {
   const [deletionLoading, setDeletionLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectMessage, setRejectMessage] = useState('');
+
+  // Goal early-unlock requests
+  const [unlockRequests, setUnlockRequests] = useState<UnlockRequest[]>([]);
+  const [unlockLoading, setUnlockLoading] = useState(true);
+  const [unlockRejectingId, setUnlockRejectingId] = useState<string | null>(null);
+  const [unlockNote, setUnlockNote] = useState('');
+
+  // Browse-any-user's-goals unlock tool
+  const [unlockSearch, setUnlockSearch] = useState('');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
+  const [userGoals, setUserGoals] = useState<Record<string, AdminGoal[]>>({});
+  const [userGoalsLoading, setUserGoalsLoading] = useState<string | null>(null);
+  const [forceUnlockNoteFor, setForceUnlockNoteFor] = useState<string | null>(null);
+  const [forceUnlockNote, setForceUnlockNote] = useState('');
+  const [resetPinFor, setResetPinFor] = useState<string | null>(null);
+  const [resetPinValue, setResetPinValue] = useState('');
 
   // Reports
   const [reports, setReports] = useState<AdminReport[]>([]);
@@ -193,6 +241,18 @@ export default function AdminPage() {
       .finally(() => setDeletionLoading(false));
   }
 
+  function loadUnlockRequests() {
+    setUnlockLoading(true);
+    api
+      .get<UnlockRequest[]>('/admin/unlock-requests')
+      .then(({ data }) => setUnlockRequests(data))
+      .catch((err) => {
+        console.error('Failed to load unlock requests:', err?.response?.data?.detail || err?.message);
+        setUnlockRequests([]);
+      })
+      .finally(() => setUnlockLoading(false));
+  }
+
   function loadReports(status: 'open' | 'solved' | 'all') {
     setReportsLoading(true);
     api
@@ -211,6 +271,7 @@ export default function AdminPage() {
       loadStats();
       loadUsers();
       loadDeletionRequests();
+      loadUnlockRequests();
       loadReports(reportFilter);
     }
   }, [checked, user]);
@@ -274,6 +335,85 @@ export default function AdminPage() {
       if (detail?.id === id) openDetail(id);
       setRejectingId(null);
       setRejectMessage('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function approveUnlock(id: string) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/unlock-requests/${id}/approve`);
+      setUnlockRequests((prev) => prev.filter((r) => r.id !== id));
+      alert('Unlocked. The user can withdraw with their PIN once they reload the app.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectUnlock(id: string) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/unlock-requests/${id}/reject`, { note: unlockNote || undefined });
+      setUnlockRequests((prev) => prev.filter((r) => r.id !== id));
+      setUnlockRejectingId(null);
+      setUnlockNote('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleUserGoals(userId: string) {
+    if (expandedUserId === userId) {
+      setExpandedUserId(null);
+      return;
+    }
+    setExpandedUserId(userId);
+    if (userGoals[userId]) return; // already fetched
+    setUserGoalsLoading(userId);
+    try {
+      const { data } = await api.get<AdminGoal[]>(`/admin/users/${userId}/goals`);
+      setUserGoals((prev) => ({ ...prev, [userId]: data }));
+    } catch {
+      setUserGoals((prev) => ({ ...prev, [userId]: [] }));
+    } finally {
+      setUserGoalsLoading(null);
+    }
+  }
+
+  async function forceUnlockGoal(userId: string, goalId: string) {
+    setBusy(true);
+    try {
+      const { data } = await api.post<AdminGoal>(`/admin/goals/${goalId}/unlock`, {
+        note: forceUnlockNote || undefined,
+      });
+      setUserGoals((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] || []).map((g) => (g.id === goalId ? data : g)),
+      }));
+      setForceUnlockNoteFor(null);
+      setForceUnlockNote('');
+      // That goal might also have had a pending request - drop it from the queue too.
+      setUnlockRequests((prev) => prev.filter((r) => r.goal_id !== goalId));
+      alert('Unlocked. The user can withdraw with their PIN once they reload the app.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetGoalPin(userId: string, goalId: string) {
+    setBusy(true);
+    try {
+      const { data } = await api.post<AdminGoal>(`/admin/goals/${goalId}/reset-pin`, {
+        new_pin: resetPinValue || undefined,
+      });
+      setUserGoals((prev) => ({
+        ...prev,
+        [userId]: (prev[userId] || []).map((g) => (g.id === goalId ? data : g)),
+      }));
+      setResetPinFor(null);
+      setResetPinValue('');
+      alert('PIN reset. The new PIN was sent to the user in their notifications.');
     } finally {
       setBusy(false);
     }
@@ -410,6 +550,7 @@ export default function AdminPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={15} /> },
     { id: 'users', label: 'Users', icon: <UsersIcon size={15} /> },
+    { id: 'unlocks', label: 'Unlock requests', icon: <Unlock size={15} /> },
     { id: 'reports', label: 'Reports', icon: <Flag size={15} /> },
   ];
 
@@ -431,6 +572,11 @@ export default function AdminPage() {
               {t.id === 'reports' && stats && stats.reports_waiting > 0 && (
                 <span className={`text-[10px] rounded-full px-1.5 ${tab === t.id ? 'bg-white/20' : 'bg-danger/10 text-danger'}`}>
                   {stats.reports_waiting}
+                </span>
+              )}
+              {t.id === 'unlocks' && unlockRequests.length > 0 && (
+                <span className={`text-[10px] rounded-full px-1.5 ${tab === t.id ? 'bg-white/20' : 'bg-danger/10 text-danger'}`}>
+                  {unlockRequests.length}
                 </span>
               )}
             </button>
@@ -613,6 +759,207 @@ export default function AdminPage() {
                 </tbody>
               </table>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- Unlock requests -------------------- */}
+      {tab === 'unlocks' && (
+        <div>
+          {unlockLoading ? (
+            <div className="p-8 text-center text-sm text-textmuted"><Loader2 className="animate-spin mx-auto" /></div>
+          ) : unlockRequests.length === 0 ? (
+            <div className="glass-card p-8 text-center text-sm text-textmuted">No pending unlock requests.</div>
+          ) : (
+            <div className="space-y-3">
+              {unlockRequests.map((r) => (
+                <div key={r.id} className="glass-card p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-textmain">
+                        {r.goal_title}
+                        {!r.goal_still_locked && (
+                          <span className="ml-2 text-[10px] font-semibold text-textmuted bg-textmain/5 rounded px-1.5 py-0.5">
+                            ALREADY UNLOCKED
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-textmuted mt-0.5">
+                        {r.user_full_name} — {r.user_email} · {new Date(r.created_at).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-textmain mt-2">"{r.reason}"</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => openChat(r.user_id)} title="Chat with this user" className="text-textmuted hover:text-primary">
+                        <MessageSquare size={15} />
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => setUnlockRejectingId(unlockRejectingId === r.id ? null : r.id)}
+                        className="btn-secondary text-xs px-2 py-1.5"
+                      >
+                        <XIcon size={14} />
+                        Reject
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => approveUnlock(r.id)}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-primary text-white font-semibold hover:brightness-95 flex items-center gap-1"
+                      >
+                        <Check size={14} />
+                        Approve unlock
+                      </button>
+                    </div>
+                  </div>
+
+                  {unlockRejectingId === r.id && (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        autoFocus
+                        value={unlockNote}
+                        onChange={(e) => setUnlockNote(e.target.value)}
+                        placeholder="Optional note explaining why (goes to their notifications)"
+                        className="input-field flex-1 text-sm"
+                      />
+                      <button disabled={busy} onClick={() => rejectUnlock(r.id)} className="btn-primary text-sm shrink-0">
+                        {busy ? <Loader2 size={14} className="animate-spin" /> : 'Send & reject'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Browse any user and unlock any of their goals directly, not just ones with an explicit request */}
+          <h2 className="font-display font-semibold text-textmain mt-8 mb-3">All users</h2>
+          <div className="flex items-center gap-2 rounded-xl border border-textmain/10 bg-surface px-3 py-2 text-sm w-64 mb-4">
+            <Search size={15} className="text-textmuted" />
+            <input
+              value={unlockSearch}
+              onChange={(e) => setUnlockSearch(e.target.value)}
+              placeholder="Search email or name..."
+              className="bg-transparent outline-none w-full text-textmain placeholder:text-textmuted"
+            />
+          </div>
+          <div className="glass-card overflow-hidden divide-y divide-textmain/[0.06]">
+            {users
+              .filter((u) => {
+                const q = unlockSearch.toLowerCase();
+                return !q || u.email.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q);
+              })
+              .map((u) => (
+                <div key={u.id}>
+                  <button
+                    onClick={() => toggleUserGoals(u.id)}
+                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-textmain/[0.02] transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {expandedUserId === u.id ? <ChevronDown size={15} className="text-textmuted shrink-0" /> : <ChevronRight size={15} className="text-textmuted shrink-0" />}
+                      <span className="text-textmain font-medium truncate">{u.full_name}</span>
+                      <span className="text-textmuted truncate">{u.email}</span>
+                    </div>
+                  </button>
+
+                  {expandedUserId === u.id && (
+                    <div className="px-4 pb-4 bg-textmain/[0.015]">
+                      {userGoalsLoading === u.id ? (
+                        <div className="py-4 text-center text-sm text-textmuted"><Loader2 className="animate-spin mx-auto" size={16} /></div>
+                      ) : (userGoals[u.id] || []).length === 0 ? (
+                        <p className="py-4 text-center text-sm text-textmuted">This user has no goals.</p>
+                      ) : (
+                        <div className="space-y-2 pt-2">
+                          {(userGoals[u.id] || []).map((g) => {
+                            const timeLocked = !!g.locked_until && new Date(g.locked_until) > new Date();
+                            return (
+                              <div key={g.id} className="rounded-xl border border-textmain/10 bg-surface p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium text-textmain truncate flex items-center gap-1.5">
+                                      {g.title}
+                                      {g.is_locked && (
+                                        <span className={`text-[10px] font-semibold rounded px-1.5 py-0.5 flex items-center gap-0.5 ${timeLocked ? 'text-danger bg-danger/10' : 'text-primary bg-primary/10'}`}>
+                                          <Lock size={9} />
+                                          {timeLocked ? 'Time-locked' : 'Locked'}
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="text-xs text-textmuted tabular-nums mt-0.5">
+                                      {g.current_amount.toLocaleString()} / {g.target_amount.toLocaleString()} {g.currency}
+                                      {timeLocked && g.locked_until && ` · until ${new Date(g.locked_until).toLocaleDateString()}`}
+                                    </p>
+                                  </div>
+                                  {g.is_locked && (
+                                    <button
+                                      disabled={busy}
+                                      onClick={() => setForceUnlockNoteFor(forceUnlockNoteFor === g.id ? null : g.id)}
+                                      className="text-xs px-2.5 py-1.5 rounded-lg bg-primary text-white font-semibold hover:brightness-95 flex items-center gap-1 shrink-0"
+                                    >
+                                      <Unlock size={13} />
+                                      Unlock
+                                    </button>
+                                  )}
+                                  {g.has_pin && (
+                                    <button
+                                      disabled={busy}
+                                      onClick={() => { setResetPinFor(resetPinFor === g.id ? null : g.id); setResetPinValue(''); }}
+                                      className="text-xs px-2.5 py-1.5 rounded-lg bg-secondary text-white font-semibold hover:brightness-95 flex items-center gap-1 shrink-0"
+                                    >
+                                      <KeyRound size={13} />
+                                      Reset PIN
+                                    </button>
+                                  )}
+                                </div>
+                                {forceUnlockNoteFor === g.id && (
+                                  <div className="mt-2.5 flex gap-2">
+                                    <input
+                                      autoFocus
+                                      value={forceUnlockNote}
+                                      onChange={(e) => setForceUnlockNote(e.target.value)}
+                                      placeholder="Optional note to send them"
+                                      className="input-field flex-1 text-sm"
+                                    />
+                                    <button
+                                      disabled={busy}
+                                      onClick={() => forceUnlockGoal(u.id, g.id)}
+                                      className="btn-primary text-sm shrink-0"
+                                    >
+                                      {busy ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                                    </button>
+                                  </div>
+                                )}
+                                {resetPinFor === g.id && (
+                                  <div className="mt-2.5">
+                                    <p className="text-xs text-textmuted mb-2">
+                                      Verify who you're talking to first (chat icon above). Leave blank to auto-generate a PIN - it's sent straight to the user, you won't see it.
+                                    </p>
+                                    <div className="flex gap-2">
+                                      <input
+                                        autoFocus
+                                        value={resetPinValue}
+                                        onChange={(e) => setResetPinValue(e.target.value)}
+                                        placeholder="New PIN (optional - auto-generates if blank)"
+                                        className="input-field flex-1 text-sm"
+                                      />
+                                      <button
+                                        disabled={busy}
+                                        onClick={() => resetGoalPin(u.id, g.id)}
+                                        className="btn-primary text-sm shrink-0"
+                                      >
+                                        {busy ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       )}

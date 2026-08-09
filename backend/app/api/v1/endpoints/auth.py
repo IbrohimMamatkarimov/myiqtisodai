@@ -1,8 +1,11 @@
 import uuid
 import logging
+import secrets
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -21,6 +24,7 @@ from app.models.user import User
 from app.schemas.user import (
     ChangePassword,
     ForgotPassword,
+    GoogleAuthRequest,
     RefreshTokenRequest,
     ResetPassword,
     Token,
@@ -128,6 +132,57 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
             status_code=403,
             detail="Please verify your email before logging in. Check your inbox for the verification link.",
         )
+
+    user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    return Token(
+        access_token=create_access_token(str(user.id)),
+        refresh_token=create_refresh_token(str(user.id)),
+    )
+
+
+@router.post("/google", response_model=Token)
+def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
+    """Sign in (or auto-register) with Google. Verifies the ID token Google's
+    Sign-In button handed the frontend, then either logs into an existing
+    account with that email or creates a brand-new one - Google has already
+    verified the email address, so is_email_verified is set True immediately
+    (no separate verification email needed) and onboarding_completed stays
+    False so they still go through the normal onboarding wizard once."""
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(status_code=503, detail="Google sign-in isn't configured on this server yet.")
+
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            payload.credential, google_requests.Request(), settings.GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google sign-in token")
+
+    if not idinfo.get("email_verified", False):
+        raise HTTPException(status_code=401, detail="Your Google email isn't verified")
+
+    email = idinfo["email"]
+    user = db.scalar(select(User).where(User.email == email))
+
+    if not user:
+        user = User(
+            email=email,
+            # Google-only accounts never log in with a password - a random,
+            # never-shared value here just satisfies the NOT NULL column
+            # and guarantees password login always fails for this account,
+            # rather than leaving it guessable/blank.
+            hashed_password=hash_password(secrets.token_urlsafe(32)),
+            full_name=idinfo.get("name") or email.split("@")[0],
+            is_email_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        seed_default_categories(user.id)
+    elif not user.is_active:
+        raise HTTPException(status_code=403, detail="Account is disabled")
 
     user.last_login_at = datetime.utcnow()
     db.commit()

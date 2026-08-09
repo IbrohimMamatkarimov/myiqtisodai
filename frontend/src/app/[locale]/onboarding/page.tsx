@@ -16,20 +16,7 @@ import {
 
 const STORAGE_KEY = 'onboarding-progress';
 
-const TOTAL_SCREENS = 5;
-
-const FINANCIAL_GOALS = [
-  { value: 'save_money', labelKey: 'goalSaveMoney' },
-  { value: 'reduce_spending', labelKey: 'goalControlSpending' },
-  { value: 'debt_free', labelKey: 'goalDebtFree' },
-  { value: 'invest', labelKey: 'goalInvest' },
-  { value: 'emergency_fund', labelKey: 'goalEmergencyFund' },
-  { value: 'buy_house', labelKey: 'goalBuyHouse' },
-  { value: 'buy_car', labelKey: 'goalBuyCar' },
-  { value: 'travel', labelKey: 'goalTravel' },
-  { value: 'education', labelKey: 'goalEducation' },
-  { value: 'other', labelKey: 'goalOther' },
-] as const;
+const TOTAL_SCREENS = 4;
 
 const CURRENCIES = ['UZS', 'USD', 'EUR'];
 const LANGUAGES = [
@@ -58,8 +45,6 @@ type FormState = {
   occupation: string;
   monthly_income: string;
 
-  financial_goal: string;
-
   salary_day: string;
   language: string;
 
@@ -74,7 +59,6 @@ const initialState: FormState = {
   currency: 'UZS',
   occupation: '',
   monthly_income: '',
-  financial_goal: '',
   salary_day: '',
   language: 'uz',
   spending_habits: {},
@@ -163,8 +147,6 @@ export default function OnboardingPage() {
         currency: form.currency || undefined,
         occupation: form.occupation || undefined,
         monthly_income: form.monthly_income ? Number(form.monthly_income) : undefined,
-
-        financial_goal: form.financial_goal || undefined,
 
         salary_day: form.salary_day ? Number(form.salary_day) : undefined,
         language: form.language || undefined,
@@ -321,30 +303,6 @@ export default function OnboardingPage() {
 
         {screen === 3 && (
           <Screen
-            title={t('screen3Title')}
-            subtitle={t('screen3Subtitle')}
-          >
-            <div className="space-y-2">
-              {FINANCIAL_GOALS.map((g) => (
-                <button
-                  key={g.value}
-                  type="button"
-                  onClick={() => update('financial_goal', g.value)}
-                  className={`w-full text-left rounded-xl border px-4 py-3 transition-colors duration-150 ${
-                    form.financial_goal === g.value
-                      ? 'border-primary bg-primary/10 text-primary font-semibold'
-                      : 'border-textmain/10 hover:border-primary/40'
-                  }`}
-                >
-                  {t(g.labelKey)}
-                </button>
-              ))}
-            </div>
-          </Screen>
-        )}
-
-        {screen === 4 && (
-          <Screen
             title={t('screen4Title')}
             subtitle={t('screen4Subtitle')}
           >
@@ -374,7 +332,7 @@ export default function OnboardingPage() {
           </Screen>
         )}
 
-        {screen === 5 && (
+        {screen === 4 && (
           <Screen
             title={t('screen5Title')}
             subtitle={t('screen5Subtitle')}

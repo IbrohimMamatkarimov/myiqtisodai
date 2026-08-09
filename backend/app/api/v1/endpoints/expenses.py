@@ -63,7 +63,16 @@ def list_expenses(
         stmt = stmt.where(Expense.expense_date <= end_date)
 
     sort_col = getattr(Expense, sort_by)
-    stmt = stmt.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
+    order = sort_col.desc() if sort_order == "desc" else sort_col.asc()
+    # Same-day rows (very common right after a goal deposit/withdrawal,
+    # which is always dated "today") had no tiebreaker, so a just-added
+    # transaction could sort anywhere among today's rows instead of first -
+    # created_at as a secondary key makes "most recent" actually mean most
+    # recently created when the primary sort key ties.
+    if sort_by != "created_at":
+        stmt = stmt.order_by(order, Expense.created_at.desc() if sort_order == "desc" else Expense.created_at.asc())
+    else:
+        stmt = stmt.order_by(order)
 
     total = len(db.scalars(stmt).all())
     items = db.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all()

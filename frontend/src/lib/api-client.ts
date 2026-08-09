@@ -3,6 +3,14 @@ import { useAuthStore } from './auth-store';
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1',
+  // Without this, a hung connection (backend mid-deploy, dropped network,
+  // etc.) leaves the UI spinning forever with no error ever firing - the
+  // person just sees a stuck loading button indefinitely. 20s is generous
+  // enough for normal slow responses (Render cold starts, AI calls) while
+  // still eventually failing visibly instead of hanging forever. Individual
+  // requests that genuinely need longer (e.g. receipt OCR) already pass
+  // their own longer `timeout` in the call itself, which overrides this.
+  timeout: 20000,
 });
 
 /**

@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: 3621
       POSTGRES_DB: myiqtisod
     ports:
       - "5432:5432"
@@ -24,7 +24,7 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://postgres:password@db:5432/myiqtisod
+      DATABASE_URL: postgresql://postgres:3621@db:5432/myiqtisod
       ALLOWED_ORIGINS: http://localhost:3000
     ports:
       - "8000:8000"

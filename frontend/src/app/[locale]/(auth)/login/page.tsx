@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { Loader2 } from 'lucide-react';
@@ -110,6 +111,13 @@ export default function LoginPage() {
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? <Loader2 className="animate-spin" size={18} /> : t('signIn')}
         </button>
+
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-px flex-1 bg-textmain/10" />
+          <span className="text-xs text-textmuted">{t('orContinueWith')}</span>
+          <div className="h-px flex-1 bg-textmain/10" />
+        </div>
+        <GoogleSignInButton />
 
         <div className="flex items-center justify-between text-sm pt-2">
           <Link href="/forgot-password" className="font-medium text-textmuted hover:text-emerald-600 dark:hover:text-emerald-400 hover:underline">

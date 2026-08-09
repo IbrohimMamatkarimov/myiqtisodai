@@ -144,6 +144,7 @@ export interface PaginatedExpenses {
 
 export interface Goal {
   id: string;
+  user_id: string;
   title: string;
   target_amount: number;
   current_amount: number;
@@ -153,7 +154,19 @@ export interface Goal {
   currency: string;
   is_completed: boolean;
   is_locked: boolean;
+  has_pin?: boolean;
+  lock_days?: number | null;
+  locked_until?: string | null;
+  is_group?: boolean;
   progress_percent: number;
+}
+
+export interface GoalMember {
+  user_id: string;
+  full_name: string;
+  email: string;
+  contributed_amount: number;
+  is_owner: boolean;
 }
 
 export interface Income {
@@ -166,5 +179,18 @@ export interface Income {
   income_date: string;
   is_recurring: boolean;
   recurrence_interval: string;
+  created_at: string;
+}
+
+export interface Debt {
+  id: string;
+  person_name: string;
+  direction: 'lent' | 'borrowed';
+  amount: number;
+  currency: string;
+  debt_date: string;
+  due_date: string | null;
+  notes: string | null;
+  is_paid: boolean;
   created_at: string;
 }

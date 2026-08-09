@@ -31,13 +31,15 @@ export default function AccountsPage() {
 
   const currency = user?.currency || 'UZS';
   const balance = summary ? summary.total_income - summary.total_expenses : 0;
+  const locked = summary?.total_locked_in_goals || 0;
+  const cash = Math.max(balance - locked, 0);
 
   const cards = summary
     ? [
         { label: t('currentBalance'), value: balance, icon: Wallet, bg: 'bg-primary/15', fg: 'text-primary' },
         { label: t('totalIncome'), value: summary.total_income, icon: TrendingUp, bg: 'bg-secondary/15', fg: 'text-secondary' },
         { label: t('totalExpenses'), value: summary.total_expenses, icon: TrendingDown, bg: 'bg-danger/15', fg: 'text-danger' },
-        { label: t('totalSavings'), value: summary.total_savings, icon: PiggyBank, bg: 'bg-primary/15', fg: 'text-primary' },
+        { label: t('lockedInGoals'), value: locked, icon: PiggyBank, bg: 'bg-primary/15', fg: 'text-primary' },
       ]
     : [];
 
@@ -89,15 +91,26 @@ export default function AccountsPage() {
                 {formatAmount(balance, currency)}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2.5">
+            <div className="flex items-center justify-between py-2.5 border-b border-textmain/[0.06]">
               <span className="flex items-center gap-2.5 text-sm text-textmain">
                 <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
-                  <PiggyBank size={15} />
+                  <Wallet size={15} />
                 </span>
                 {t('cash')}
               </span>
               <span className="text-sm font-semibold tabular-nums text-textmain">
-                {formatAmount(summary.total_savings, currency)}
+                {formatAmount(cash, currency)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2.5">
+              <span className="flex items-center gap-2.5 text-sm text-textmain">
+                <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                  <PiggyBank size={15} />
+                </span>
+                {t('lockedInGoals')}
+              </span>
+              <span className="text-sm font-semibold tabular-nums text-textmain">
+                {formatAmount(locked, currency)}
               </span>
             </div>
           </div>

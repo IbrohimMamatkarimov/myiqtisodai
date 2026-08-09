@@ -21,6 +21,19 @@ const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   EUR: '€',
 };
 
+/** Convert an amount from one currency directly into another, via UZS as
+ * the common intermediate unit. Used for e.g. "let the user type in
+ * whatever currency they have on hand, convert to the goal's currency
+ * before sending it to the backend" - the backend only ever stores/sums
+ * amounts in a record's own declared currency, it doesn't convert. */
+export function convertBetween(amount: number, from: string, to: string): number {
+  const fromCode = (from as CurrencyCode) in RATES_TO_UZS ? (from as CurrencyCode) : 'UZS';
+  const toCode = (to as CurrencyCode) in RATES_TO_UZS ? (to as CurrencyCode) : 'UZS';
+  if (fromCode === toCode) return amount;
+  const amountUZS = amount * RATES_TO_UZS[fromCode];
+  return amountUZS / RATES_TO_UZS[toCode];
+}
+
 /** Convert an amount stored in UZS into the given display currency. */
 export function convertFromUZS(amountUZS: number, to: CurrencyCode): number {
   const rate = RATES_TO_UZS[to] || 1;

@@ -34,7 +34,7 @@ def list_incomes(
         stmt = stmt.where(Income.income_date >= start_date)
     if end_date:
         stmt = stmt.where(Income.income_date <= end_date)
-    stmt = stmt.order_by(Income.income_date.desc())
+    stmt = stmt.order_by(Income.income_date.desc(), Income.created_at.desc())
     return db.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all()
 
 

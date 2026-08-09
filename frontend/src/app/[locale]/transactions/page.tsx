@@ -47,7 +47,7 @@ export default function TransactionsPage() {
     try {
       const [expensesRes, incomesRes] = await Promise.all([
         api.get<PaginatedExpenses>('/expenses', { params: { page: 1, page_size: 50 } }),
-        api.get<Income[]>('/incomes'),
+        api.get<Income[]>('/incomes', { params: { page: 1, page_size: 50 } }),
       ]);
       const expenseTxns: Txn[] = expensesRes.data.items.map((item) => ({
         type: 'expense' as const,
@@ -59,7 +59,15 @@ export default function TransactionsPage() {
         date: item.income_date,
         item,
       }));
-      setTxns([...expenseTxns, ...incomeTxns].sort((a, b) => (a.date < b.date ? 1 : -1)));
+      // created_at (a real timestamp), not the plain date - two same-day
+      // transactions (e.g. a goal deposit right after an expense) need a
+      // real tiebreaker or the most recent one can end up buried instead of
+      // first, which reads as "it didn't save."
+      setTxns(
+        [...expenseTxns, ...incomeTxns].sort(
+          (a, b) => new Date(b.item.created_at).getTime() - new Date(a.item.created_at).getTime()
+        )
+      );
     } catch {
       setTxns([]);
     } finally {
@@ -128,7 +136,10 @@ export default function TransactionsPage() {
         {loading ? (
           <div className="p-8 text-center text-sm text-textmuted">{tc('loading')}</div>
         ) : visible.length === 0 ? (
-          <div className="p-8 text-center text-sm text-textmuted">{t('empty')}</div>
+          <div className="p-10 text-center">
+            <img src="/transactions.png" alt="" className="h-32 w-32 mx-auto mb-4 object-contain rounded-2xl" />
+            <p className="text-sm text-textmuted">{t('empty')}</p>
+          </div>
         ) : (
           <div className="divide-y divide-textmain/[0.06]">
             {visible.map((txn) => {

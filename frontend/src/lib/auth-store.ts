@@ -32,6 +32,13 @@ interface AuthState {
 
   user: AuthUser | null;
 
+  // Zustand's persist middleware reads localStorage asynchronously, after
+  // the first render - without tracking this, any page checking
+  // accessToken on mount (see useRequireAuth) sees a false "not logged in"
+  // for a moment on every hard refresh and bounces to /login incorrectly.
+  hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
+
   setTokens: (accessToken: string, refreshToken: string) => void;
 
   setUser: (user: AuthUser) => void;
@@ -48,6 +55,9 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
 
       user: null,
+
+      hasHydrated: false,
+      setHasHydrated: (v) => set({ hasHydrated: v }),
 
       setTokens: (accessToken, refreshToken) =>
         set({
@@ -79,6 +89,9 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'myiqtisod-auth',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

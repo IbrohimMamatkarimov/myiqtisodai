@@ -70,6 +70,19 @@ export function SupportChatWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Lets other parts of the app (e.g. a locked-goal card) open this widget
+  // and pre-fill a message, without needing shared state management -
+  // window.dispatchEvent(new CustomEvent('open-support-chat', { detail: { prefill } }))
+  useEffect(() => {
+    function handleOpenRequest(e: Event) {
+      const detail = (e as CustomEvent<{ prefill?: string }>).detail;
+      setOpen(true);
+      if (detail?.prefill) setDraft(detail.prefill);
+    }
+    window.addEventListener('open-support-chat', handleOpenRequest);
+    return () => window.removeEventListener('open-support-chat', handleOpenRequest);
+  }, []);
+
   // Poll the thread itself while the panel is open.
   useEffect(() => {
     if (!open) return;

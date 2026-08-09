@@ -175,3 +175,9 @@ class User(UUIDMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         foreign_keys="ChatMessage.user_id",
     )
+
+    debts = relationship(
+        "Debt",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

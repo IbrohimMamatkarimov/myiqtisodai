@@ -54,9 +54,12 @@ export default function ReceiptsPage() {
 
   return (
     <AppShell>
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-textmain">{t('title')}</h1>
-        <p className="text-sm text-textmuted mt-0.5">{t('subtitle')}</p>
+      <div className="mb-6 flex items-center gap-4">
+        <img src="/cheklar.png" alt="" className="h-16 w-16 rounded-2xl object-cover hidden sm:block" />
+        <div>
+          <h1 className="font-display text-2xl font-bold text-textmain">{t('title')}</h1>
+          <p className="text-sm text-textmuted mt-0.5">{t('subtitle')}</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -109,7 +112,10 @@ export default function ReceiptsPage() {
         {loading ? (
           <div className="p-8 text-center text-sm text-textmuted">{tc('loading')}</div>
         ) : receipts.length === 0 ? (
-          <div className="p-8 text-center text-sm text-textmuted">{t('empty')}</div>
+          <div className="p-10 text-center">
+            <img src="/cheklar.png" alt="" className="h-32 w-32 mx-auto mb-4 object-contain rounded-2xl" />
+            <p className="text-sm text-textmuted">{t('empty')}</p>
+          </div>
         ) : (
           <div className="divide-y divide-textmain/[0.06]">
             {receipts.map((r) => {

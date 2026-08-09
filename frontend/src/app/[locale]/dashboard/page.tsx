@@ -3,25 +3,26 @@
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import {
-  Plus, Wallet, Sparkles, ArrowRight, Target, Camera, Loader2, UploadCloud,
+  Plus, Wallet, Sparkles, ArrowRight, Target, Loader2,
   ShoppingCart, Car, Utensils, ShoppingBag, CreditCard, Receipt as ReceiptIcon,
-  Eye, EyeOff, Lock, X,
+  Eye, EyeOff, Lock, Unlock, X, Users,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { AchievementToast } from '@/components/AchievementToast';
-import { Link, useRouter } from '@/navigation';
+import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
-import { formatAmount, formatCurrency } from '@/lib/currency';
-import { SCAN_DRAFT_STORAGE_KEY } from '@/components/quick-actions';
-import type { DashboardSummary, Expense, Income, Goal, ReceiptScanResult } from '@/types/finance';
+import { formatAmount, formatCurrency, convertBetween } from '@/lib/currency';
+import type { DashboardSummary, Expense, Income, Goal } from '@/types/finance';
 
 const LANGUAGE_NAMES: Record<string, string> = {
   uz: 'Uzbek',
   en: 'English',
   ru: 'Russian',
 };
+
+const CURRENCIES = ['UZS', 'USD', 'EUR'];
 
 const INSIGHT_CACHE_KEY = 'dashboard-insight-cache';
 const INSIGHT_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -77,13 +78,10 @@ function parseTips(raw: string): string[] {
 export default function DashboardPage() {
   const checked = useRequireAuth();
   const t = useTranslations('dashboard');
-  const te = useTranslations('expenses');
   const ta = useTranslations('accounts');
-  const tr = useTranslations('receipts');
   const tg = useTranslations('goals');
   const tc = useTranslations('common');
   const locale = useLocale();
-  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [txns, setTxns] = useState<Txn[]>([]);
@@ -93,74 +91,52 @@ export default function DashboardPage() {
   const [tips, setTips] = useState<string[]>([]);
   const [activeTip, setActiveTip] = useState(0);
   const [insightLoading, setInsightLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [hideBalance, setHideBalance] = useState(false);
 
   // Allocate (add funds to a goal) - inline on the dashboard so people don't
   // have to leave it just to lock money away toward a goal.
   const [allocateFor, setAllocateFor] = useState<string | null>(null);
   const [fundsAmount, setFundsAmount] = useState('');
-  const [pin, setPin] = useState('');
-  const [pinConfirm, setPinConfirm] = useState('');
+  const [fundsCurrency, setFundsCurrency] = useState('UZS');
+  const [legacyPin, setLegacyPin] = useState('');
+  const [legacyPinConfirm, setLegacyPinConfirm] = useState('');
   const [allocateError, setAllocateError] = useState('');
   const [allocating, setAllocating] = useState(false);
+
+  // Withdraw (get locked money back) - same PIN flow as the Goals page,
+  // surfaced here too since this card is often the first place people look.
+  const [withdrawFor, setWithdrawFor] = useState<string | null>(null);
+  const [withdrawPin, setWithdrawPin] = useState('');
+  const [withdrawError, setWithdrawError] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [forgotPinSentFor, setForgotPinSentFor] = useState<string | null>(null);
+  const [forgotPinSubmitting, setForgotPinSubmitting] = useState(false);
+
+  // Early-unlock request (sent to admin for approval) - same flow as the
+  // Goals page, not just a plain chat message, so it actually shows up in
+  // the admin panel as a real request they can approve/reject.
+  const [unlockRequestFor, setUnlockRequestFor] = useState<string | null>(null);
+  const [unlockReason, setUnlockReason] = useState('');
+  const [unlockRequestSubmitting, setUnlockRequestSubmitting] = useState(false);
+  const [unlockRequestSentFor, setUnlockRequestSentFor] = useState<string | null>(null);
+  const [unlockRequestError, setUnlockRequestError] = useState('');
 
   function loadGoals() {
     api
       .get<Goal[]>('/goals')
-      .then(({ data }) => setGoals(data.filter((g) => !g.is_completed).slice(0, 2)))
+      .then(({ data }) => setGoals(data.slice(0, 2)))
       .catch(() => setGoals([]));
   }
 
-  function openAllocate(goal: Goal) {
-    setAllocateFor(goal.id);
-    setFundsAmount('');
-    setPin('');
-    setPinConfirm('');
-    setAllocateError('');
-  }
-
-  async function handleAllocate(goal: Goal) {
-    setAllocateError('');
-    const amount = parseFloat(fundsAmount);
-    if (!amount || amount <= 0) return;
-
-    if (!goal.is_locked) {
-      if (pin.length < 4) {
-        setAllocateError(tg('pinPlaceholder'));
-        return;
-      }
-      if (pin !== pinConfirm) {
-        setAllocateError(tg('pinMismatch'));
-        return;
-      }
-    }
-
-    setAllocating(true);
-    try {
-      await api.post(`/goals/${goal.id}/allocate`, {
-        amount,
-        pin: goal.is_locked ? '0000' : pin,
-      });
-      setAllocateFor(null);
-      loadGoals();
-    } catch (err: any) {
-      setAllocateError(getErrorMessage(err, tg('pinMismatch')));
-    } finally {
-      setAllocating(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!checked) return;
-
+  function loadSummary() {
     api
       .get<DashboardSummary>('/dashboard/summary')
       .then(({ data }) => setSummary(data))
       .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
+  }
 
+  function loadTxns() {
     Promise.all([
       api.get('/expenses', { params: { page_size: 5 } }),
       api.get('/incomes', { params: { page_size: 5 } }),
@@ -176,17 +152,129 @@ export default function DashboardPage() {
           date: item.income_date,
           item,
         }));
+        // Sort by when it actually happened, not just the calendar date -
+        // date-only comparison ties every "today" transaction together, so a
+        // goal deposit/withdrawal (always dated today) could land anywhere
+        // among today's rows instead of at the top, making it look like it
+        // never happened. created_at (a real timestamp) breaks that tie.
         const merged = [...expenseTxns, ...incomeTxns]
-          .sort((a, b) => (a.date < b.date ? 1 : -1))
+          .sort((a, b) => new Date(b.item.created_at).getTime() - new Date(a.item.created_at).getTime())
           .slice(0, 5);
         setTxns(merged);
       })
       .catch(() => setTxns([]));
+  }
 
-    api
-      .get<Goal[]>('/goals')
-      .then(({ data }) => setGoals(data.filter((g) => !g.is_completed).slice(0, 2)))
-      .catch(() => setGoals([]));
+  function openAllocate(goal: Goal) {
+    setAllocateFor(goal.id);
+    setFundsAmount('');
+    setFundsCurrency(goal.currency || user?.currency || 'UZS');
+    setAllocateError('');
+    setLegacyPin('');
+    setLegacyPinConfirm('');
+  }
+
+  async function handleAllocate(goal: Goal) {
+    setAllocateError('');
+    const typed = parseFloat(fundsAmount);
+    if (!typed || typed <= 0) return;
+    const goalCurrency = goal.currency || user?.currency || 'UZS';
+    const amount = convertBetween(typed, fundsCurrency, goalCurrency);
+
+    let legacyPinPayload: string | undefined;
+    if (!goal.has_pin && !goal.is_group) {
+      if (legacyPin.length < 4) {
+        setAllocateError(tg('pinPlaceholder'));
+        return;
+      }
+      if (legacyPin !== legacyPinConfirm) {
+        setAllocateError(tg('pinMismatch'));
+        return;
+      }
+      legacyPinPayload = legacyPin;
+    }
+
+    if (!window.confirm(tg('confirmAllocate', { amount: formatCurrency(amount, goalCurrency), goal: goal.title }))) {
+      return;
+    }
+
+    setAllocating(true);
+    try {
+      await api.post(`/goals/${goal.id}/allocate`, { amount, pin: legacyPinPayload });
+      setAllocateFor(null);
+      loadGoals();
+      loadSummary();
+      loadTxns();
+    } catch (err: any) {
+      setAllocateError(getErrorMessage(err, tg('pinMismatch')));
+    } finally {
+      setAllocating(false);
+    }
+  }
+
+  function openWithdraw(goalId: string) {
+    setWithdrawFor(goalId);
+    setWithdrawPin('');
+    setWithdrawError('');
+    setForgotPinSentFor(null);
+  }
+
+  async function handleForgotPin(goalId: string) {
+    setForgotPinSubmitting(true);
+    try {
+      await api.post(`/goals/${goalId}/forgot-pin`);
+      setForgotPinSentFor(goalId);
+    } catch (err: any) {
+      setWithdrawError(getErrorMessage(err, tg('unlockRequestError')));
+    } finally {
+      setForgotPinSubmitting(false);
+    }
+  }
+
+  function openUnlockRequest(goalId: string) {
+    setUnlockRequestFor(goalId);
+    setUnlockReason('');
+    setUnlockRequestError('');
+  }
+
+  async function submitUnlockRequest(goalId: string) {
+    if (unlockReason.trim().length < 2) return;
+    setUnlockRequestSubmitting(true);
+    setUnlockRequestError('');
+    try {
+      await api.post(`/goals/${goalId}/request-unlock`, { reason: unlockReason.trim() });
+      setUnlockRequestFor(null);
+      setUnlockRequestSentFor(goalId);
+    } catch (err: any) {
+      setUnlockRequestError(getErrorMessage(err, tg('unlockRequestError')));
+    } finally {
+      setUnlockRequestSubmitting(false);
+    }
+  }
+
+  async function handleWithdraw(goalId: string) {
+    if (withdrawPin.length < 4) return;
+    setWithdrawing(true);
+    setWithdrawError('');
+    try {
+      await api.post(`/goals/${goalId}/withdraw`, { pin: withdrawPin });
+      setWithdrawFor(null);
+      loadGoals();
+      loadSummary();
+      loadTxns();
+    } catch (err: any) {
+      setWithdrawError(getErrorMessage(err, tg('wrongPin')));
+    } finally {
+      setWithdrawing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!checked) return;
+
+    loadSummary();
+    loadTxns();
+    loadGoals();
 
     let cached: { locale: string; insight: string; ts: number } | null = null;
     try {
@@ -223,6 +311,27 @@ export default function DashboardPage() {
       .finally(() => setInsightLoading(false));
   }, [checked, locale]);
 
+  // Data can go stale the moment you leave this tab - e.g. scanning a
+  // receipt navigates to /expenses to save it, then coming back here should
+  // show the updated balance, not whatever was cached from the first mount.
+  // Covers back-navigation, tab switching, and just returning to the tab.
+  useEffect(() => {
+    if (!checked) return;
+    function refresh() {
+      if (document.visibilityState === 'visible') {
+        loadSummary();
+        loadTxns();
+        loadGoals();
+      }
+    }
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [checked]);
+
   // Auto-rotate through the tips every 6s
   useEffect(() => {
     if (tips.length <= 1) return;
@@ -231,24 +340,6 @@ export default function DashboardPage() {
     }, 6000);
     return () => clearInterval(interval);
   }, [tips.length]);
-
-  async function handleScanFile(file: File | null | undefined) {
-    if (!file) return;
-    setScanning(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('language', locale);
-      const { data } = await api.post<ReceiptScanResult>('/expenses/scan', formData, { timeout: 25000 });
-      sessionStorage.setItem(SCAN_DRAFT_STORAGE_KEY, JSON.stringify(data));
-      router.push('/expenses');
-    } catch {
-      sessionStorage.setItem(SCAN_DRAFT_STORAGE_KEY, JSON.stringify({ warning: te('scanErrorGeneric') }));
-      router.push('/expenses');
-    } finally {
-      setScanning(false);
-    }
-  }
 
   if (!checked) return null;
 
@@ -347,21 +438,6 @@ export default function DashboardPage() {
                   <span className="text-sm font-medium text-textmain flex-1">{t('qaAddIncome')}</span>
                   <ArrowRight size={14} className="text-textmuted" />
                 </Link>
-                <label className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
-                    capture="environment"
-                    className="hidden"
-                    disabled={scanning}
-                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleScanFile(f); }}
-                  />
-                  <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                    {scanning ? <Loader2 size={17} className="animate-spin" /> : <Camera size={17} />}
-                  </span>
-                  <span className="text-sm font-medium text-textmain flex-1">{te('scanReceipt')}</span>
-                  <ArrowRight size={14} className="text-textmuted" />
-                </label>
                 <Link href="/assistant" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
                   <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                     <Sparkles size={17} />
@@ -419,76 +495,117 @@ export default function DashboardPage() {
             </div>
 
             {/* Goals - cover images match the Goals page */}
-            {goals.length > 0 && (
-              <div className="glass-card p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-display font-semibold text-textmain">{t('myGoalsTitle')}</h2>
-                  <Link href="/goals" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
-                    {t('seeAll')}
-                    <ArrowRight size={13} />
-                  </Link>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {goals.map((goal) => (
-                    <div key={goal.id} className="rounded-2xl overflow-hidden border border-textmain/[0.06]">
-                      <Link href="/goals" className="block hover:brightness-[0.98] transition-all">
-                        {goal.image_url && (
-                          <div className="h-20 w-full overflow-hidden bg-textmain/[0.04]">
-                            <img
-                              src={goal.image_url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            <div className="glass-card p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display font-semibold text-textmain">{t('myGoalsTitle')}</h2>
+                <Link href="/goals" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
+                  {t('seeAll')}
+                  <ArrowRight size={13} />
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {goals.map((goal) => {
+                    const timeLocked = !!goal.locked_until && new Date(goal.locked_until) > new Date();
+                    const daysLeft = timeLocked
+                      ? Math.max(1, Math.ceil((new Date(goal.locked_until as string).getTime() - Date.now()) / 86400000))
+                      : 0;
+                    const completed = goal.is_completed;
+                    return (
+                    <div key={goal.id} className={`rounded-2xl overflow-hidden border transition-all ${completed ? 'border-amber-300/50 hover:border-amber-400/70 hover:shadow-lg' : 'border-textmain/[0.06] hover:border-primary/30 hover:shadow-lg'}`}>
+                      <button
+                        type="button"
+                        onClick={() => (allocateFor === goal.id || withdrawFor === goal.id || completed ? undefined : openAllocate(goal))}
+                        className="block w-full text-left group"
+                      >
+                        <div className="w-full h-20 sm:h-24 overflow-hidden relative">
+                          <img
+                            src="/box.png"
+                            alt=""
+                            className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                          />
+                          {/* The box art has a blank label plate baked in, just under the
+                              padlock - the title sits there instead of floating over the lock.
+                              Styled like an engraved nameplate (uppercase, letter-spaced, subtle
+                              shadow) so it actually reads as a deliberate label, not filler text. */}
+                          <p className="absolute left-1/2 top-[68%] -translate-x-1/2 -translate-y-1/2 w-[46%] text-center text-[9px] font-display font-extrabold uppercase tracking-wide text-primary leading-tight truncate pointer-events-none drop-shadow-sm">
+                            {goal.title}
+                          </p>
+                          {timeLocked && (
+                            <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/55 backdrop-blur flex items-center justify-center">
+                              <Lock size={10} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-2.5 pb-2">
+                          <div className="h-1.5 rounded-full bg-textmain/[0.06] overflow-hidden mt-1">
+                            <div
+                              className={`h-full rounded-full ${completed ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500' : 'bg-primary'}`}
+                              style={{ width: `${Math.min(goal.progress_percent, 100)}%` }}
                             />
                           </div>
-                        )}
-                        <div className="p-3 pb-2">
-                          <p className="text-sm font-medium text-textmain truncate">{goal.title}</p>
-                          <div className="h-1.5 rounded-full bg-textmain/[0.06] overflow-hidden mt-2">
-                            <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(goal.progress_percent, 100)}%` }} />
-                          </div>
-                          <p className="text-xs text-textmuted mt-1.5">
+                          <p className="text-[10px] text-textmuted mt-1 truncate">
                             {formatCurrency(goal.current_amount, goal.currency || user?.currency || 'UZS')} / {formatCurrency(goal.target_amount, goal.currency || user?.currency || 'UZS')}
                           </p>
+                          {completed && (
+                            <p className="text-[10px] font-semibold text-amber-500 mt-0.5">{tg('completed')}</p>
+                          )}
                         </div>
-                      </Link>
+                      </button>
 
                       {allocateFor === goal.id ? (
-                        <div className="px-3 pb-3 space-y-2">
-                          <div className="relative">
+                        <div className="px-3 pb-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1.5">
                             <input
                               type="number"
                               autoFocus
                               value={fundsAmount}
                               onChange={(e) => setFundsAmount(e.target.value)}
-                              className="input-field text-sm pr-14"
+                              className="input-field text-sm flex-1"
                               placeholder="100000"
                             />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-textmuted">
-                              {goal.currency || user?.currency || 'UZS'}
-                            </span>
+                            <select
+                              value={fundsCurrency}
+                              onChange={(e) => setFundsCurrency(e.target.value)}
+                              className="input-field text-sm w-20 px-1"
+                            >
+                              {CURRENCIES.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                              ))}
+                            </select>
                           </div>
-                          {!goal.is_locked && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <input
-                                type="password"
-                                inputMode="numeric"
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value)}
-                                className="input-field text-sm"
-                                placeholder={tg('setPinLabel')}
-                                maxLength={32}
-                              />
-                              <input
-                                type="password"
-                                inputMode="numeric"
-                                value={pinConfirm}
-                                onChange={(e) => setPinConfirm(e.target.value)}
-                                className="input-field text-sm"
-                                placeholder={tg('confirmPinLabel')}
-                                maxLength={32}
-                              />
-                            </div>
+                          {fundsCurrency !== (goal.currency || user?.currency || 'UZS') && fundsAmount && !isNaN(parseFloat(fundsAmount)) && (
+                            <p className="text-xs text-textmuted">
+                              ≈ {formatCurrency(convertBetween(parseFloat(fundsAmount), fundsCurrency, goal.currency || user?.currency || 'UZS'), goal.currency || user?.currency || 'UZS')}
+                            </p>
+                          )}
+                          {!goal.has_pin && !goal.is_group && (
+                            <>
+                              <p className="text-[11px] text-textmuted">{tg('setPinHint')}</p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <input
+                                  type="password"
+                                  inputMode="numeric"
+                                  autoComplete="new-password"
+                                  name="goal-pin"
+                                  value={legacyPin}
+                                  onChange={(e) => setLegacyPin(e.target.value)}
+                                  className="input-field text-sm"
+                                  placeholder={tg('setPinLabel')}
+                                  maxLength={32}
+                                />
+                                <input
+                                  type="password"
+                                  inputMode="numeric"
+                                  autoComplete="new-password"
+                                  name="goal-pin-confirm"
+                                  value={legacyPinConfirm}
+                                  onChange={(e) => setLegacyPinConfirm(e.target.value)}
+                                  className="input-field text-sm"
+                                  placeholder={tg('confirmPinLabel')}
+                                  maxLength={32}
+                                />
+                              </div>
+                            </>
                           )}
                           {allocateError && <p className="text-xs text-danger">{allocateError}</p>}
                           <div className="flex items-center gap-2">
@@ -504,22 +621,129 @@ export default function DashboardPage() {
                             </button>
                           </div>
                         </div>
-                      ) : (
+                      ) : withdrawFor === goal.id ? (
+                        <div className="px-3 pb-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            name="goal-withdraw-pin"
+                            autoFocus
+                            value={withdrawPin}
+                            onChange={(e) => setWithdrawPin(e.target.value)}
+                            className="input-field text-sm"
+                            placeholder={tg('enterPinLabel')}
+                            maxLength={32}
+                          />
+                          {withdrawError && <p className="text-xs text-danger">{withdrawError}</p>}
+                          {forgotPinSentFor === goal.id ? (
+                            <p className="text-[11px] text-primary font-medium">{tg('forgotPinSent')}</p>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleForgotPin(goal.id)}
+                              disabled={forgotPinSubmitting}
+                              className="text-[11px] font-medium text-textmuted hover:text-primary transition-colors disabled:opacity-50"
+                            >
+                              {tg('forgotPin')}
+                            </button>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleWithdraw(goal.id)}
+                              disabled={withdrawing}
+                              className="flex-1 text-sm py-2 rounded-xl bg-danger text-white font-medium hover:brightness-95 transition-all flex items-center justify-center gap-1.5"
+                            >
+                              {withdrawing ? <Loader2 size={14} className="animate-spin" /> : tg('withdraw')}
+                            </button>
+                            <button onClick={() => setWithdrawFor(null)} className="btn-secondary px-2.5 py-2">
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : goal.is_group ? (
                         <div className="px-3 pb-3">
-                          <button
-                            onClick={() => openAllocate(goal)}
-                            className="btn-secondary w-full text-xs py-2"
+                          <Link
+                            href="/goals"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`btn-secondary w-full text-xs py-2 justify-center ${completed ? 'text-amber-600 border-amber-300/40' : 'text-secondary border-secondary/20'}`}
                           >
-                            <Plus size={13} />
-                            {goal.is_locked ? tg('addMore') : tg('allocate')}
-                          </button>
+                            <Users size={13} />
+                            {tg('members')}
+                          </Link>
+                        </div>
+                      ) : completed ? (
+                        <div className="px-3 pb-3 space-y-1.5">
+                          {timeLocked ? (
+                            <div className="space-y-1">
+                              <p className="text-center text-[11px] font-medium text-textmuted flex items-center justify-center gap-1">
+                                <Lock size={10} />
+                                {tg('daysLeftLabel', { days: daysLeft })}
+                              </p>
+                              <button
+                                onClick={() => openUnlockRequest(goal.id)}
+                                disabled={unlockRequestSentFor === goal.id}
+                                className="w-full text-[10px] font-medium text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                              >
+                                {unlockRequestSentFor === goal.id ? tg('unlockRequestSent') : tg('contactSupportUnlock')}
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => openWithdraw(goal.id)}
+                              className="w-full text-xs py-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white font-semibold hover:brightness-105 transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <Unlock size={13} />
+                              {tg('withdraw')}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="px-3 pb-3 space-y-1.5">
+                          <p className="text-center text-[10px] text-textmuted -mt-1 mb-1">
+                            {tg('tapBoxHint')}
+                          </p>
+                          {goal.is_locked && (
+                            timeLocked ? (
+                              <div className="space-y-1">
+                                <p className="text-center text-[11px] font-medium text-textmuted flex items-center justify-center gap-1">
+                                  <Lock size={10} />
+                                  {tg('daysLeftLabel', { days: daysLeft })}
+                                </p>
+                                <button
+                                  onClick={() => openUnlockRequest(goal.id)}
+                                  disabled={unlockRequestSentFor === goal.id}
+                                  className="w-full text-[10px] font-medium text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                                >
+                                  {unlockRequestSentFor === goal.id ? tg('unlockRequestSent') : tg('contactSupportUnlock')}
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => openWithdraw(goal.id)}
+                                className="btn-secondary w-full text-xs py-2 text-danger border-danger/20 hover:bg-danger/5"
+                              >
+                                <Unlock size={13} />
+                                {tg('withdraw')}
+                              </button>
+                            )
+                          )}
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
+                  <Link
+                    href="/goals"
+                    className="rounded-2xl border-2 border-dashed border-textmain/15 hover:border-primary/50 hover:bg-primary/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 text-center p-3 min-h-[112px]"
+                  >
+                    <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                      <Target size={15} />
+                    </span>
+                    <span className="text-xs font-medium text-textmain">{tg('addNewGoal')}</span>
+                  </Link>
                 </div>
               </div>
-            )}
 
             {/* AI Coach - 3 rotating tips instead of one static paragraph */}
             <div className="glass-card p-6">
@@ -553,51 +777,6 @@ export default function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-5 min-w-0">
-            {/* Cheklar - receipt upload */}
-            <div className="glass-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display font-semibold text-textmain">{tr('title')}</h2>
-                <Link href="/receipts" className="text-xs text-secondary font-medium hover:underline">
-                  {t('seeAll')}
-                </Link>
-              </div>
-              <label
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  handleScanFile(e.dataTransfer.files?.[0]);
-                }}
-                className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed px-4 py-6 text-center cursor-pointer transition-colors ${
-                  dragOver ? 'border-primary bg-primary/5' : 'border-textmain/15 hover:border-primary/40'
-                }`}
-              >
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
-                  className="hidden"
-                  disabled={scanning}
-                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleScanFile(f); }}
-                />
-                <UploadCloud size={24} className="text-textmuted mb-1" />
-                <p className="text-sm font-medium text-textmain">{tr('uploadTitle')}</p>
-                <p className="text-xs text-textmuted">{tr('uploadHint')}</p>
-              </label>
-              <label className="btn-primary w-full mt-3 justify-center cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
-                  capture="environment"
-                  className="hidden"
-                  disabled={scanning}
-                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; handleScanFile(f); }}
-                />
-                {scanning ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
-                {scanning ? te('scanning') : tr('scanWithCamera')}
-              </label>
-            </div>
-
             {/* Hisoblarim - account balances derived from real summary data */}
             <div className="glass-card p-5">
               <div className="flex items-center justify-between mb-3">
@@ -623,13 +802,44 @@ export default function DashboardPage() {
                     <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
                       <Lock size={15} />
                     </span>
-                    {ta('totalSavings')}
+                    {ta('lockedInGoals')}
                   </span>
                   <span className="text-sm font-semibold tabular-nums text-textmain">
                     {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
                   </span>
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Early-unlock request (sent to admin for approval) - same modal as
+          the Goals page, so both surfaces produce a real, trackable request
+          instead of this one silently doing nothing. */}
+      {unlockRequestFor && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-textmain/20 p-4" onClick={() => setUnlockRequestFor(null)}>
+          <div className="glass-card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display font-semibold text-textmain mb-1">{tg('unlockRequestTitle')}</h2>
+            <p className="text-xs text-textmuted mb-4">{tg('unlockRequestHint')}</p>
+            <textarea
+              autoFocus
+              value={unlockReason}
+              onChange={(e) => setUnlockReason(e.target.value)}
+              placeholder={tg('unlockRequestPlaceholder')}
+              rows={3}
+              className="input-field resize-none"
+            />
+            {unlockRequestError && <p className="text-xs text-danger mt-2">{unlockRequestError}</p>}
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setUnlockRequestFor(null)} className="btn-secondary">{tc('cancel')}</button>
+              <button
+                onClick={() => submitUnlockRequest(unlockRequestFor)}
+                disabled={unlockRequestSubmitting || unlockReason.trim().length < 2}
+                className="btn-primary"
+              >
+                {unlockRequestSubmitting ? <Loader2 size={16} className="animate-spin" /> : tg('unlockRequestSubmit')}
+              </button>
             </div>
           </div>
         </div>

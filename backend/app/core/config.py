@@ -47,6 +47,17 @@ class Settings(BaseSettings):
     # https://pexels.com/api, free tier, no approval process needed)
     PEXELS_API_KEY: str = ""
 
+    # Google Sign-In (OAuth client, console.cloud.google.com > APIs & Services
+    # > Clients). Only the Client ID is needed server-side - it's used as the
+    # expected "audience" when verifying the ID token Google sends back after
+    # someone signs in. The Client Secret isn't used at all for this flow
+    # (that's only needed for server-side redirect-based OAuth, not the
+    # Google Identity Services "Sign in with Google" button/One Tap flow this
+    # app uses) - kept here anyway since Google issues both together and it
+    # doesn't hurt to have it available if a different flow is added later.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Receipt image folder
     UPLOAD_DIR: str = "uploads"
 

@@ -1,0 +1,44 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#16A34A" stop-opacity="0.03"/>
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="200" r="170" fill="url(#bgGrad3)"/>
+
+  <!-- target rings -->
+  <circle cx="200" cy="190" r="95" fill="none" stroke="#16A34A" stroke-width="3" opacity="0.25"/>
+  <circle cx="200" cy="190" r="65" fill="none" stroke="#16A34A" stroke-width="3" opacity="0.4"/>
+  <circle cx="200" cy="190" r="35" fill="#16A34A" opacity="0.15"/>
+
+  <!-- flag on the target -->
+  <line x1="200" y1="95" x2="200" y2="190" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M200 95 L246 108 L200 121 Z" fill="#16A34A"/>
+
+  <!-- coin arcing toward the flag -->
+  <g>
+    <circle cx="120" cy="290" r="22" fill="#16A34A"/>
+    <circle cx="120" cy="290" r="22" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/>
+    <text x="120" y="298" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" text-anchor="middle">$</text>
+    <path d="M120 268 C 150 210, 175 190, 196 178" stroke="#16A34A" stroke-width="3" stroke-dasharray="6 8" fill="none" opacity="0.6"/>
+  </g>
+
+  <!-- piggy bank at the base -->
+  <g transform="translate(238,244)">
+    <ellipse cx="35" cy="46" rx="46" ry="34" fill="#16A34A"/>
+    <circle cx="72" cy="34" r="12" fill="#16A34A"/>
+    <ellipse cx="76" cy="30" rx="3" ry="3" fill="#0F1620"/>
+    <rect x="26" y="10" width="18" height="7" rx="3.5" fill="#0F1620"/>
+    <path d="M2 46 L-10 36 M2 54 L-12 50" stroke="#16A34A" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="16" cy="76" r="7" fill="#0F1620"/>
+    <circle cx="54" cy="76" r="7" fill="#0F1620"/>
+  </g>
+
+  <!-- lock badge (goal-locking feature) -->
+  <g transform="translate(96,120)">
+    <rect x="0" y="14" width="34" height="26" rx="6" fill="#0F1620"/>
+    <path d="M6 14 L6 6 a11 11 0 0 1 22 0 L28 14" stroke="#0F1620" stroke-width="5" fill="none"/>
+    <circle cx="17" cy="27" r="4" fill="#16A34A"/>
+  </g>
+</svg>

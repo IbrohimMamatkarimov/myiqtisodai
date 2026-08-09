@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     categories,
     chat,
     dashboard,
+    debts,
     expenses,
     goals,
     incomes,
@@ -25,6 +26,7 @@ api_router.include_router(expenses.router)
 api_router.include_router(incomes.router)
 api_router.include_router(budgets.router)
 api_router.include_router(goals.router)
+api_router.include_router(debts.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(notifications.router)
 api_router.include_router(reports.router)

@@ -59,6 +59,13 @@ class UserLogin(BaseModel):
     password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    """The ID token (a signed JWT) that Google's "Sign in with Google"
+    button hands back to the frontend - verified server-side against
+    GOOGLE_CLIENT_ID before it's trusted for anything."""
+    credential: str
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

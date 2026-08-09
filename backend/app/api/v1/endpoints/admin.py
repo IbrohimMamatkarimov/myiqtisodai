@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from datetime import date, datetime, timezone
 
@@ -12,11 +13,23 @@ from app.models.ai_conversation import AIConversation
 from app.models.chat_message import ChatMessage
 from app.models.expense import Expense
 from app.models.goal import Goal
+from app.models.goal_unlock_request import GoalUnlockRequest, UnlockRequestStatus
+from app.models.goal_member import GoalMember
+from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest, MemberWithdrawRequestStatus
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.report import Report, ReportStatus
 from app.models.user import User
 from app.schemas.chat import ChatConversationOut, ChatMessageCreate, ChatMessageOut
+from app.schemas.goal import (
+    AdminGoalMemberWithdrawRequestOut,
+    AdminGoalUnlockRequestOut,
+    AdminResetGoalPin,
+    AdminUnlockDecision,
+    GoalMemberWithdrawRequestOut,
+    GoalOut,
+    GoalUnlockRequestOut,
+)
 from app.schemas.report import AdminReportOut, AdminReportReply, ReportOut
 from app.schemas.user import (
     AdminChangeEmail,
@@ -343,6 +356,353 @@ def notify_all_users(
     )
     db.commit()
     return None
+
+
+# --------------------------------------------------------------------------
+# Goal early-unlock requests
+# --------------------------------------------------------------------------
+
+@router.get("/users/{user_id}/goals", response_model=list[GoalOut])
+def list_user_goals(
+    user_id: uuid.UUID,
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """All of a specific user's goals, for the admin unlock tool - lets an
+    admin browse straight to any goal (locked or not) rather than only
+    ones with an explicit pending unlock request."""
+    target = db.get(User, user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    return db.scalars(select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc())).all()
+
+
+@router.post("/goals/{goal_id}/unlock", response_model=GoalOut)
+def admin_unlock_goal(
+    goal_id: uuid.UUID,
+    payload: AdminUnlockDecision = Body(default=AdminUnlockDecision()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """Directly clears a goal's time lock - same effect as approving an
+    unlock request, but usable on any locked goal even without one (the
+    admin found it by browsing the user's goals, not from the request
+    queue). The PIN is still required client-side to actually withdraw -
+    this only lifts the time lock, it never bypasses the PIN."""
+    goal = db.get(Goal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    if not goal.is_locked:
+        raise HTTPException(status_code=400, detail="This goal isn't locked.")
+
+    goal.locked_until = None
+
+    # If there's a pending request for this exact goal, resolve it too so it
+    # doesn't linger in the queue looking unactioned.
+    pending = db.scalar(
+        select(GoalUnlockRequest).where(
+            GoalUnlockRequest.goal_id == goal.id,
+            GoalUnlockRequest.status == UnlockRequestStatus.pending,
+        )
+    )
+    if pending:
+        pending.status = UnlockRequestStatus.approved
+        pending.admin_note = payload.note
+
+    db.add(
+        Notification(
+            user_id=goal.user_id,
+            type=NotificationType.system,
+            title=f"'{goal.title}' erta ochildi",
+            message=payload.note or "Endi PIN kodingiz bilan mablag'ni yechib olishingiz mumkin.",
+        )
+    )
+
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+@router.post("/goals/{goal_id}/reset-pin", response_model=GoalOut)
+def admin_reset_goal_pin(
+    goal_id: uuid.UUID,
+    payload: AdminResetGoalPin = Body(default=AdminResetGoalPin()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """Sets a new PIN for a goal - this is the tool forgot_pin's support
+    chat message points admins to, after they've verified who they're
+    talking to. If no PIN is given, generates a random one and sends it to
+    the user via notification, so the admin never has to see or choose the
+    actual PIN themselves."""
+    goal = db.get(Goal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    if goal.is_group:
+        raise HTTPException(status_code=400, detail="Group goals don't use a PIN.")
+
+    new_pin = payload.new_pin or secrets.token_hex(3)  # e.g. "a1b2c3" if auto-generated
+    goal.pin_hash = hash_password(new_pin)
+
+    db.add(
+        Notification(
+            user_id=goal.user_id,
+            type=NotificationType.system,
+            title=f"'{goal.title}' uchun yangi PIN kod o'rnatildi",
+            message=f"Yangi PIN kodingiz: {new_pin}\n\nBu kodni xavfsiz joyda saqlang - keyingi safar mablag'ni yechib olish uchun kerak bo'ladi.",
+        )
+    )
+
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+@router.get("/unlock-requests", response_model=list[AdminGoalUnlockRequestOut])
+def list_unlock_requests(
+    status_filter: UnlockRequestStatus | None = Query(None, alias="status"),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    stmt = (
+        select(GoalUnlockRequest, User)
+        .join(User, User.id == GoalUnlockRequest.user_id)
+        .order_by(GoalUnlockRequest.created_at.desc())
+    )
+    if status_filter:
+        stmt = stmt.where(GoalUnlockRequest.status == status_filter)
+    else:
+        # Default view is what admins actually need to act on.
+        stmt = stmt.where(GoalUnlockRequest.status == UnlockRequestStatus.pending)
+
+    rows = db.execute(stmt).all()
+    results = []
+    for req, user in rows:
+        goal = db.get(Goal, req.goal_id)
+        results.append(
+            AdminGoalUnlockRequestOut(
+                **GoalUnlockRequestOut.model_validate(req).model_dump(),
+                user_id=user.id,
+                user_email=user.email,
+                user_full_name=user.full_name,
+                goal_still_locked=bool(goal and goal.is_locked),
+            )
+        )
+    return results
+
+
+@router.post("/unlock-requests/{request_id}/approve", response_model=AdminGoalUnlockRequestOut)
+def approve_unlock_request(
+    request_id: uuid.UUID,
+    payload: AdminUnlockDecision = Body(default=AdminUnlockDecision()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    req = db.get(GoalUnlockRequest, request_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Unlock request not found")
+    if req.status != UnlockRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="This request has already been decided.")
+
+    goal = db.get(Goal, req.goal_id)
+    if goal:
+        # Clears the time lock only - the PIN is still required to actually
+        # withdraw, so approving this can't bypass that second protection.
+        goal.locked_until = None
+
+    req.status = UnlockRequestStatus.approved
+    req.admin_note = payload.note
+
+    db.add(
+        Notification(
+            user_id=req.user_id,
+            type=NotificationType.system,
+            title=f"'{req.goal_title}' erta ochish so'rovi tasdiqlandi",
+            message=payload.note or "Endi PIN kodingiz bilan mablag'ni yechib olishingiz mumkin.",
+        )
+    )
+
+    db.commit()
+    db.refresh(req)
+    user = db.get(User, req.user_id)
+    return AdminGoalUnlockRequestOut(
+        **GoalUnlockRequestOut.model_validate(req).model_dump(),
+        user_id=user.id,
+        user_email=user.email,
+        user_full_name=user.full_name,
+        goal_still_locked=bool(goal and goal.is_locked),
+    )
+
+
+@router.post("/unlock-requests/{request_id}/reject", response_model=AdminGoalUnlockRequestOut)
+def reject_unlock_request(
+    request_id: uuid.UUID,
+    payload: AdminUnlockDecision = Body(default=AdminUnlockDecision()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    req = db.get(GoalUnlockRequest, request_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Unlock request not found")
+    if req.status != UnlockRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="This request has already been decided.")
+
+    req.status = UnlockRequestStatus.rejected
+    req.admin_note = payload.note
+
+    db.add(
+        Notification(
+            user_id=req.user_id,
+            type=NotificationType.system,
+            title=f"'{req.goal_title}' erta ochish so'rovi rad etildi",
+            message=payload.note or "Maqsad hozircha qulflangan bo'lib qoladi.",
+        )
+    )
+
+    db.commit()
+    db.refresh(req)
+    goal = db.get(Goal, req.goal_id)
+    user = db.get(User, req.user_id)
+    return AdminGoalUnlockRequestOut(
+        **GoalUnlockRequestOut.model_validate(req).model_dump(),
+        user_id=user.id,
+        user_email=user.email,
+        user_full_name=user.full_name,
+        goal_still_locked=bool(goal and goal.is_locked),
+    )
+
+
+# --------------------------------------------------------------------------
+# Family/group goal - member withdrawal requests
+# --------------------------------------------------------------------------
+
+@router.get("/member-withdraw-requests", response_model=list[AdminGoalMemberWithdrawRequestOut])
+def list_member_withdraw_requests(
+    status_filter: MemberWithdrawRequestStatus | None = Query(None, alias="status"),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    stmt = (
+        select(GoalMemberWithdrawRequest, User)
+        .join(User, User.id == GoalMemberWithdrawRequest.user_id)
+        .order_by(GoalMemberWithdrawRequest.created_at.desc())
+    )
+    if status_filter:
+        stmt = stmt.where(GoalMemberWithdrawRequest.status == status_filter)
+    else:
+        stmt = stmt.where(GoalMemberWithdrawRequest.status == MemberWithdrawRequestStatus.pending)
+
+    rows = db.execute(stmt).all()
+    return [
+        AdminGoalMemberWithdrawRequestOut(
+            **GoalMemberWithdrawRequestOut.model_validate(req).model_dump(),
+            user_id=user.id,
+            user_email=user.email,
+            user_full_name=user.full_name,
+        )
+        for req, user in rows
+    ]
+
+
+@router.post("/member-withdraw-requests/{request_id}/approve", response_model=AdminGoalMemberWithdrawRequestOut)
+def approve_member_withdraw_request(
+    request_id: uuid.UUID,
+    payload: AdminUnlockDecision = Body(default=AdminUnlockDecision()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """Actually moves the money: creates a real income entry for exactly the
+    requesting member's amount (never more than what they personally put
+    in), and reduces both their own share and the goal's total by that much."""
+    req = db.get(GoalMemberWithdrawRequest, request_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if req.status != MemberWithdrawRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="This request has already been decided.")
+
+    goal = db.get(Goal, req.goal_id)
+    member = db.scalar(
+        select(GoalMember).where(GoalMember.goal_id == req.goal_id, GoalMember.user_id == req.user_id)
+    )
+    if not goal or not member:
+        raise HTTPException(status_code=400, detail="The goal or membership behind this request no longer exists.")
+
+    amount = min(req.amount, float(member.contributed_amount))
+    if amount > 0:
+        db.add(
+            Income(
+                user_id=req.user_id,
+                source_name=f"Oilaviy maqsaddan qaytarildi: {req.goal_title}",
+                amount=amount,
+                currency=req.currency,
+                income_date=date.today(),
+                goal_id=goal.id,
+                is_goal_transfer=True,
+            )
+        )
+        member.contributed_amount = float(member.contributed_amount) - amount
+        goal.current_amount = max(0, float(goal.current_amount) - amount)
+        if goal.current_amount <= 0:
+            goal.is_locked = False
+        goal.is_completed = goal.current_amount >= goal.target_amount
+
+    req.status = MemberWithdrawRequestStatus.approved
+    req.admin_note = payload.note
+
+    db.add(
+        Notification(
+            user_id=req.user_id,
+            type=NotificationType.system,
+            title=f"'{req.goal_title}' dagi ulushingiz qaytarildi",
+            message=payload.note or f"{amount:,.0f} {req.currency} balansingizga qaytarildi.",
+        )
+    )
+
+    db.commit()
+    db.refresh(req)
+    user = db.get(User, req.user_id)
+    return AdminGoalMemberWithdrawRequestOut(
+        **GoalMemberWithdrawRequestOut.model_validate(req).model_dump(),
+        user_id=user.id,
+        user_email=user.email,
+        user_full_name=user.full_name,
+    )
+
+
+@router.post("/member-withdraw-requests/{request_id}/reject", response_model=AdminGoalMemberWithdrawRequestOut)
+def reject_member_withdraw_request(
+    request_id: uuid.UUID,
+    payload: AdminUnlockDecision = Body(default=AdminUnlockDecision()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    req = db.get(GoalMemberWithdrawRequest, request_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if req.status != MemberWithdrawRequestStatus.pending:
+        raise HTTPException(status_code=400, detail="This request has already been decided.")
+
+    req.status = MemberWithdrawRequestStatus.rejected
+    req.admin_note = payload.note
+
+    db.add(
+        Notification(
+            user_id=req.user_id,
+            type=NotificationType.system,
+            title=f"'{req.goal_title}' dagi so'rovingiz rad etildi",
+            message=payload.note or "Admin so'rovingizni rad etdi.",
+        )
+    )
+
+    db.commit()
+    db.refresh(req)
+    user = db.get(User, req.user_id)
+    return AdminGoalMemberWithdrawRequestOut(
+        **GoalMemberWithdrawRequestOut.model_validate(req).model_dump(),
+        user_id=user.id,
+        user_email=user.email,
+        user_full_name=user.full_name,
+    )
 
 
 # --------------------------------------------------------------------------

@@ -7,7 +7,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
-import { Loader2, Send, MessageCircle, ChevronLeft } from 'lucide-react';
+import { Loader2, Send, MessageCircle, ChevronLeft, Target, KeyRound, X, Lock } from 'lucide-react';
 
 interface Conversation {
   user_id: string;
@@ -27,6 +27,17 @@ interface ChatMessage {
   created_at: string;
 }
 
+interface AdminGoal {
+  id: string;
+  title: string;
+  target_amount: number;
+  current_amount: number;
+  currency: string;
+  is_locked: boolean;
+  is_group: boolean;
+  has_pin: boolean;
+}
+
 export default function AdminChatPage() {
   const checked = useRequireAuth();
   const router = useRouter();
@@ -44,6 +55,16 @@ export default function AdminChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevTotalUnread = useRef(0);
+
+  // Goal PIN management - lets an admin act right away on a message like
+  // "forgot my PIN for goal X" without leaving the conversation.
+  const [showGoals, setShowGoals] = useState(false);
+  const [userGoals, setUserGoals] = useState<AdminGoal[]>([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
+  const [resetGoalId, setResetGoalId] = useState<string | null>(null);
+  const [newPin, setNewPin] = useState('');
+  const [resetting, setResetting] = useState(false);
+  const [resetDoneFor, setResetDoneFor] = useState<string | null>(null);
 
   function loadConversations() {
     api
@@ -83,6 +104,38 @@ export default function AdminChatPage() {
       .finally(() => setMessagesLoading(false));
   }
 
+  function loadUserGoals(userId: string) {
+    setGoalsLoading(true);
+    api
+      .get<AdminGoal[]>(`/admin/users/${userId}/goals`)
+      .then(({ data }) => setUserGoals(data))
+      .catch(() => setUserGoals([]))
+      .finally(() => setGoalsLoading(false));
+  }
+
+  function toggleGoals() {
+    const next = !showGoals;
+    setShowGoals(next);
+    setResetGoalId(null);
+    setResetDoneFor(null);
+    if (next && activeUserId) loadUserGoals(activeUserId);
+  }
+
+  async function submitResetPin(goalId: string) {
+    setResetting(true);
+    try {
+      await api.post(`/admin/goals/${goalId}/reset-pin`, newPin.trim() ? { new_pin: newPin.trim() } : {});
+      setResetGoalId(null);
+      setNewPin('');
+      setResetDoneFor(goalId);
+    } catch {
+      // errors are rare here (goal not found / group goal) - the button
+      // staying enabled is enough of a signal to just try again
+    } finally {
+      setResetting(false);
+    }
+  }
+
   useEffect(() => {
     if (!checked) return;
     if (user && !user.is_superuser) {
@@ -102,6 +155,7 @@ export default function AdminChatPage() {
   useEffect(() => {
     const preselect = searchParams.get('user');
     if (preselect) setActiveUserId(preselect);
+    setShowGoals(false);
   }, [searchParams]);
 
   useEffect(() => {
@@ -209,11 +263,87 @@ export default function AdminChatPage() {
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold text-textmain truncate">{activeName}</p>
                   {activeConvo && <p className="text-xs text-textmuted truncate">{activeConvo.email}</p>}
                 </div>
+                <button
+                  onClick={toggleGoals}
+                  className={`shrink-0 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors ${
+                    showGoals ? 'bg-primary/10 text-primary' : 'text-textmuted hover:bg-textmain/[0.04]'
+                  }`}
+                >
+                  <Target size={13} />
+                  Goals
+                </button>
               </div>
+
+              {showGoals && (
+                <div className="px-3 md:px-5 py-3 border-b border-textmain/[0.06] bg-textmain/[0.015] max-h-56 overflow-y-auto">
+                  {goalsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 size={16} className="animate-spin text-textmuted" />
+                    </div>
+                  ) : userGoals.length === 0 ? (
+                    <p className="text-xs text-textmuted text-center py-3">This user has no goals yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {userGoals.map((g) => (
+                        <div key={g.id} className="rounded-xl border border-textmain/[0.06] px-3 py-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex items-center gap-1.5">
+                              {g.is_locked && <Lock size={11} className="text-textmuted shrink-0" />}
+                              <p className="text-sm font-medium text-textmain truncate">{g.title}</p>
+                            </div>
+                            <p className="text-xs text-textmuted tabular-nums shrink-0">
+                              {g.current_amount.toLocaleString()} / {g.target_amount.toLocaleString()} {g.currency}
+                            </p>
+                          </div>
+
+                          {g.is_group ? (
+                            <p className="text-[11px] text-textmuted mt-1.5">Group goals don't use a PIN.</p>
+                          ) : resetDoneFor === g.id ? (
+                            <p className="text-[11px] text-primary mt-1.5">New PIN sent to their notifications.</p>
+                          ) : resetGoalId === g.id ? (
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <input
+                                autoFocus
+                                value={newPin}
+                                onChange={(e) => setNewPin(e.target.value)}
+                                placeholder="Leave blank to auto-generate"
+                                className="input-field text-xs flex-1 py-1.5"
+                                maxLength={32}
+                              />
+                              <button
+                                onClick={() => submitResetPin(g.id)}
+                                disabled={resetting}
+                                className="shrink-0 flex items-center justify-center h-7 w-7 rounded-lg bg-primary text-white disabled:opacity-50"
+                                aria-label="Confirm"
+                              >
+                                {resetting ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
+                              </button>
+                              <button
+                                onClick={() => { setResetGoalId(null); setNewPin(''); }}
+                                className="shrink-0 flex items-center justify-center h-7 w-7 rounded-lg text-textmuted hover:bg-textmain/[0.06]"
+                                aria-label="Cancel"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setResetGoalId(g.id); setNewPin(''); }}
+                              className="text-[11px] font-medium text-primary hover:underline mt-1.5"
+                            >
+                              {g.has_pin ? 'Set new PIN' : 'Set PIN'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex-1 overflow-y-auto px-3 md:px-4 py-4 space-y-2">
                 {messagesLoading && messages.length === 0 ? (

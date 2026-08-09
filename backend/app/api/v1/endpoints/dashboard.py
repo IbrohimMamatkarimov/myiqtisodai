@@ -29,6 +29,12 @@ def _sum_in_range(db: Session, model, user_id, start: date, end: date, amount_co
     return float(db.scalar(stmt) or 0)
 
 
+def _sum_all_time(db: Session, model, user_id, amount_col) -> float:
+    uzs_expr = amount_in_uzs(model, amount_col)
+    stmt = select(func.coalesce(func.sum(uzs_expr), 0)).where(model.user_id == user_id)
+    return float(db.scalar(stmt) or 0)
+
+
 @router.get("/summary", response_model=DashboardSummary)
 def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
@@ -76,9 +82,13 @@ def get_dashboard_summary(
     goals = db.scalars(select(Goal).where(Goal.user_id == current_user.id, Goal.is_completed.is_(False))).all()
     goals_on_track = sum(1 for g in goals if g.progress_percent >= 50)
 
+    # Locked totals must include COMPLETED goals too - a goal is marked
+    # completed the instant current_amount reaches target_amount, but the
+    # money is still genuinely locked in it until the user withdraws it.
+    all_goals_for_lock_total = db.scalars(select(Goal).where(Goal.user_id == current_user.id)).all()
     total_locked_in_goals = sum(
         float(g.current_amount) * RATES_TO_UZS.get(g.currency, 1)
-        for g in goals
+        for g in all_goals_for_lock_total
         if g.is_locked
     )
 
@@ -150,7 +160,15 @@ def get_dashboard_summary(
         for cid, cname, total in today_rows
     ]
 
-    total_savings = max(total_income - total_expenses, 0)
+    total_savings = total_locked_in_goals
+
+    # "Balance" is what you actually have overall, not just this month's
+    # cash flow - using the monthly figures here made it look wrong/static
+    # whenever a goal allocation (or any income/expense) fell in a
+    # different month than the one currently being viewed.
+    all_time_income = _sum_all_time(db, Income, current_user.id, Income.amount)
+    all_time_expenses = _sum_all_time(db, Expense, current_user.id, Expense.amount)
+    remaining_balance_all_time = all_time_income - all_time_expenses
 
     score = calculate_financial_health_score(
         total_income=total_income,
@@ -218,7 +236,7 @@ def get_dashboard_summary(
     return DashboardSummary(
         total_income=total_income,
     total_expenses=total_expenses,
-    remaining_balance=total_income - total_expenses,
+    remaining_balance=remaining_balance_all_time,
     total_savings=total_savings,
     total_locked_in_goals=total_locked_in_goals,
     financial_health_score=score,
@@ -226,10 +244,10 @@ def get_dashboard_summary(
     month_over_month_income_change_percent=pct_change(total_income, prev_income),
     month_over_month_expense_change_percent=pct_change(total_expenses, prev_expenses),
 
-    predicted_month_end_balance=total_income - total_expenses,
+    predicted_month_end_balance=remaining_balance_all_time,
     predicted_month_end_savings=total_savings,
-    safe_to_spend_today=max(0, total_income - total_expenses),
-    recommended_daily_budget=max(0, (total_income - total_expenses) / 30),
+    safe_to_spend_today=max(0, remaining_balance_all_time),
+    recommended_daily_budget=max(0, remaining_balance_all_time / 30),
 
     top_expense_categories=top_categories,
     today_categories=today_categories,
