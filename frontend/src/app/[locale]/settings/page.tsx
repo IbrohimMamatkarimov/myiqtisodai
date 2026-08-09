@@ -5,17 +5,21 @@ import { useTranslations } from 'next-intl';
 import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { useAuthStore } from '@/lib/auth-store';
+import { useRouter } from '@/navigation';
 import { api } from '@/lib/api-client';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck, LogOut } from 'lucide-react';
 
 const CURRENCIES = ['UZS', 'USD', 'EUR'];
 
 export default function SettingsPage() {
   const checked = useRequireAuth();
   const t = useTranslations('settings');
+  const tn = useTranslations('nav');
   const tc = useTranslations('common');
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
 
   const [currency, setCurrency] = useState(user?.currency || 'UZS');
   const [savingCurrency, setSavingCurrency] = useState(false);
@@ -86,6 +90,11 @@ export default function SettingsPage() {
     }
   }
 
+  function handleLogout() {
+    logout();
+    router.push('/login');
+  }
+
   if (!checked) return null;
 
   return (
@@ -141,6 +150,16 @@ export default function SettingsPage() {
               <p className="text-xs text-textmuted mt-0.5">{t('trustDesc')}</p>
             </div>
           </div>
+        </section>
+
+        <section className="glass-card p-5">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 text-sm font-medium text-textmuted hover:text-danger transition-colors"
+          >
+            <LogOut size={17} />
+            {tn('logout')}
+          </button>
         </section>
 
         <section className="glass-card p-5 border border-coral-500/20">

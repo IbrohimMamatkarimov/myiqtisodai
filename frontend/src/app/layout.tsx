@@ -53,8 +53,28 @@ const manrope = Manrope({
 });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Organization structured data (JSON-LD) - the standard signal Google
+  // looks for when deciding whether to show a logo/knowledge panel in
+  // search results. Adding this is necessary but not sufficient - Google
+  // still decides independently whether the site has enough authority
+  // (age, backlinks, traffic) to actually show one, and it isn't instant
+  // even once it does.
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'IqtisodAI',
+    url: 'https://iqtisodai.uz',
+    logo: 'https://iqtisodai.uz/iqtisodaiphoto.png',
+  };
+
   return (
     <html className={`${inter.variable} ${manrope.variable}`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   );
