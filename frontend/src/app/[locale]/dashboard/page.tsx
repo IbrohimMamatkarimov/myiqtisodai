@@ -14,7 +14,7 @@ import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatAmount, formatCurrency, convertBetween } from '@/lib/currency';
-import type { DashboardSummary, Expense, Income, Goal } from '@/types/finance';
+import type { DashboardSummary, Expense, Income, Goal, GoalInvite } from '@/types/finance';
 
 const LANGUAGE_NAMES: Record<string, string> = {
   uz: 'Uzbek',
@@ -92,6 +92,8 @@ export default function DashboardPage() {
   const [activeTip, setActiveTip] = useState(0);
   const [insightLoading, setInsightLoading] = useState(true);
   const [hideBalance, setHideBalance] = useState(false);
+  const [invites, setInvites] = useState<GoalInvite[]>([]);
+  const [invitesResponding, setInvitesResponding] = useState<string | null>(null);
 
   // Allocate (add funds to a goal) - inline on the dashboard so people don't
   // have to leave it just to lock money away toward a goal.
@@ -127,6 +129,24 @@ export default function DashboardPage() {
       .get<Goal[]>('/goals')
       .then(({ data }) => setGoals(data.slice(0, 2)))
       .catch(() => setGoals([]));
+  }
+
+  function loadInvites() {
+    api
+      .get<GoalInvite[]>('/goals/invites')
+      .then(({ data }) => setInvites(data))
+      .catch(() => setInvites([]));
+  }
+
+  async function respondToInvite(inviteId: string, accept: boolean) {
+    setInvitesResponding(inviteId);
+    try {
+      await api.post(`/goals/invites/${inviteId}/respond`, { accept });
+      setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      if (accept) loadGoals();
+    } finally {
+      setInvitesResponding(null);
+    }
   }
 
   function loadSummary() {
@@ -282,6 +302,7 @@ export default function DashboardPage() {
     loadSummary();
     loadTxns();
     loadGoals();
+    loadInvites();
 
     let cached: { locale: string; insight: string; ts: number } | null = null;
     try {
@@ -369,6 +390,36 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <AchievementToast summary={summary} />
+      {invites.length > 0 && (
+        <div className="space-y-2 mb-5">
+          {invites.map((inv) => (
+            <div key={inv.id} className="glass-card p-4 flex items-center gap-3 border border-secondary/20">
+              <span className="h-9 w-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <Users size={16} />
+              </span>
+              <p className="text-sm text-textmain flex-1 min-w-0">
+                {tg('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => respondToInvite(inv.id, true)}
+                  disabled={invitesResponding === inv.id}
+                  className="btn-primary text-sm py-1.5 px-3"
+                >
+                  {invitesResponding === inv.id ? <Loader2 size={14} className="animate-spin" /> : tg('acceptInvite')}
+                </button>
+                <button
+                  onClick={() => respondToInvite(inv.id, false)}
+                  disabled={invitesResponding === inv.id}
+                  className="btn-secondary text-sm py-1.5 px-3"
+                >
+                  {tg('declineInvite')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {loading || !summary ? (
         <div className="space-y-4">
           <div className="glass-card animate-pulse" style={{ height: 140 }} />

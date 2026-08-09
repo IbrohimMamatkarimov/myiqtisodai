@@ -140,6 +140,18 @@ class GoalMemberWithdrawRequestCreate(BaseModel):
     reason: str = Field(min_length=2, max_length=1000)
 
 
+class WithdrawConfirmationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: uuid.UUID
+    full_name: str
+    decision: str
+
+
+class WithdrawConfirmationDecide(BaseModel):
+    approve: bool
+
+
 class GoalMemberWithdrawRequestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -152,6 +164,10 @@ class GoalMemberWithdrawRequestOut(BaseModel):
     status: str
     admin_note: Optional[str] = None
     created_at: datetime
+    confirmations: list[WithdrawConfirmationOut] = []
+    # Whether the goal's other members have all signed off yet - an admin
+    # can't release the money until this is true.
+    all_confirmed: bool = True
 
 
 class AdminGoalMemberWithdrawRequestOut(GoalMemberWithdrawRequestOut):

@@ -27,5 +27,10 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Optional in-app path (e.g. "/goals") the frontend navigates to when
+    # this notification is tapped - lets "you were invited", "your unlock
+    # request was approved", etc. actually take the person somewhere
+    # instead of just marking themselves read and doing nothing.
+    link: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     user = relationship("User", back_populates="notifications")

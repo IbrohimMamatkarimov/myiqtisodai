@@ -142,6 +142,14 @@ export interface PaginatedExpenses {
   total_pages: number;
 }
 
+export interface GoalInvite {
+  id: string;
+  goal_id: string;
+  goal_title: string;
+  owner_name: string;
+  created_at: string;
+}
+
 export interface Goal {
   id: string;
   user_id: string;

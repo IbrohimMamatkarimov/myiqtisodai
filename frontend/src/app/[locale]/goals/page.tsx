@@ -371,9 +371,18 @@ export default function GoalsPage() {
     setUnlockRequestError('');
   }
 
-  async function openMembers(goal: Goal) {
+  // Pending withdrawal requests for the goal currently open in the Members
+  // modal - confirm/reject shows for whichever ones name ME as a needed
+  // confirmer (every other accepted member gets one, not just the admin).
+  const [withdrawRequests, setWithdrawRequests] = useState<
+    { id: string; user_id: string; amount: number; currency: string; reason: string; status: string; confirmations: { user_id: string; full_name: string; decision: string }[] }[]
+  >([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  async function openMembers(goal: Goal, autoWithdraw?: boolean) {
     setMembersFor(goal);
     setMembers([]);
+    setWithdrawRequests([]);
     setInviteIdentifier('');
     setInviteError('');
     setMemberWithdrawOpen(false);
@@ -382,12 +391,33 @@ export default function GoalsPage() {
     setMemberWithdrawError('');
     setMembersLoading(true);
     try {
-      const { data } = await api.get<GoalMember[]>(`/goals/${goal.id}/members`);
-      setMembers(data);
+      const [membersRes, requestsRes] = await Promise.all([
+        api.get<GoalMember[]>(`/goals/${goal.id}/members`),
+        api.get(`/goals/${goal.id}/withdraw-requests`).catch(() => ({ data: [] })),
+      ]);
+      setMembers(membersRes.data);
+      setWithdrawRequests((requestsRes.data || []).filter((r: any) => r.status === 'pending'));
+      if (autoWithdraw) {
+        const mine = membersRes.data.find((m) => m.user_id === user?.id);
+        if (mine && mine.contributed_amount > 0) {
+          setMemberWithdrawOpen(true);
+          setMemberWithdrawAmount(String(mine.contributed_amount));
+        }
+      }
     } catch {
       setMembers([]);
     } finally {
       setMembersLoading(false);
+    }
+  }
+
+  async function handleConfirmWithdraw(requestId: string, approve: boolean) {
+    setConfirmingId(requestId);
+    try {
+      await api.post(`/goals/withdraw-requests/${requestId}/confirm`, { approve });
+      setWithdrawRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } finally {
+      setConfirmingId(null);
     }
   }
 
@@ -1027,6 +1057,15 @@ export default function GoalsPage() {
                         </button>
                       )}
                     </div>
+                    {goal.is_group && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openMembers(goal, true); }}
+                        className="w-full mt-2 text-xs font-medium text-textmuted hover:text-danger transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Unlock size={12} />
+                        {t('requestMyShare')}
+                      </button>
+                    )}
                     {!goal.is_group && goal.is_locked && (
                       timeLocked ? (
                         <div className="mt-2 space-y-1" onClick={(e) => e.stopPropagation()}>
@@ -1165,6 +1204,47 @@ export default function GoalsPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Withdrawal requests waiting on my confirmation */}
+            {withdrawRequests.filter((r) => r.user_id !== user?.id).length > 0 && (
+              <div className="space-y-2 mb-4 border-t border-textmain/10 pt-4">
+                <p className="label-text">{t('pendingConfirmations')}</p>
+                {withdrawRequests
+                  .filter((r) => r.user_id !== user?.id)
+                  .map((r) => {
+                    const mine = r.confirmations.find((c) => c.user_id === user?.id);
+                    const requester = members.find((m) => m.user_id === r.user_id);
+                    if (!mine || mine.decision !== 'pending') return null;
+                    return (
+                      <div key={r.id} className="rounded-xl bg-textmain/[0.03] p-3">
+                        <p className="text-sm text-textmain">
+                          {t('memberWantsToWithdraw', {
+                            name: requester?.full_name || '',
+                            amount: formatCurrency(r.amount, r.currency),
+                          })}
+                        </p>
+                        <p className="text-xs text-textmuted mt-1 italic">"{r.reason}"</p>
+                        <div className="flex items-center gap-2 mt-2.5">
+                          <button
+                            onClick={() => handleConfirmWithdraw(r.id, true)}
+                            disabled={confirmingId === r.id}
+                            className="btn-primary flex-1 text-xs py-1.5"
+                          >
+                            {confirmingId === r.id ? <Loader2 size={13} className="animate-spin" /> : t('confirmApprove')}
+                          </button>
+                          <button
+                            onClick={() => handleConfirmWithdraw(r.id, false)}
+                            disabled={confirmingId === r.id}
+                            className="btn-secondary flex-1 text-xs py-1.5 text-danger border-danger/20"
+                          >
+                            {t('confirmReject')}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             )}
 

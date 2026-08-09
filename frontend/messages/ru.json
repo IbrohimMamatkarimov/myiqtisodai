@@ -242,6 +242,10 @@
     "removeMemberError": "Не удалось убрать участника.",
     "yourShare": "Ваша доля",
     "requestMyShare": "Запросить свою долю обратно",
+    "pendingConfirmations": "Требуется ваше подтверждение",
+    "memberWantsToWithdraw": "{name} хочет вывести {amount}",
+    "confirmApprove": "Подтвердить",
+    "confirmReject": "Отклонить",
     "confirmAllocate": "Выделить {amount} на «{goal}»? Эта сумма будет списана с вашего баланса и заблокирована в этой цели."
   },
   "assistant": {

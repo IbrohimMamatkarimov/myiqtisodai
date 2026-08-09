@@ -15,6 +15,7 @@ from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.goal_unlock_request import GoalUnlockRequest, UnlockRequestStatus
 from app.models.goal_member import GoalMember
+from app.models.goal_member_withdraw_confirmation import ConfirmationDecision, GoalMemberWithdrawConfirmation
 from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest, MemberWithdrawRequestStatus
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
@@ -415,6 +416,7 @@ def admin_unlock_goal(
             type=NotificationType.system,
             title=f"'{goal.title}' erta ochildi",
             message=payload.note or "Endi PIN kodingiz bilan mablag'ni yechib olishingiz mumkin.",
+            link="/goals",
         )
     )
 
@@ -450,6 +452,7 @@ def admin_reset_goal_pin(
             type=NotificationType.system,
             title=f"'{goal.title}' uchun yangi PIN kod o'rnatildi",
             message=f"Yangi PIN kodingiz: {new_pin}\n\nBu kodni xavfsiz joyda saqlang - keyingi safar mablag'ni yechib olish uchun kerak bo'ladi.",
+            link="/goals",
         )
     )
 
@@ -593,15 +596,28 @@ def list_member_withdraw_requests(
         stmt = stmt.where(GoalMemberWithdrawRequest.status == MemberWithdrawRequestStatus.pending)
 
     rows = db.execute(stmt).all()
-    return [
-        AdminGoalMemberWithdrawRequestOut(
-            **GoalMemberWithdrawRequestOut.model_validate(req).model_dump(),
-            user_id=user.id,
-            user_email=user.email,
-            user_full_name=user.full_name,
+    results = []
+    for req, user in rows:
+        confirmation_rows = db.execute(
+            select(GoalMemberWithdrawConfirmation, User)
+            .join(User, User.id == GoalMemberWithdrawConfirmation.user_id)
+            .where(GoalMemberWithdrawConfirmation.request_id == req.id)
+        ).all()
+        confirmations = [
+            {"user_id": u.id, "full_name": u.full_name, "decision": c.decision.value} for c, u in confirmation_rows
+        ]
+        all_confirmed = all(c.decision == ConfirmationDecision.approved for c, _ in confirmation_rows)
+        results.append(
+            AdminGoalMemberWithdrawRequestOut(
+                **GoalMemberWithdrawRequestOut.model_validate(req).model_dump(exclude={"confirmations", "all_confirmed"}),
+                confirmations=confirmations,
+                all_confirmed=all_confirmed,
+                user_id=user.id,
+                user_email=user.email,
+                user_full_name=user.full_name,
+            )
         )
-        for req, user in rows
-    ]
+    return results
 
 
 @router.post("/member-withdraw-requests/{request_id}/approve", response_model=AdminGoalMemberWithdrawRequestOut)
@@ -619,6 +635,18 @@ def approve_member_withdraw_request(
         raise HTTPException(status_code=404, detail="Request not found")
     if req.status != MemberWithdrawRequestStatus.pending:
         raise HTTPException(status_code=400, detail="This request has already been decided.")
+
+    pending_or_rejected = db.scalars(
+        select(GoalMemberWithdrawConfirmation).where(
+            GoalMemberWithdrawConfirmation.request_id == req.id,
+            GoalMemberWithdrawConfirmation.decision != ConfirmationDecision.approved,
+        )
+    ).all()
+    if pending_or_rejected:
+        raise HTTPException(
+            status_code=400,
+            detail="Not every other member of this goal has confirmed yet - can't release the money until they have.",
+        )
 
     goal = db.get(Goal, req.goal_id)
     member = db.scalar(

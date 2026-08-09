@@ -105,6 +105,8 @@ interface MemberWithdrawRequest {
   user_id: string;
   user_email: string;
   user_full_name: string;
+  confirmations: { user_id: string; full_name: string; decision: 'pending' | 'approved' | 'rejected' }[];
+  all_confirmed: boolean;
 }
 
 interface AdminGoal {
@@ -842,6 +844,28 @@ export default function AdminPage() {
                         {r.user_full_name} — {r.user_email} · {new Date(r.created_at).toLocaleString()}
                       </p>
                       <p className="text-sm text-textmain mt-2">"{r.reason}"</p>
+                      {r.confirmations.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                          <span className="text-xs text-textmuted">Other members:</span>
+                          {r.confirmations.map((c) => (
+                            <span
+                              key={c.user_id}
+                              className={`text-[10px] font-semibold rounded px-1.5 py-0.5 ${
+                                c.decision === 'approved'
+                                  ? 'text-secondary bg-secondary/10'
+                                  : c.decision === 'rejected'
+                                  ? 'text-danger bg-danger/10'
+                                  : 'text-textmuted bg-textmain/[0.06]'
+                              }`}
+                            >
+                              {c.full_name}: {c.decision}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {!r.all_confirmed && (
+                        <p className="text-xs text-amber-600 mt-1.5">Waiting on every other member to confirm before this can be approved.</p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button onClick={() => openChat(r.user_id)} title="Chat with this user" className="text-textmuted hover:text-primary">
@@ -921,9 +945,10 @@ export default function AdminPage() {
                         Reject
                       </button>
                       <button
-                        disabled={busy}
+                        disabled={busy || !r.all_confirmed}
                         onClick={() => approveWithdrawRequest(r.id)}
-                        className="text-xs px-2 py-1.5 rounded-lg bg-primary text-white font-semibold hover:brightness-95 flex items-center gap-1"
+                        title={!r.all_confirmed ? 'Every other member has to confirm first' : undefined}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-primary text-white font-semibold hover:brightness-95 flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Check size={14} />
                         Approve & send money

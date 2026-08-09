@@ -242,6 +242,10 @@
     "removeMemberError": "A'zoni olib tashlab bo'lmadi.",
     "yourShare": "Sizning ulushingiz",
     "requestMyShare": "Ulushimni qaytarib olish",
+    "pendingConfirmations": "Tasdiqlashingiz kerak",
+    "memberWantsToWithdraw": "{name} {amount} yechib olishni so'ramoqda",
+    "confirmApprove": "Tasdiqlash",
+    "confirmReject": "Rad etish",
     "confirmAllocate": "\u00ab{goal}\u00bb uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
   },
   "assistant": {

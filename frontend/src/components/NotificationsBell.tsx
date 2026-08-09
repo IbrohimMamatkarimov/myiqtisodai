@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Bell, Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api-client';
+import { useRouter } from '@/navigation';
 
 type NotificationItem = {
   id: string;
@@ -11,11 +12,13 @@ type NotificationItem = {
   title: string;
   message: string;
   is_read: boolean;
+  link?: string | null;
   created_at: string;
 };
 
 export function NotificationsBell() {
   const tb = useTranslations('topbar');
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -56,6 +59,14 @@ export function NotificationsBell() {
       await api.patch(`/notifications/${id}/read`);
     } catch {
       // best-effort
+    }
+  }
+
+  async function handleClick(n: NotificationItem) {
+    markRead(n.id);
+    if (n.link) {
+      setOpen(false);
+      router.push(n.link);
     }
   }
 
@@ -101,7 +112,7 @@ export function NotificationsBell() {
               key={n.id}
               role="button"
               tabIndex={0}
-              onClick={() => markRead(n.id)}
+              onClick={() => handleClick(n)}
               className={`w-full flex items-start gap-2 px-4 py-3 text-left border-b border-black/5 last:border-0 transition-colors hover:bg-black/5 cursor-pointer ${
                 n.is_read ? '' : 'bg-primary/5'
               }`}

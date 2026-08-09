@@ -14,7 +14,8 @@ from app.models.chat_message import ChatMessage
 from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.goal_member import GoalMember, GoalMemberStatus
-from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest
+from app.models.goal_member_withdraw_confirmation import ConfirmationDecision, GoalMemberWithdrawConfirmation
+from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest, MemberWithdrawRequestStatus
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
@@ -32,6 +33,8 @@ from app.schemas.goal import (
     GoalUnlockRequestOut,
     GoalUpdate,
     GoalWithdraw,
+    WithdrawConfirmationDecide,
+    WithdrawConfirmationOut,
 )
 from app.models.goal_unlock_request import GoalUnlockRequest, UnlockRequestStatus
 from app.services.receipt_scanner import _downscale_image
@@ -241,6 +244,7 @@ def invite_goal_member(
             type=NotificationType.system,
             title=f"\u00ab{goal.title}\u00bb oilaviy maqsadiga taklif",
             message=f"{current_user.full_name} sizni birgalikdagi jamg'arma maqsadiga taklif qildi. Qabul qilish yoki rad etish uchun Maqsadlar bo'limiga o'ting.",
+            link="/goals",
         )
     )
 
@@ -513,6 +517,88 @@ def allocate_funds(
     return goal
 
 
+def _serialize_withdraw_request(db: Session, request: GoalMemberWithdrawRequest) -> GoalMemberWithdrawRequestOut:
+    rows = db.execute(
+        select(GoalMemberWithdrawConfirmation, User)
+        .join(User, User.id == GoalMemberWithdrawConfirmation.user_id)
+        .where(GoalMemberWithdrawConfirmation.request_id == request.id)
+    ).all()
+    confirmations = [
+        WithdrawConfirmationOut(user_id=u.id, full_name=u.full_name, decision=c.decision.value) for c, u in rows
+    ]
+    all_confirmed = all(c.decision == ConfirmationDecision.approved for c, _ in rows)
+    data = GoalMemberWithdrawRequestOut.model_validate(request).model_dump()
+    data["confirmations"] = confirmations
+    data["all_confirmed"] = all_confirmed
+    return GoalMemberWithdrawRequestOut(**data)
+
+
+@router.get("/{goal_id}/withdraw-requests", response_model=list[GoalMemberWithdrawRequestOut])
+def list_goal_withdraw_requests(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Pending (and recent) withdrawal requests for a group goal, visible to
+    any accepted member - so everyone can see what's waiting on their
+    confirmation, not just the requester and the admin."""
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None or member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+    requests = db.scalars(
+        select(GoalMemberWithdrawRequest)
+        .where(GoalMemberWithdrawRequest.goal_id == goal.id)
+        .order_by(GoalMemberWithdrawRequest.created_at.desc())
+        .limit(20)
+    ).all()
+    return [_serialize_withdraw_request(db, r) for r in requests]
+
+
+@router.post("/withdraw-requests/{request_id}/confirm", response_model=GoalMemberWithdrawRequestOut)
+def confirm_member_withdraw(
+    request_id: uuid.UUID,
+    payload: WithdrawConfirmationDecide,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Another group member signs off on (or declines) a withdrawal request.
+    A single decline kills the request outright - it never even reaches an
+    admin. Only once every other member has approved can an admin release
+    the money."""
+    request = db.get(GoalMemberWithdrawRequest, request_id)
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    confirmation = db.scalar(
+        select(GoalMemberWithdrawConfirmation).where(
+            GoalMemberWithdrawConfirmation.request_id == request_id,
+            GoalMemberWithdrawConfirmation.user_id == current_user.id,
+        )
+    )
+    if not confirmation:
+        raise HTTPException(status_code=403, detail="Sizdan bu so'rov uchun tasdiq so'ralmagan")
+    if request.status != MemberWithdrawRequestStatus.pending or confirmation.decision != ConfirmationDecision.pending:
+        raise HTTPException(status_code=400, detail="Bu so'rov allaqachon hal qilingan")
+
+    confirmation.decision = ConfirmationDecision.approved if payload.approve else ConfirmationDecision.rejected
+
+    if not payload.approve:
+        request.status = MemberWithdrawRequestStatus.rejected
+        request.admin_note = f"{current_user.full_name} rad etdi"
+        db.add(
+            Notification(
+                user_id=request.user_id,
+                type=NotificationType.system,
+                title=f"'{request.goal_title}' so'rovingiz rad etildi",
+                message=f"{current_user.full_name} so'rovingizni rad etdi.",
+                link="/goals",
+            )
+        )
+
+    db.commit()
+    db.refresh(request)
+    return _serialize_withdraw_request(db, request)
+
+
 @router.post("/{goal_id}/request-member-withdraw", response_model=GoalMemberWithdrawRequestOut, status_code=status.HTTP_201_CREATED)
 def request_member_withdraw(
     goal_id: uuid.UUID,
@@ -521,9 +607,9 @@ def request_member_withdraw(
     db: Session = Depends(get_db),
 ):
     """A group-goal member asking for their own contributed share back -
-    never the whole pot, never someone else's share. Always goes to an
-    admin to actually move the money; there's no self-serve PIN path for
-    group goals at all."""
+    never the whole pot, never someone else's share. Every OTHER accepted
+    member has to confirm before an admin can even consider releasing the
+    money; there's no self-serve PIN path for group goals at all."""
     goal, member = _get_member_goal(db, goal_id, current_user.id)
     if not goal.is_group or member is None:
         raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
@@ -541,9 +627,30 @@ def request_member_withdraw(
         reason=payload.reason,
     )
     db.add(request)
+    db.flush()
+
+    other_members = db.scalars(
+        select(GoalMember).where(
+            GoalMember.goal_id == goal.id,
+            GoalMember.status == GoalMemberStatus.accepted,
+            GoalMember.user_id != current_user.id,
+        )
+    ).all()
+    for other in other_members:
+        db.add(GoalMemberWithdrawConfirmation(request_id=request.id, user_id=other.user_id))
+        db.add(
+            Notification(
+                user_id=other.user_id,
+                type=NotificationType.system,
+                title=f"'{goal.title}' dan mablag' yechish so'rovi",
+                message=f"{current_user.full_name} o'z ulushidan {payload.amount:,.0f} {goal.currency} yechib olishni so'ramoqda. Tasdiqlaysizmi?",
+                link="/goals",
+            )
+        )
+
     db.commit()
     db.refresh(request)
-    return request
+    return _serialize_withdraw_request(db, request)
 
 
 @router.post("/{goal_id}/withdraw", response_model=GoalOut)

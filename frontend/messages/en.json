@@ -242,6 +242,10 @@
     "removeMemberError": "Couldn't remove that member.",
     "yourShare": "Your share",
     "requestMyShare": "Request my share back",
+    "pendingConfirmations": "Needs your confirmation",
+    "memberWantsToWithdraw": "{name} wants to withdraw {amount}",
+    "confirmApprove": "Confirm",
+    "confirmReject": "Decline",
     "confirmAllocate": "Allocate {amount} to \"{goal}\"? This will be deducted from your balance and locked toward this goal."
   },
   "assistant": {

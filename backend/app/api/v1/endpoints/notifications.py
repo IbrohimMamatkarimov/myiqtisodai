@@ -27,6 +27,7 @@ def list_notifications(current_user: User = Depends(get_current_user), db: Sessi
             "title": n.title,
             "message": n.message,
             "is_read": n.is_read,
+            "link": n.link,
             "created_at": n.created_at,
         }
         for n in notifications
