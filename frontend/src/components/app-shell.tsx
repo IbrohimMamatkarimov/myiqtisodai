@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
                 <img
-                  src="/iqtisodaiphoto.jpg"
+                  src="/iqtisodaiphoto.png"
                   alt="IqtisodAI"
                   className="h-full w-full object-cover"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}

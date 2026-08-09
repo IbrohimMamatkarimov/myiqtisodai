@@ -102,6 +102,7 @@ export default function DashboardPage() {
   const [legacyPinConfirm, setLegacyPinConfirm] = useState('');
   const [allocateError, setAllocateError] = useState('');
   const [allocating, setAllocating] = useState(false);
+  const [confirmingAllocate, setConfirmingAllocate] = useState<{ goal: Goal; amount: number; pin?: string } | null>(null);
 
   // Withdraw (get locked money back) - same PIN flow as the Goals page,
   // surfaced here too since this card is often the first place people look.
@@ -194,18 +195,24 @@ export default function DashboardPage() {
       legacyPinPayload = legacyPin;
     }
 
-    if (!window.confirm(tg('confirmAllocate', { amount: formatCurrency(amount, goalCurrency), goal: goal.title }))) {
-      return;
-    }
+    // Themed in-app confirmation instead of the native browser confirm()
+    // popup, same as the Goals page - see submitAllocate for the actual call.
+    setConfirmingAllocate({ goal, amount, pin: legacyPinPayload });
+  }
 
+  async function submitAllocate() {
+    if (!confirmingAllocate) return;
+    const { goal, amount, pin } = confirmingAllocate;
     setAllocating(true);
     try {
-      await api.post(`/goals/${goal.id}/allocate`, { amount, pin: legacyPinPayload });
+      await api.post(`/goals/${goal.id}/allocate`, { amount, pin });
+      setConfirmingAllocate(null);
       setAllocateFor(null);
       loadGoals();
       loadSummary();
       loadTxns();
     } catch (err: any) {
+      setConfirmingAllocate(null);
       setAllocateError(getErrorMessage(err, tg('pinMismatch')));
     } finally {
       setAllocating(false);
@@ -380,7 +387,7 @@ export default function DashboardPage() {
               />
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-white/15">
-                  <img src="/robotiqtisod.png" alt="" className="h-full w-full object-cover" />
+                  <img src="/iqtisodaiphoto.png" alt="" className="h-full w-full object-cover" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-display font-semibold text-white truncate">
@@ -560,7 +567,7 @@ export default function DashboardPage() {
                               autoFocus
                               value={fundsAmount}
                               onChange={(e) => setFundsAmount(e.target.value)}
-                              className="input-field text-sm flex-1"
+                              className="input-field text-sm flex-1 min-w-0"
                               placeholder="100000"
                             />
                             <select
@@ -809,6 +816,27 @@ export default function DashboardPage() {
                   </span>
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm allocate - themed modal instead of the native browser confirm() */}
+      {confirmingAllocate && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-textmain/20 p-4" onClick={() => setConfirmingAllocate(null)}>
+          <div className="glass-card p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h2 className="font-display font-semibold text-textmain mb-2">{tc('confirm')}</h2>
+            <p className="text-sm text-textmuted">
+              {tg('confirmAllocate', {
+                amount: formatCurrency(confirmingAllocate.amount, confirmingAllocate.goal.currency || user?.currency || 'UZS'),
+                goal: confirmingAllocate.goal.title,
+              })}
+            </p>
+            <div className="flex justify-end gap-2 mt-5">
+              <button onClick={() => setConfirmingAllocate(null)} className="btn-secondary">{tc('cancel')}</button>
+              <button onClick={submitAllocate} disabled={allocating} className="btn-primary">
+                {allocating ? <Loader2 size={16} className="animate-spin" /> : tc('confirm')}
+              </button>
             </div>
           </div>
         </div>

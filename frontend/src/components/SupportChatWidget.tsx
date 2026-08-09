@@ -206,8 +206,7 @@ export function SupportChatWidget() {
           setToast(null);
           setOpen((v) => !v);
         }}
-        className="fixed z-30 flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity"
-        style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))', right: '1.5rem' }}
+        className="fixed z-30 flex items-center gap-2 rounded-full bg-primary text-white px-4 py-3 shadow-card hover:opacity-90 transition-opacity bottom-20 right-4 md:bottom-6 md:right-6"
       >
         {open ? (
           <X size={18} />

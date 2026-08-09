@@ -839,7 +839,7 @@ export default function GoalsPage() {
                           autoFocus
                           value={fundsAmount}
                           onChange={(e) => setFundsAmount(e.target.value)}
-                          className="input-field flex-1"
+                          className="input-field flex-1 min-w-0"
                           placeholder="100000"
                         />
                         <select

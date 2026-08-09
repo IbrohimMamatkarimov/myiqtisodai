@@ -3,16 +3,16 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.iqtisodai.uz'),
+  metadataBase: new URL('https://iqtisodai.uz'),
   title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
   description:
     'IqtisodAI bilan xarajat va daromadlaringizni kuzating, chekni skanerlab avtomatik yozdiring, maqsadlar uchun pul jamg‘aring va AI moliyaviy maslahatchidan real vaqtda tavsiya oling — barchasi o‘zbek, rus va ingliz tillarida.',
   openGraph: {
     title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
     description: 'Xarajatlaringizni kuzating, maqsadlar uchun jamg‘aring va AI yordamchidan maslahat oling.',
-    url: 'https://www.iqtisodai.uz',
+    url: 'https://iqtisodai.uz',
     siteName: 'IqtisodAI',
-    images: [{ url: '/robotiqtisod.png', width: 1024, height: 1024, alt: 'IqtisodAI' }],
+    images: [{ url: '/iqtisodaiphoto.png', width: 1254, height: 1254, alt: 'IqtisodAI' }],
     locale: 'uz_UZ',
     type: 'website',
   },
@@ -20,11 +20,15 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
     description: 'Xarajatlaringizni kuzating, maqsadlar uchun jamg‘aring va AI yordamchidan maslahat oling.',
-    images: ['/robotiqtisod.png'],
+    images: ['/iqtisodaiphoto.png'],
   },
   icons: {
-    icon: '/robotiqtisod.png',
-    apple: '/robotiqtisod.png',
+    // ?v=2 cache-busts the favicon specifically - browsers cache favicons far
+    // more aggressively than regular assets and often ignore normal cache
+    // invalidation, so a plain path swap alone can keep showing the old one
+    // indefinitely. Bump this number again if it ever needs to change further.
+    icon: '/iqtisodaiphoto.png?v=2',
+    apple: '/iqtisodaiphoto.png?v=2',
   },
 };
 
