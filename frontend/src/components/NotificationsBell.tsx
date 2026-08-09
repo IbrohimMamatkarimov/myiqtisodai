@@ -86,7 +86,7 @@ export function NotificationsBell() {
       </button>
 
       {open && (
-        <div className="absolute top-full mt-2 w-80 right-0 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-96 overflow-y-auto">
+        <div className="fixed inset-x-3 top-16 sm:absolute sm:inset-x-auto sm:top-full sm:mt-2 sm:w-80 sm:right-0 rounded-xl border border-black/10 bg-surface shadow-xl overflow-hidden z-50 max-h-96 overflow-y-auto">
           <div className="px-4 py-3 border-b border-black/5 flex items-center justify-between">
             <span className="text-sm font-semibold text-textmain">{tb('notifications')}</span>
             {loading && <Loader2 size={13} className="animate-spin text-textmuted" />}

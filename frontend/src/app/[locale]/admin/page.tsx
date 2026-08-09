@@ -92,6 +92,21 @@ interface UnlockRequest {
   goal_still_locked: boolean;
 }
 
+interface MemberWithdrawRequest {
+  id: string;
+  goal_id: string;
+  goal_title: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_note: string | null;
+  created_at: string;
+  user_id: string;
+  user_email: string;
+  user_full_name: string;
+}
+
 interface AdminGoal {
   id: string;
   title: string;
@@ -192,6 +207,12 @@ export default function AdminPage() {
   const [unlockRejectingId, setUnlockRejectingId] = useState<string | null>(null);
   const [unlockNote, setUnlockNote] = useState('');
 
+  // Group-goal "give me my share back" requests
+  const [withdrawRequests, setWithdrawRequests] = useState<MemberWithdrawRequest[]>([]);
+  const [withdrawReqLoading, setWithdrawReqLoading] = useState(true);
+  const [withdrawRejectingId, setWithdrawRejectingId] = useState<string | null>(null);
+  const [withdrawReqNote, setWithdrawReqNote] = useState('');
+
   // Browse-any-user's-goals unlock tool
   const [unlockSearch, setUnlockSearch] = useState('');
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
@@ -253,6 +274,15 @@ export default function AdminPage() {
       .finally(() => setUnlockLoading(false));
   }
 
+  function loadWithdrawRequests() {
+    setWithdrawReqLoading(true);
+    api
+      .get<MemberWithdrawRequest[]>('/admin/member-withdraw-requests')
+      .then(({ data }) => setWithdrawRequests(data))
+      .catch(() => setWithdrawRequests([]))
+      .finally(() => setWithdrawReqLoading(false));
+  }
+
   function loadReports(status: 'open' | 'solved' | 'all') {
     setReportsLoading(true);
     api
@@ -272,6 +302,7 @@ export default function AdminPage() {
       loadUsers();
       loadDeletionRequests();
       loadUnlockRequests();
+      loadWithdrawRequests();
       loadReports(reportFilter);
     }
   }, [checked, user]);
@@ -358,6 +389,29 @@ export default function AdminPage() {
       setUnlockRequests((prev) => prev.filter((r) => r.id !== id));
       setUnlockRejectingId(null);
       setUnlockNote('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function approveWithdrawRequest(id: string) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/member-withdraw-requests/${id}/approve`);
+      setWithdrawRequests((prev) => prev.filter((r) => r.id !== id));
+      alert("Approved. The money has been moved back to their balance.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejectWithdrawRequest(id: string) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/member-withdraw-requests/${id}/reject`, { note: withdrawReqNote || undefined });
+      setWithdrawRequests((prev) => prev.filter((r) => r.id !== id));
+      setWithdrawRejectingId(null);
+      setWithdrawReqNote('');
     } finally {
       setBusy(false);
     }
@@ -574,9 +628,9 @@ export default function AdminPage() {
                   {stats.reports_waiting}
                 </span>
               )}
-              {t.id === 'unlocks' && unlockRequests.length > 0 && (
+              {t.id === 'unlocks' && (unlockRequests.length + withdrawRequests.length) > 0 && (
                 <span className={`text-[10px] rounded-full px-1.5 ${tab === t.id ? 'bg-white/20' : 'bg-danger/10 text-danger'}`}>
-                  {unlockRequests.length}
+                  {unlockRequests.length + withdrawRequests.length}
                 </span>
               )}
             </button>
@@ -822,6 +876,71 @@ export default function AdminPage() {
                         className="input-field flex-1 text-sm"
                       />
                       <button disabled={busy} onClick={() => rejectUnlock(r.id)} className="btn-primary text-sm shrink-0">
+                        {busy ? <Loader2 size={14} className="animate-spin" /> : 'Send & reject'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Group-goal share-back requests */}
+          <h2 className="font-display font-semibold text-textmain mt-8 mb-3">Family goal withdrawal requests</h2>
+          {withdrawReqLoading ? (
+            <div className="p-8 text-center text-sm text-textmuted"><Loader2 className="animate-spin mx-auto" /></div>
+          ) : withdrawRequests.length === 0 ? (
+            <div className="glass-card p-8 text-center text-sm text-textmuted">No pending withdrawal requests.</div>
+          ) : (
+            <div className="space-y-3">
+              {withdrawRequests.map((r) => (
+                <div key={r.id} className="glass-card p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-textmain">
+                        {r.goal_title}
+                        <span className="ml-2 text-textmuted font-normal tabular-nums">
+                          {r.amount.toLocaleString()} {r.currency}
+                        </span>
+                      </p>
+                      <p className="text-xs text-textmuted mt-0.5">
+                        {r.user_full_name} — {r.user_email} · {new Date(r.created_at).toLocaleString()}
+                      </p>
+                      <p className="text-sm text-textmain mt-2">"{r.reason}"</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => openChat(r.user_id)} title="Chat with this user" className="text-textmuted hover:text-primary">
+                        <MessageSquare size={15} />
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => setWithdrawRejectingId(withdrawRejectingId === r.id ? null : r.id)}
+                        className="btn-secondary text-xs px-2 py-1.5"
+                      >
+                        <XIcon size={14} />
+                        Reject
+                      </button>
+                      <button
+                        disabled={busy}
+                        onClick={() => approveWithdrawRequest(r.id)}
+                        className="text-xs px-2 py-1.5 rounded-lg bg-primary text-white font-semibold hover:brightness-95 flex items-center gap-1"
+                      >
+                        <Check size={14} />
+                        Approve & send money
+                      </button>
+                    </div>
+                  </div>
+
+                  {withdrawRejectingId === r.id && (
+                    <div className="mt-3 flex gap-2">
+                      <input
+                        autoFocus
+                        value={withdrawReqNote}
+                        onChange={(e) => setWithdrawReqNote(e.target.value)}
+                        placeholder="Optional note explaining why (goes to their notifications)"
+                        className="input-field flex-1 text-sm"
+                      />
+                      <button disabled={busy} onClick={() => rejectWithdrawRequest(r.id)} className="btn-primary text-sm shrink-0">
                         {busy ? <Loader2 size={14} className="animate-spin" /> : 'Send & reject'}
                       </button>
                     </div>
