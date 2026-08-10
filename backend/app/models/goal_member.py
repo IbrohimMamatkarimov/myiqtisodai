@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, Numeric, UniqueConstraint
+from sqlalchemy import Enum, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
@@ -37,6 +37,11 @@ class GoalMember(UUIDMixin, TimestampMixin, Base):
     status: Mapped[GoalMemberStatus] = mapped_column(
         Enum(GoalMemberStatus, name="goalmemberstatus"), default=GoalMemberStatus.pending, nullable=False
     )
+    # This member's own PIN for confirming a "collect the whole box" request
+    # - separate from a personal goal's pin_hash. Set the first time they
+    # ever confirm one of these (same lazy-capture pattern as a legacy
+    # personal goal's PIN), then required on every confirmation after that.
+    confirm_pin_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     goal = relationship("Goal", back_populates="members")
     user = relationship("User")

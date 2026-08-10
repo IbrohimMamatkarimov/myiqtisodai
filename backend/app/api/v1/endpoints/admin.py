@@ -16,7 +16,11 @@ from app.models.goal import Goal
 from app.models.goal_unlock_request import GoalUnlockRequest, UnlockRequestStatus
 from app.models.goal_member import GoalMember
 from app.models.goal_member_withdraw_confirmation import ConfirmationDecision, GoalMemberWithdrawConfirmation
-from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest, MemberWithdrawRequestStatus
+from app.models.goal_member_withdraw_request import (
+    GoalMemberWithdrawRequest,
+    MemberWithdrawRequestStatus,
+    MemberWithdrawRequestType,
+)
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.report import Report, ReportStatus
@@ -627,9 +631,14 @@ def approve_member_withdraw_request(
     _: User = Depends(get_current_superuser),
     db: Session = Depends(get_db),
 ):
-    """Actually moves the money: creates a real income entry for exactly the
-    requesting member's amount (never more than what they personally put
-    in), and reduces both their own share and the goal's total by that much."""
+    """Actually moves the money. For an 'own_share' request: a real income
+    entry for exactly the requesting member's amount (never more than what
+    they personally put in), reducing both their own share and the goal's
+    total. For a 'collect_all' request: the requester gets the goal's
+    ENTIRE current balance instead - every other member's contributed_amount
+    stays exactly as it was (it's a permanent record of what they put in
+    lifetime, not a running balance that withdrawals draw down), only the
+    goal's current_amount empties out."""
     req = db.get(GoalMemberWithdrawRequest, request_id)
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -655,12 +664,18 @@ def approve_member_withdraw_request(
     if not goal or not member:
         raise HTTPException(status_code=400, detail="The goal or membership behind this request no longer exists.")
 
-    amount = min(req.amount, float(member.contributed_amount))
+    if req.request_type == MemberWithdrawRequestType.collect_all:
+        amount = min(req.amount, float(goal.current_amount))
+        source_label = f"Oilaviy qutidan yig'ib olindi: {req.goal_title}"
+    else:
+        amount = min(req.amount, float(member.contributed_amount))
+        source_label = f"Oilaviy maqsaddan qaytarildi: {req.goal_title}"
+
     if amount > 0:
         db.add(
             Income(
                 user_id=req.user_id,
-                source_name=f"Oilaviy maqsaddan qaytarildi: {req.goal_title}",
+                source_name=source_label,
                 amount=amount,
                 currency=req.currency,
                 income_date=date.today(),
@@ -668,7 +683,8 @@ def approve_member_withdraw_request(
                 is_goal_transfer=True,
             )
         )
-        member.contributed_amount = float(member.contributed_amount) - amount
+        if req.request_type == MemberWithdrawRequestType.own_share:
+            member.contributed_amount = float(member.contributed_amount) - amount
         goal.current_amount = max(0, float(goal.current_amount) - amount)
         if goal.current_amount <= 0:
             goal.is_locked = False
@@ -677,12 +693,19 @@ def approve_member_withdraw_request(
     req.status = MemberWithdrawRequestStatus.approved
     req.admin_note = payload.note
 
+    if req.request_type == MemberWithdrawRequestType.collect_all:
+        notif_title = f"'{req.goal_title}' qutisi butunlay yig'ib olindi"
+        notif_message = payload.note or f"{amount:,.0f} {req.currency} balansingizga qaytarildi."
+    else:
+        notif_title = f"'{req.goal_title}' dagi ulushingiz qaytarildi"
+        notif_message = payload.note or f"{amount:,.0f} {req.currency} balansingizga qaytarildi."
+
     db.add(
         Notification(
             user_id=req.user_id,
             type=NotificationType.system,
-            title=f"'{req.goal_title}' dagi ulushingiz qaytarildi",
-            message=payload.note or f"{amount:,.0f} {req.currency} balansingizga qaytarildi.",
+            title=notif_title,
+            message=notif_message,
         )
     )
 

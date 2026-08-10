@@ -720,7 +720,7 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       ) : goal.is_group ? (
-                        <div className="px-3 pb-3">
+                        <div className="px-3 pb-3 space-y-1.5">
                           <Link
                             href="/goals"
                             onClick={(e) => e.stopPropagation()}
@@ -729,6 +729,28 @@ export default function DashboardPage() {
                             <Users size={13} />
                             {tg('members')}
                           </Link>
+                          {/* Getting your own contribution back was only reachable by
+                              digging into the Members modal on the Goals page - this
+                              jumps straight there with the withdraw-request form
+                              already open. Same for collecting the whole box - it used
+                              to only be reachable that way, buried below the own-share
+                              option, with no shortcut here at all. */}
+                          <Link
+                            href={{ pathname: '/goals', query: { openWithdraw: goal.id } }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="block w-full text-center text-[11px] font-medium text-textmuted hover:text-danger transition-colors"
+                          >
+                            {tg('requestMyShare')}
+                          </Link>
+                          {goal.current_amount > 0 && (
+                            <Link
+                              href={{ pathname: '/goals', query: { openCollectAll: goal.id } }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="block w-full text-center text-[11px] font-medium text-amber-600 hover:text-amber-700 transition-colors"
+                            >
+                              {tg('collectAllLabel')}
+                            </Link>
+                          )}
                         </div>
                       ) : completed ? (
                         <div className="px-3 pb-3 space-y-1.5">

@@ -15,12 +15,17 @@ from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.goal_member import GoalMember, GoalMemberStatus
 from app.models.goal_member_withdraw_confirmation import ConfirmationDecision, GoalMemberWithdrawConfirmation
-from app.models.goal_member_withdraw_request import GoalMemberWithdrawRequest, MemberWithdrawRequestStatus
+from app.models.goal_member_withdraw_request import (
+    GoalMemberWithdrawRequest,
+    MemberWithdrawRequestStatus,
+    MemberWithdrawRequestType,
+)
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
 from app.schemas.goal import (
     GoalAllocate,
+    GoalCollectAllRequestCreate,
     GoalCreate,
     GoalInviteOut,
     GoalInviteRespond,
@@ -197,6 +202,7 @@ def list_goal_members(
             contributed_amount=float(member.contributed_amount),
             is_owner=(user.id == goal.user_id),
             status=member.status.value,
+            has_confirm_pin=bool(member.confirm_pin_hash),
         )
         for member, user in rows
     ]
@@ -530,6 +536,7 @@ def _serialize_withdraw_request(db: Session, request: GoalMemberWithdrawRequest)
     data = GoalMemberWithdrawRequestOut.model_validate(request).model_dump()
     data["confirmations"] = confirmations
     data["all_confirmed"] = all_confirmed
+    data["request_type"] = request.request_type.value
     return GoalMemberWithdrawRequestOut(**data)
 
 
@@ -564,7 +571,13 @@ def confirm_member_withdraw(
     """Another group member signs off on (or declines) a withdrawal request.
     A single decline kills the request outright - it never even reaches an
     admin. Only once every other member has approved can an admin release
-    the money."""
+    the money.
+
+    For a 'collect_all' request specifically (someone taking the WHOLE box,
+    not just their own share), approving also requires this member's own
+    PIN - set right here the first time they ever confirm one of these,
+    verified against it every time after. Declining never needs a PIN;
+    saying no doesn't require proving who you are."""
     request = db.get(GoalMemberWithdrawRequest, request_id)
     if not request:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -578,6 +591,21 @@ def confirm_member_withdraw(
         raise HTTPException(status_code=403, detail="Sizdan bu so'rov uchun tasdiq so'ralmagan")
     if request.status != MemberWithdrawRequestStatus.pending or confirmation.decision != ConfirmationDecision.pending:
         raise HTTPException(status_code=400, detail="Bu so'rov allaqachon hal qilingan")
+
+    if payload.approve and request.request_type == MemberWithdrawRequestType.collect_all:
+        member = db.scalar(
+            select(GoalMember).where(GoalMember.goal_id == request.goal_id, GoalMember.user_id == current_user.id)
+        )
+        if not member:
+            raise HTTPException(status_code=403, detail="Sizdan bu so'rov uchun tasdiq so'ralmagan")
+        if not payload.pin or len(payload.pin) < 4:
+            raise HTTPException(status_code=400, detail="PIN kod kamida 4 ta belgidan iborat bo'lishi kerak")
+        if not member.confirm_pin_hash:
+            # First time confirming one of these - this PIN becomes theirs
+            # for every future collect-all confirmation on any group goal.
+            member.confirm_pin_hash = hash_password(payload.pin)
+        elif not verify_password(payload.pin, member.confirm_pin_hash):
+            raise HTTPException(status_code=400, detail="PIN noto'g'ri")
 
     confirmation.decision = ConfirmationDecision.approved if payload.approve else ConfirmationDecision.rejected
 
@@ -593,10 +621,47 @@ def confirm_member_withdraw(
                 link="/goals",
             )
         )
+    else:
+        # Leave status as 'pending' - the admin endpoint (approve_member_withdraw_request)
+        # does its own live check of every confirmation before releasing funds,
+        # and requires status=='pending' as a precondition. Flipping status here
+        # would make that admin endpoint reject a fully-confirmed request as
+        # "already decided". Just let the requester know all members are in.
+        all_confirmations = db.scalars(
+            select(GoalMemberWithdrawConfirmation).where(GoalMemberWithdrawConfirmation.request_id == request.id)
+        ).all()
+        if all(c.decision == ConfirmationDecision.approved for c in all_confirmations):
+            db.add(
+                Notification(
+                    user_id=request.user_id,
+                    type=NotificationType.system,
+                    title=f"'{request.goal_title}' so'rovingiz tasdiqlandi",
+                    message="Barcha a'zolar roziligini berdi. Endi administrator pulni yuborishini kutmoqda.",
+                    link="/goals",
+                )
+            )
 
     db.commit()
     db.refresh(request)
     return _serialize_withdraw_request(db, request)
+
+
+def _ensure_no_pending_withdraw_request(db: Session, goal_id: uuid.UUID) -> None:
+    """Blocks a second withdrawal request (of either type) from being filed
+    while one is still pending on the same goal - without this, an
+    own-share request and a collect-all request could both be in flight at
+    once and both get approved, double-counting the same money."""
+    existing = db.scalar(
+        select(GoalMemberWithdrawRequest).where(
+            GoalMemberWithdrawRequest.goal_id == goal_id,
+            GoalMemberWithdrawRequest.status == MemberWithdrawRequestStatus.pending,
+        )
+    )
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail="Bu maqsad uchun allaqachon kutilayotgan so'rov bor. Avval uni hal qiling.",
+        )
 
 
 @router.post("/{goal_id}/request-member-withdraw", response_model=GoalMemberWithdrawRequestOut, status_code=status.HTTP_201_CREATED)
@@ -617,6 +682,7 @@ def request_member_withdraw(
         raise HTTPException(status_code=403, detail="Siz hali bu maqsadga taklifni qabul qilmagansiz")
     if payload.amount > float(member.contributed_amount) + 0.01:
         raise HTTPException(status_code=400, detail="Bu summa sizning ulushingizdan ko'p")
+    _ensure_no_pending_withdraw_request(db, goal.id)
 
     request = GoalMemberWithdrawRequest(
         goal_id=goal.id,
@@ -625,6 +691,7 @@ def request_member_withdraw(
         amount=payload.amount,
         currency=goal.currency,
         reason=payload.reason,
+        request_type=MemberWithdrawRequestType.own_share,
     )
     db.add(request)
     db.flush()
@@ -644,6 +711,63 @@ def request_member_withdraw(
                 type=NotificationType.system,
                 title=f"'{goal.title}' dan mablag' yechish so'rovi",
                 message=f"{current_user.full_name} o'z ulushidan {payload.amount:,.0f} {goal.currency} yechib olishni so'ramoqda. Tasdiqlaysizmi?",
+                link="/goals",
+            )
+        )
+
+    db.commit()
+    db.refresh(request)
+    return _serialize_withdraw_request(db, request)
+
+
+@router.post("/{goal_id}/request-collect-all", response_model=GoalMemberWithdrawRequestOut, status_code=status.HTTP_201_CREATED)
+def request_collect_all(
+    goal_id: uuid.UUID,
+    payload: GoalCollectAllRequestCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """A group-goal member asking to collect the ENTIRE box balance for
+    themselves - not just what they personally put in. Same confirmation
+    gate as an own-share request (every other accepted member, then an
+    admin), except confirming this specific type requires each member's own
+    PIN, not just a button tap - see confirm_member_withdraw."""
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+    if member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=403, detail="Siz hali bu maqsadga taklifni qabul qilmagansiz")
+    if float(goal.current_amount) <= 0:
+        raise HTTPException(status_code=400, detail="Bu qutida mablag' yo'q")
+    _ensure_no_pending_withdraw_request(db, goal.id)
+
+    request = GoalMemberWithdrawRequest(
+        goal_id=goal.id,
+        user_id=current_user.id,
+        goal_title=goal.title,
+        amount=float(goal.current_amount),
+        currency=goal.currency,
+        reason=payload.reason,
+        request_type=MemberWithdrawRequestType.collect_all,
+    )
+    db.add(request)
+    db.flush()
+
+    other_members = db.scalars(
+        select(GoalMember).where(
+            GoalMember.goal_id == goal.id,
+            GoalMember.status == GoalMemberStatus.accepted,
+            GoalMember.user_id != current_user.id,
+        )
+    ).all()
+    for other in other_members:
+        db.add(GoalMemberWithdrawConfirmation(request_id=request.id, user_id=other.user_id))
+        db.add(
+            Notification(
+                user_id=other.user_id,
+                type=NotificationType.system,
+                title=f"'{goal.title}' qutisini butunlay yig'ib olish so'rovi",
+                message=f"{current_user.full_name} qutidagi barcha {request.amount:,.0f} {goal.currency} ni yig'ib olishni so'ramoqda. Tasdiqlash uchun PIN kodingiz kerak bo'ladi.",
                 link="/goals",
             )
         )

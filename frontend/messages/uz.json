@@ -243,9 +243,17 @@
     "yourShare": "Sizning ulushingiz",
     "requestMyShare": "Ulushimni qaytarib olish",
     "pendingConfirmations": "Tasdiqlashingiz kerak",
+    "confirmationsProgress": "{approved}/{total} a'zo tasdiqladi",
     "memberWantsToWithdraw": "{name} {amount} yechib olishni so'ramoqda",
     "confirmApprove": "Tasdiqlash",
     "confirmReject": "Rad etish",
+    "collectAllLabel": "Butun qutini yig'ish",
+    "collectAllHint": "Qutidagi BARCHA mablag'ni o'zingiz uchun so'raysiz — faqat o'z ulushingiz emas. Har bir a'zo o'z PIN kodi bilan tasdiqlashi kerak.",
+    "collectAllReasonPlaceholder": "Nega butun qutini yig'ib olmoqchisiz?",
+    "collectAllRequestSent": "So'rov yuborildi — barcha a'zolar tasdiqlashi kerak",
+    "memberWantsToCollectAll": "{name} qutidagi barcha {amount} ni yig'ib olishni so'ramoqda",
+    "enterConfirmPinLabel": "Tasdiqlash PIN kodini kiriting",
+    "confirmPinFirstTimeHint": "Birinchi marta tasdiqlayapsiz — shu PIN kod keyingi safar ham so'raladi",
     "confirmAllocate": "\u00ab{goal}\u00bb uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
   },
   "assistant": {

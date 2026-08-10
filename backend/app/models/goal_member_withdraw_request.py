@@ -14,6 +14,17 @@ class MemberWithdrawRequestStatus(str, enum.Enum):
     rejected = "rejected"
 
 
+class MemberWithdrawRequestType(str, enum.Enum):
+    # Just their own contributed_amount back - the original, still-default
+    # behavior.
+    own_share = "own_share"
+    # The ENTIRE current box balance, going to this requester - not capped
+    # to what they personally put in. Confirming one of these requires each
+    # other member's own PIN, not just a button tap (see
+    # GoalMemberWithdrawConfirmation / confirm_member_withdraw).
+    collect_all = "collect_all"
+
+
 class GoalMemberWithdrawRequest(UUIDMixin, TimestampMixin, Base):
     """A group-goal member asking for their own contributed share back.
     Unlike a personal goal (self-serve with a PIN), a group member's money
@@ -37,6 +48,11 @@ class GoalMemberWithdrawRequest(UUIDMixin, TimestampMixin, Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[MemberWithdrawRequestStatus] = mapped_column(
         Enum(MemberWithdrawRequestStatus), default=MemberWithdrawRequestStatus.pending, nullable=False
+    )
+    request_type: Mapped[MemberWithdrawRequestType] = mapped_column(
+        Enum(MemberWithdrawRequestType, name="goalmemberwithdrawrequesttype"),
+        default=MemberWithdrawRequestType.own_share,
+        nullable=False,
     )
     admin_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 

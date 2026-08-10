@@ -243,9 +243,17 @@
     "yourShare": "Ваша доля",
     "requestMyShare": "Запросить свою долю обратно",
     "pendingConfirmations": "Требуется ваше подтверждение",
+    "confirmationsProgress": "{approved}/{total} участник(ов) подтвердили",
     "memberWantsToWithdraw": "{name} хочет вывести {amount}",
     "confirmApprove": "Подтвердить",
     "confirmReject": "Отклонить",
+    "collectAllLabel": "Забрать всю копилку",
+    "collectAllHint": "Вы запрашиваете ВСЕ средства из копилки — а не только свою долю. Каждый участник должен подтвердить своим PIN-кодом.",
+    "collectAllReasonPlaceholder": "Почему вы хотите забрать всю копилку?",
+    "collectAllRequestSent": "Запрос отправлен — каждый участник должен подтвердить",
+    "memberWantsToCollectAll": "{name} хочет забрать всю копилку ({amount})",
+    "enterConfirmPinLabel": "Введите свой PIN-код для подтверждения",
+    "confirmPinFirstTimeHint": "Это ваше первое подтверждение такого типа — этот PIN-код понадобится и в следующий раз",
     "confirmAllocate": "Выделить {amount} на «{goal}»? Эта сумма будет списана с вашего баланса и заблокирована в этой цели."
   },
   "assistant": {

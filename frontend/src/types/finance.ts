@@ -176,6 +176,7 @@ export interface GoalMember {
   contributed_amount: number;
   is_owner: boolean;
   status: 'pending' | 'accepted';
+  has_confirm_pin?: boolean;
 }
 
 export interface GoalInvite {

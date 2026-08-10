@@ -63,6 +63,9 @@ class GoalMemberOut(BaseModel):
     contributed_amount: float
     is_owner: bool = False
     status: str = "accepted"
+    # Whether this member has already set their collect-all confirmation PIN
+    # - lets the frontend show "first time" hint text only when it's true.
+    has_confirm_pin: bool = False
 
 
 class GoalInviteOut(BaseModel):
@@ -140,6 +143,13 @@ class GoalMemberWithdrawRequestCreate(BaseModel):
     reason: str = Field(min_length=2, max_length=1000)
 
 
+class GoalCollectAllRequestCreate(BaseModel):
+    # No amount field - it's always the goal's entire current balance,
+    # snapshotted server-side at request time, never something the
+    # requester types in themselves.
+    reason: str = Field(min_length=2, max_length=1000)
+
+
 class WithdrawConfirmationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -150,6 +160,11 @@ class WithdrawConfirmationOut(BaseModel):
 
 class WithdrawConfirmationDecide(BaseModel):
     approve: bool
+    # Required only when confirming a request whose request_type is
+    # 'collect_all' - the endpoint enforces that, not this schema, since it
+    # depends on which request is being confirmed. Ignored for 'own_share'
+    # requests, which stay a plain approve/reject with no PIN.
+    pin: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
 
 class GoalMemberWithdrawRequestOut(BaseModel):
@@ -168,6 +183,7 @@ class GoalMemberWithdrawRequestOut(BaseModel):
     # Whether the goal's other members have all signed off yet - an admin
     # can't release the money until this is true.
     all_confirmed: bool = True
+    request_type: str = "own_share"
 
 
 class AdminGoalMemberWithdrawRequestOut(GoalMemberWithdrawRequestOut):

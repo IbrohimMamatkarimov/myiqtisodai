@@ -243,9 +243,17 @@
     "yourShare": "Your share",
     "requestMyShare": "Request my share back",
     "pendingConfirmations": "Needs your confirmation",
+    "confirmationsProgress": "{approved}/{total} member(s) confirmed",
     "memberWantsToWithdraw": "{name} wants to withdraw {amount}",
     "confirmApprove": "Confirm",
     "confirmReject": "Decline",
+    "collectAllLabel": "Collect the whole box",
+    "collectAllHint": "You're asking for ALL the money in the box — not just your own share. Every member has to confirm with their own PIN.",
+    "collectAllReasonPlaceholder": "Why do you want to collect the whole box?",
+    "collectAllRequestSent": "Request sent — every member needs to confirm",
+    "memberWantsToCollectAll": "{name} wants to collect the entire box ({amount})",
+    "enterConfirmPinLabel": "Enter your confirmation PIN",
+    "confirmPinFirstTimeHint": "First time confirming one of these — this PIN will be asked for again next time",
     "confirmAllocate": "Allocate {amount} to \"{goal}\"? This will be deducted from your balance and locked toward this goal."
   },
   "assistant": {

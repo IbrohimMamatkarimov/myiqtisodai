@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Target, Sparkles, Trash2, Loader2, X, Lock, Unlock, Users, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
@@ -124,6 +124,22 @@ export default function GoalsPage() {
   const [memberWithdrawSubmitting, setMemberWithdrawSubmitting] = useState(false);
   const [memberWithdrawSentFor, setMemberWithdrawSentFor] = useState<string | null>(null);
 
+  // Request to collect the ENTIRE box balance (not just my own share) -
+  // same admin-approval gate as an own-share request, but confirming this
+  // one requires every other member's PIN, not just a button tap.
+  const [collectAllOpen, setCollectAllOpen] = useState(false);
+  const [collectAllReason, setCollectAllReason] = useState('');
+  const [collectAllError, setCollectAllError] = useState('');
+  const [collectAllSubmitting, setCollectAllSubmitting] = useState(false);
+  const [collectAllSentFor, setCollectAllSentFor] = useState<string | null>(null);
+
+  // PIN entry per pending request being confirmed (only used for
+  // 'collect_all' requests) - keyed by request id so multiple could
+  // theoretically be entered independently, though only one request is ever
+  // pending on a goal at once.
+  const [confirmPins, setConfirmPins] = useState<Record<string, string>>({});
+  const [confirmPinErrors, setConfirmPinErrors] = useState<Record<string, string>>({});
+
   // Allocate (add funds) panel state
   const [allocateFor, setAllocateFor] = useState<string | null>(null);
   const [fundsAmount, setFundsAmount] = useState('');
@@ -158,6 +174,14 @@ export default function GoalsPage() {
   const [invites, setInvites] = useState<GoalInvite[]>([]);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
 
+  // Pending withdrawal requests for the goal currently open in the Members
+  // modal - confirm/reject shows for whichever ones name ME as a needed
+  // confirmer (every other accepted member gets one, not just the admin).
+  const [withdrawRequests, setWithdrawRequests] = useState<
+    { id: string; user_id: string; amount: number; currency: string; reason: string; status: string; request_type: string; confirmations: { user_id: string; full_name: string; decision: string }[] }[]
+  >([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
   function loadInvites() {
     api.get<GoalInvite[]>('/goals/invites').then(({ data }) => setInvites(data)).catch(() => setInvites([]));
   }
@@ -183,6 +207,29 @@ export default function GoalsPage() {
     loadGoals();
     loadInvites();
   }, [checked]);
+
+  // Deep link from the dashboard's compact group card (?openWithdraw=<id>) -
+  // jumps straight to the withdraw-request form inside the Members modal
+  // instead of landing here with no obvious next step. Reads the raw URL
+  // (not next/navigation's useSearchParams, which needs a Suspense boundary
+  // at build time) since this only ever needs to run once, client-side,
+  // after mount. The ref guard stops it from firing again on a later
+  // loadGoals() (invite accept, allocate, etc.) and popping the modal back
+  // open after the person already closed it.
+  const openedFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (openedFromQueryRef.current || goals.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const withdrawGoalId = params.get('openWithdraw');
+    const collectAllGoalId = params.get('openCollectAll');
+    const goalId = withdrawGoalId || collectAllGoalId;
+    if (!goalId) return;
+    const goal = goals.find((g) => g.id === goalId);
+    if (goal) {
+      openedFromQueryRef.current = true;
+      openMembers(goal, !!withdrawGoalId, !!collectAllGoalId);
+    }
+  }, [goals]);
 
   if (!checked) return null;
 
@@ -371,15 +418,7 @@ export default function GoalsPage() {
     setUnlockRequestError('');
   }
 
-  // Pending withdrawal requests for the goal currently open in the Members
-  // modal - confirm/reject shows for whichever ones name ME as a needed
-  // confirmer (every other accepted member gets one, not just the admin).
-  const [withdrawRequests, setWithdrawRequests] = useState<
-    { id: string; user_id: string; amount: number; currency: string; reason: string; status: string; confirmations: { user_id: string; full_name: string; decision: string }[] }[]
-  >([]);
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-
-  async function openMembers(goal: Goal, autoWithdraw?: boolean) {
+  async function openMembers(goal: Goal, autoWithdraw?: boolean, autoCollectAll?: boolean) {
     setMembersFor(goal);
     setMembers([]);
     setWithdrawRequests([]);
@@ -389,6 +428,11 @@ export default function GoalsPage() {
     setMemberWithdrawAmount('');
     setMemberWithdrawReason('');
     setMemberWithdrawError('');
+    setCollectAllOpen(false);
+    setCollectAllReason('');
+    setCollectAllError('');
+    setConfirmPins({});
+    setConfirmPinErrors({});
     setMembersLoading(true);
     try {
       const [membersRes, requestsRes] = await Promise.all([
@@ -404,6 +448,9 @@ export default function GoalsPage() {
           setMemberWithdrawAmount(String(mine.contributed_amount));
         }
       }
+      if (autoCollectAll) {
+        setCollectAllOpen(true);
+      }
     } catch {
       setMembers([]);
     } finally {
@@ -411,13 +458,35 @@ export default function GoalsPage() {
     }
   }
 
-  async function handleConfirmWithdraw(requestId: string, approve: boolean) {
+  async function handleConfirmWithdraw(requestId: string, approve: boolean, pin?: string) {
     setConfirmingId(requestId);
+    setConfirmPinErrors((prev) => ({ ...prev, [requestId]: '' }));
     try {
-      await api.post(`/goals/withdraw-requests/${requestId}/confirm`, { approve });
+      await api.post(`/goals/withdraw-requests/${requestId}/confirm`, { approve, pin });
       setWithdrawRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } catch (err: any) {
+      // Wrong PIN (or too-short PIN) on a collect-all confirmation - let
+      // them retry rather than silently doing nothing, which is what this
+      // used to do before there was any PIN involved to get wrong.
+      setConfirmPinErrors((prev) => ({ ...prev, [requestId]: getErrorMessage(err, t('wrongPin')) }));
     } finally {
       setConfirmingId(null);
+    }
+  }
+
+  async function handleCollectAllRequest() {
+    if (!membersFor || collectAllReason.trim().length < 2) return;
+    setCollectAllSubmitting(true);
+    setCollectAllError('');
+    try {
+      const { data } = await api.post(`/goals/${membersFor.id}/request-collect-all`, { reason: collectAllReason.trim() });
+      setWithdrawRequests((prev) => [...prev, data]);
+      setCollectAllSentFor(membersFor.id);
+      setCollectAllOpen(false);
+    } catch (err: any) {
+      setCollectAllError(getErrorMessage(err, t('unlockRequestError')));
+    } finally {
+      setCollectAllSubmitting(false);
     }
   }
 
@@ -455,10 +524,14 @@ export default function GoalsPage() {
     setMemberWithdrawSubmitting(true);
     setMemberWithdrawError('');
     try {
-      await api.post(`/goals/${membersFor.id}/request-member-withdraw`, {
+      const { data } = await api.post(`/goals/${membersFor.id}/request-member-withdraw`, {
         amount,
         reason: memberWithdrawReason.trim(),
       });
+      // So the collect-all trigger below also disappears immediately,
+      // without needing to reopen the modal - both read "is there already a
+      // pending request" off this same array.
+      setWithdrawRequests((prev) => [...prev, data]);
       setMemberWithdrawSentFor(membersFor.id);
       setMemberWithdrawOpen(false);
     } catch (err: any) {
@@ -1058,13 +1131,27 @@ export default function GoalsPage() {
                       )}
                     </div>
                     {goal.is_group && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openMembers(goal, true); }}
-                        className="w-full mt-2 text-xs font-medium text-textmuted hover:text-danger transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Unlock size={12} />
-                        {t('requestMyShare')}
-                      </button>
+                      <div className="flex items-center justify-center gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => openMembers(goal, true)}
+                          className="text-xs font-medium text-textmuted hover:text-danger transition-colors flex items-center justify-center gap-1"
+                        >
+                          <Unlock size={12} />
+                          {t('requestMyShare')}
+                        </button>
+                        {goal.current_amount > 0 && (
+                          <>
+                            <span className="text-textmuted/30">·</span>
+                            <button
+                              onClick={() => openMembers(goal, false, true)}
+                              className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Unlock size={12} />
+                              {t('collectAllLabel')}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     )}
                     {!goal.is_group && goal.is_locked && (
                       timeLocked ? (
@@ -1207,30 +1294,54 @@ export default function GoalsPage() {
               </div>
             )}
 
-            {/* Withdrawal requests waiting on my confirmation */}
-            {withdrawRequests.filter((r) => r.user_id !== user?.id).length > 0 && (
-              <div className="space-y-2 mb-4 border-t border-textmain/10 pt-4">
-                <p className="label-text">{t('pendingConfirmations')}</p>
-                {withdrawRequests
-                  .filter((r) => r.user_id !== user?.id)
-                  .map((r) => {
-                    const mine = r.confirmations.find((c) => c.user_id === user?.id);
+            {/* Withdrawal requests waiting on my confirmation - computed
+                once so the header and the list below it can never disagree
+                about whether there's actually anything to show (that
+                mismatch used to leave a "Tasdiqlashingiz kerak" heading
+                with nothing rendered under it, whenever a request existed
+                that wasn't mine to confirm - already decided, or no
+                confirmation row for me at all). */}
+            {(() => {
+              const actionable = withdrawRequests.filter((r) => {
+                if (r.user_id === user?.id) return false;
+                const mine = r.confirmations.find((c) => c.user_id === user?.id);
+                return !!mine && mine.decision === 'pending';
+              });
+              if (actionable.length === 0) return null;
+              return (
+                <div className="space-y-2 mb-4 border-t border-textmain/10 pt-4">
+                  <p className="label-text">{t('pendingConfirmations')}</p>
+                  {actionable.map((r) => {
                     const requester = members.find((m) => m.user_id === r.user_id);
-                    if (!mine || mine.decision !== 'pending') return null;
+                    const isCollectAll = r.request_type === 'collect_all';
+                    const memberRow = members.find((m) => m.user_id === user?.id);
                     return (
-                      <div key={r.id} className="rounded-xl bg-textmain/[0.03] p-3">
+                      <div key={r.id} className={`rounded-xl p-3 ${isCollectAll ? 'bg-amber-50 border border-amber-200' : 'bg-textmain/[0.03]'}`}>
                         <p className="text-sm text-textmain">
-                          {t('memberWantsToWithdraw', {
-                            name: requester?.full_name || '',
-                            amount: formatCurrency(r.amount, r.currency),
-                          })}
+                          {isCollectAll
+                            ? t('memberWantsToCollectAll', { name: requester?.full_name || '', amount: formatCurrency(r.amount, r.currency) })
+                            : t('memberWantsToWithdraw', { name: requester?.full_name || '', amount: formatCurrency(r.amount, r.currency) })}
                         </p>
                         <p className="text-xs text-textmuted mt-1 italic">"{r.reason}"</p>
+                        {isCollectAll && (
+                          <div className="mt-2">
+                            <PinField
+                              name={`confirm-pin-${r.id}`}
+                              value={confirmPins[r.id] || ''}
+                              onChange={(v) => setConfirmPins((prev) => ({ ...prev, [r.id]: v }))}
+                              placeholder={t('enterConfirmPinLabel')}
+                            />
+                            {!memberRow?.has_confirm_pin && (
+                              <p className="text-[11px] text-textmuted mt-1">{t('confirmPinFirstTimeHint')}</p>
+                            )}
+                            {confirmPinErrors[r.id] && <p className="text-xs text-danger mt-1">{confirmPinErrors[r.id]}</p>}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-2.5">
                           <button
-                            onClick={() => handleConfirmWithdraw(r.id, true)}
-                            disabled={confirmingId === r.id}
-                            className="btn-primary flex-1 text-xs py-1.5"
+                            onClick={() => handleConfirmWithdraw(r.id, true, isCollectAll ? confirmPins[r.id] : undefined)}
+                            disabled={confirmingId === r.id || (isCollectAll && (confirmPins[r.id] || '').length < 4)}
+                            className={`flex-1 text-xs py-1.5 ${isCollectAll ? 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold hover:brightness-95 transition-all' : 'btn-primary'}`}
                           >
                             {confirmingId === r.id ? <Loader2 size={13} className="animate-spin" /> : t('confirmApprove')}
                           </button>
@@ -1245,8 +1356,49 @@ export default function GoalsPage() {
                       </div>
                     );
                   })}
-              </div>
-            )}
+                </div>
+              );
+            })()}
+
+            {/* My own pending request's live status - previously this only
+                ever showed right after submitting (transient local state),
+                so closing and reopening the modal (or another member
+                confirming while I wasn't looking) showed nothing at all
+                about where things stood. */}
+            {(() => {
+              const mine = withdrawRequests.find((r) => r.user_id === user?.id);
+              if (!mine) return null;
+              const others = mine.confirmations;
+              const approvedCount = others.filter((c) => c.decision === 'approved').length;
+              return (
+                <div className="rounded-xl p-3 mb-4 bg-primary/5 border border-primary/10">
+                  <p className="text-sm font-medium text-textmain">
+                    {mine.request_type === 'collect_all' ? t('collectAllRequestSent') : t('unlockRequestSent')}
+                  </p>
+                  <p className="text-xs text-textmuted mt-1">
+                    {t('confirmationsProgress', { approved: approvedCount, total: others.length })}
+                  </p>
+                  <div className="space-y-1 mt-2">
+                    {others.map((c) => (
+                      <div key={c.user_id} className="flex items-center justify-between text-xs">
+                        <span className="text-textmuted">{c.full_name}</span>
+                        <span
+                          className={
+                            c.decision === 'approved'
+                              ? 'text-primary font-medium'
+                              : c.decision === 'rejected'
+                                ? 'text-danger font-medium'
+                                : 'text-textmuted'
+                          }
+                        >
+                          {c.decision === 'approved' ? t('confirmApprove') : c.decision === 'rejected' ? t('confirmReject') : t('pendingBadge')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Owner: invite someone new */}
             {membersFor.user_id === user?.id && (
@@ -1271,13 +1423,13 @@ export default function GoalsPage() {
               </div>
             )}
 
-            {/* Anyone: request their own share back - always admin-approved */}
+            {/* Anyone: request their own share back - always admin-approved.
+                Hidden while any request is pending (own or someone else's) -
+                the status card above already shows what's happening instead. */}
             {(() => {
               const mine = members.find((m) => m.user_id === user?.id);
               if (!mine || mine.contributed_amount <= 0) return null;
-              if (memberWithdrawSentFor === membersFor.id) {
-                return <p className="text-xs text-primary font-medium border-t border-textmain/10 pt-4 mt-1">{t('unlockRequestSent')}</p>;
-              }
+              if (withdrawRequests.length > 0) return null;
               return (
                 <div className="border-t border-textmain/10 pt-4 mt-1">
                   {memberWithdrawOpen ? (
@@ -1327,6 +1479,51 @@ export default function GoalsPage() {
                 </div>
               );
             })()}
+
+            {/* Anyone: request to collect the ENTIRE box, not just their own
+                share - gated the same way (one pending request at a time,
+                and there has to actually be money in the box), but
+                confirming this one needs each member's own PIN. Hidden
+                while any request is pending, same as the own-share trigger
+                above - the status card covers that case instead. */}
+            {membersFor.current_amount > 0 && withdrawRequests.length === 0 && (
+              <div className="border-t border-textmain/10 pt-4 mt-1">
+                {collectAllOpen ? (
+                  <div className="space-y-2.5">
+                    <p className="text-xs text-textmuted">{t('collectAllHint')}</p>
+                    <textarea
+                      autoFocus
+                      value={collectAllReason}
+                      onChange={(e) => setCollectAllReason(e.target.value)}
+                      placeholder={t('collectAllReasonPlaceholder')}
+                      rows={2}
+                      className="input-field resize-none"
+                    />
+                    {collectAllError && <p className="text-xs text-danger">{collectAllError}</p>}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCollectAllRequest}
+                        disabled={collectAllSubmitting || collectAllReason.trim().length < 2}
+                        className="flex-1 text-sm py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold hover:brightness-95 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        {collectAllSubmitting ? <Loader2 size={14} className="animate-spin" /> : t('unlockRequestSubmit')}
+                      </button>
+                      <button onClick={() => setCollectAllOpen(false)} className="btn-secondary px-2.5">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setCollectAllOpen(true)}
+                    className="w-full text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Unlock size={13} />
+                    {t('collectAllLabel')}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
