@@ -113,7 +113,14 @@ def respond_to_invite(
     goal = db.get(Goal, member.goal_id)
 
     if payload.accept:
+        if not payload.pin or len(payload.pin) < 4:
+            raise HTTPException(status_code=400, detail="Qutiga qo'shilish uchun o'z shaxsiy PIN kodingizni o'rnatishingiz kerak")
         member.status = GoalMemberStatus.accepted
+        # This member's OWN PIN, set right now as a condition of joining -
+        # not a shared PIN, not captured later. From now on, whenever
+        # someone else on this goal requests a withdrawal, this is the PIN
+        # THIS member types in to confirm it (see confirm_member_withdraw).
+        member.confirm_pin_hash = hash_password(payload.pin)
         db.add(
             Notification(
                 user_id=goal.user_id,
@@ -150,15 +157,12 @@ def create_goal(
     data = payload.model_dump(exclude={"pin"})
     if data.get("is_group"):
         # A time-lock doesn't mean much for a group goal - withdrawing
-        # always needs every member's confirmation plus an admin anyway,
-        # so there's no separate self-serve unlock date to protect against.
+        # always needs every member's confirmation anyway, so there's no
+        # separate self-serve unlock date to protect against.
         data["lock_days"] = None
     goal = Goal(user_id=current_user.id, **data)
-    if payload.pin:
-        # One shared PIN either way: for a personal goal it's what unlocks
-        # a withdrawal later; for a group goal it's what every member
-        # (owner included) types in to confirm someone else's withdrawal
-        # request - see confirm_member_withdraw.
+    if payload.pin and not goal.is_group:
+        # Personal goal: this is what unlocks a withdrawal later.
         goal.pin_hash = hash_password(payload.pin)
     # Deliberately no photo cover here (see stock_photos.py's docstring for
     # the full history) - even a moderated stock library can return an
@@ -170,8 +174,16 @@ def create_goal(
     if goal.is_group:
         # The creator is always a member too, at 0 contributed - so
         # "contribute" logic can treat owner and invited members exactly
-        # the same way from here on.
-        db.add(GoalMember(goal_id=goal.id, user_id=current_user.id, contributed_amount=0, status=GoalMemberStatus.accepted))
+        # the same way from here on. Their PIN (payload.pin, required for
+        # every new group goal) becomes THEIR OWN confirm PIN, same as
+        # every invited member sets for themselves when accepting - never a
+        # single shared PIN.
+        owner_member = GoalMember(
+            goal_id=goal.id, user_id=current_user.id, contributed_amount=0, status=GoalMemberStatus.accepted
+        )
+        if payload.pin:
+            owner_member.confirm_pin_hash = hash_password(payload.pin)
+        db.add(owner_member)
     db.commit()
     db.refresh(goal)
     return goal
@@ -632,16 +644,15 @@ def confirm_member_withdraw(
     db: Session = Depends(get_db),
 ):
     """Another group member signs off on (or declines) a withdrawal request.
-    A single decline kills the request outright - it never even reaches an
-    admin. Only once every other member has approved can an admin release
-    the money.
+    A single decline kills the request outright - it never even reaches the
+    money-release step. Only once every other member has approved does the
+    money move automatically (see the bottom of this function).
 
-    Approving either request type (own-share or collect-all) requires the
-    goal's shared PIN - the one set when the group goal was created, same
-    PIN every member uses. Declining never needs a PIN; saying no doesn't
-    require proving who you are. Legacy group goals created before a shared
-    PIN was required at creation have no pin_hash yet - the first person to
-    confirm on one of those sets it for everyone from then on."""
+    Approving either request type (own-share or collect-all) requires THIS
+    member's own PIN - the one they set for themselves when they joined the
+    box (or, for the owner, when they created it). Never a shared PIN, and
+    never anyone else's. Declining never needs a PIN; saying no doesn't
+    require proving who you are."""
     request = db.get(GoalMemberWithdrawRequest, request_id)
     if not request:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -657,12 +668,19 @@ def confirm_member_withdraw(
         raise HTTPException(status_code=400, detail="Bu so'rov allaqachon hal qilingan")
 
     if payload.approve:
-        goal = db.get(Goal, request.goal_id)
+        confirmer_member = db.scalar(
+            select(GoalMember).where(GoalMember.goal_id == request.goal_id, GoalMember.user_id == current_user.id)
+        )
+        if not confirmer_member:
+            raise HTTPException(status_code=403, detail="Siz bu maqsadning a'zosi emassiz")
         if not payload.pin or len(payload.pin) < 4:
             raise HTTPException(status_code=400, detail="PIN kod kamida 4 ta belgidan iborat bo'lishi kerak")
-        if not goal.pin_hash:
-            goal.pin_hash = hash_password(payload.pin)
-        elif not verify_password(payload.pin, goal.pin_hash):
+        if not confirmer_member.confirm_pin_hash:
+            # Shouldn't normally happen - every member sets their own PIN at
+            # join time now (respond_to_invite / create_goal) - but covers
+            # any member who joined before that was enforced.
+            confirmer_member.confirm_pin_hash = hash_password(payload.pin)
+        elif not verify_password(payload.pin, confirmer_member.confirm_pin_hash):
             raise HTTPException(status_code=400, detail="PIN noto'g'ri")
 
     confirmation.decision = ConfirmationDecision.approved if payload.approve else ConfirmationDecision.rejected

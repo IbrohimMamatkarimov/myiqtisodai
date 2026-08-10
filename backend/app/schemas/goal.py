@@ -14,10 +14,12 @@ class GoalCreate(BaseModel):
     currency: str = Field(default="UZS", max_length=8)
     lock_days: Optional[int] = Field(default=None, ge=1, le=3650)
     is_group: bool = False
-    # PIN is set once, at creation - required either way, whether the goal
-    # is personal (needed later to withdraw) or group (one shared PIN every
-    # member uses to confirm a withdrawal request, instead of each person
-    # having their own). Optional in the schema only for backward
+    # PIN is set once, at creation - required either way. For a personal
+    # goal, it's needed later to withdraw. For a group goal, the creator is
+    # auto-added as a member (see create_goal), so this becomes THEIR OWN
+    # confirm PIN - the same one every other invited member sets for
+    # themselves when they accept (GoalInviteRespond.pin) - not a single
+    # shared PIN anymore. Optional in the schema only for backward
     # compatibility with personal goals created before this existed (those
     # fall back to being asked for a PIN on first allocation instead) - the
     # endpoint itself requires it for every new group goal.
@@ -89,6 +91,13 @@ class GoalMemberInvite(BaseModel):
 
 class GoalInviteRespond(BaseModel):
     accept: bool
+    # Required when accept=True: the PIN this member is setting for
+    # themselves, right now, as a condition of joining the box - not
+    # optional, not captured later. This is THEIR OWN PIN (GoalMember.
+    # confirm_pin_hash), used only by them whenever they're asked to
+    # confirm someone else's withdrawal request on this goal. Not required
+    # when declining.
+    pin: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
 
 class GoalAllocate(BaseModel):
@@ -161,8 +170,10 @@ class WithdrawConfirmationOut(BaseModel):
 
 class WithdrawConfirmationDecide(BaseModel):
     approve: bool
-    # Required whenever approve=True, for either request type - the goal's
-    # shared PIN (set at creation). Not required when declining.
+    # Required whenever approve=True, for either request type - THIS
+    # member's own PIN, the one they set for themselves when they joined
+    # the box (or, for the owner, when they created it). Never a shared
+    # PIN. Not required when declining.
     pin: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
 

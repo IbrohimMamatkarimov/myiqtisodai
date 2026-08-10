@@ -173,6 +173,13 @@ export default function GoalsPage() {
   // main list at all until accepted (backend gate, not just hidden here).
   const [invites, setInvites] = useState<GoalInvite[]>([]);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  // Accepting an invite now requires setting my OWN confirm PIN first (used
+  // later whenever another member on this goal needs my sign-off) - this
+  // tracks which invite card is showing that PIN step.
+  const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
+  const [acceptPin, setAcceptPin] = useState('');
+  const [acceptPinConfirm, setAcceptPinConfirm] = useState('');
+  const [acceptPinError, setAcceptPinError] = useState('');
 
   // Pending withdrawal requests for the goal currently open in the Members
   // modal - confirm/reject shows for whichever ones name ME as a needed
@@ -186,15 +193,41 @@ export default function GoalsPage() {
     api.get<GoalInvite[]>('/goals/invites').then(({ data }) => setInvites(data)).catch(() => setInvites([]));
   }
 
-  async function respondToInvite(inviteId: string, accept: boolean) {
+  async function respondToInvite(inviteId: string, accept: boolean, pin?: string) {
     setRespondingTo(inviteId);
+    setAcceptPinError('');
     try {
-      await api.post(`/goals/invites/${inviteId}/respond`, { accept });
+      await api.post(`/goals/invites/${inviteId}/respond`, { accept, pin });
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      setAcceptingInviteId(null);
+      setAcceptPin('');
+      setAcceptPinConfirm('');
       if (accept) loadGoals();
+    } catch (err: any) {
+      if (accept) setAcceptPinError(getErrorMessage(err, t('pinMismatch')));
     } finally {
       setRespondingTo(null);
     }
+  }
+
+  function startAcceptInvite(inviteId: string) {
+    setAcceptingInviteId(inviteId);
+    setAcceptPin('');
+    setAcceptPinConfirm('');
+    setAcceptPinError('');
+  }
+
+  function submitAcceptInvite(inviteId: string) {
+    setAcceptPinError('');
+    if (acceptPin.length < 4) {
+      setAcceptPinError(t('pinPlaceholder'));
+      return;
+    }
+    if (acceptPin !== acceptPinConfirm) {
+      setAcceptPinError(t('pinMismatch'));
+      return;
+    }
+    respondToInvite(inviteId, true, acceptPin);
   }
 
   function loadGoals() {
@@ -611,31 +644,78 @@ export default function GoalsPage() {
       {invites.length > 0 && (
         <div className="space-y-2 mb-6">
           {invites.map((inv) => (
-            <div key={inv.id} className="glass-card p-4 flex items-center justify-between gap-3 border border-primary/20">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Users size={16} />
-                </span>
-                <p className="text-sm text-textmain min-w-0">
-                  {t('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
-                </p>
+            <div key={inv.id} className="glass-card p-4 border border-primary/20">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Users size={16} />
+                  </span>
+                  <p className="text-sm text-textmain min-w-0">
+                    {t('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
+                  </p>
+                </div>
+                {acceptingInviteId !== inv.id && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => respondToInvite(inv.id, false)}
+                      disabled={respondingTo === inv.id}
+                      className="btn-secondary text-sm px-3 py-1.5"
+                    >
+                      {t('declineInvite')}
+                    </button>
+                    <button
+                      onClick={() => startAcceptInvite(inv.id)}
+                      disabled={respondingTo === inv.id}
+                      className="btn-primary text-sm px-3 py-1.5"
+                    >
+                      {t('acceptInvite')}
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => respondToInvite(inv.id, false)}
-                  disabled={respondingTo === inv.id}
-                  className="btn-secondary text-sm px-3 py-1.5"
-                >
-                  {t('declineInvite')}
-                </button>
-                <button
-                  onClick={() => respondToInvite(inv.id, true)}
-                  disabled={respondingTo === inv.id}
-                  className="btn-primary text-sm px-3 py-1.5"
-                >
-                  {respondingTo === inv.id ? <Loader2 size={14} className="animate-spin" /> : t('acceptInvite')}
-                </button>
-              </div>
+              {acceptingInviteId === inv.id && (
+                <div className="mt-3 pt-3 border-t border-textmain/10 space-y-2.5">
+                  <p className="text-xs text-textmuted">{t('acceptInvitePinHint')}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label-text">{t('setPinLabel')}</label>
+                      <PinField
+                        name={`accept-pin-${inv.id}`}
+                        autoFocus
+                        value={acceptPin}
+                        onChange={setAcceptPin}
+                        placeholder={t('pinPlaceholder')}
+                      />
+                    </div>
+                    <div>
+                      <label className="label-text">{t('confirmPinLabel')}</label>
+                      <PinField
+                        name={`accept-pin-confirm-${inv.id}`}
+                        value={acceptPinConfirm}
+                        onChange={setAcceptPinConfirm}
+                        placeholder={t('pinPlaceholder')}
+                      />
+                    </div>
+                  </div>
+                  {acceptPinError && <p className="text-xs text-danger">{acceptPinError}</p>}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => submitAcceptInvite(inv.id)}
+                      disabled={respondingTo === inv.id}
+                      className="btn-primary text-sm px-3 py-1.5 flex-1"
+                    >
+                      {respondingTo === inv.id ? <Loader2 size={14} className="animate-spin" /> : t('acceptInvite')}
+                    </button>
+                    <button
+                      onClick={() => setAcceptingInviteId(null)}
+                      disabled={respondingTo === inv.id}
+                      className="btn-secondary text-sm px-3 py-1.5"
+                    >
+                      {tc('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -668,6 +748,7 @@ export default function GoalsPage() {
               </span>
             </label>
             {isGroup && <p className="text-xs text-textmuted mt-1.5">{t('groupGoalHint')}</p>}
+            {isGroup && <p className="text-xs text-primary mt-1.5">{t('groupOwnerPinHint')}</p>}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -1341,9 +1422,6 @@ export default function GoalsPage() {
                             onChange={(v) => setConfirmPins((prev) => ({ ...prev, [r.id]: v }))}
                             placeholder={t('enterConfirmPinLabel')}
                           />
-                          {!membersFor?.has_pin && (
-                            <p className="text-[11px] text-textmuted mt-1">{t('confirmPinFirstTimeHint')}</p>
-                          )}
                           {confirmPinErrors[r.id] && <p className="text-xs text-danger mt-1">{confirmPinErrors[r.id]}</p>}
                         </div>
                         <div className="flex items-center gap-2 mt-2.5">
