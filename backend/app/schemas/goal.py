@@ -14,12 +14,13 @@ class GoalCreate(BaseModel):
     currency: str = Field(default="UZS", max_length=8)
     lock_days: Optional[int] = Field(default=None, ge=1, le=3650)
     is_group: bool = False
-    # PIN is set once, at creation - required to later withdraw any money
-    # locked into this goal. Optional in the schema for backward
-    # compatibility with goals created before this existed (those still
-    # fall back to being asked for a PIN on first allocation instead).
-    # Group goals ignore this entirely - they never use a self-serve PIN,
-    # every withdrawal goes through admin approval instead.
+    # PIN is set once, at creation - required either way, whether the goal
+    # is personal (needed later to withdraw) or group (one shared PIN every
+    # member uses to confirm a withdrawal request, instead of each person
+    # having their own). Optional in the schema only for backward
+    # compatibility with personal goals created before this existed (those
+    # fall back to being asked for a PIN on first allocation instead) - the
+    # endpoint itself requires it for every new group goal.
     pin: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
 
@@ -160,10 +161,8 @@ class WithdrawConfirmationOut(BaseModel):
 
 class WithdrawConfirmationDecide(BaseModel):
     approve: bool
-    # Required only when confirming a request whose request_type is
-    # 'collect_all' - the endpoint enforces that, not this schema, since it
-    # depends on which request is being confirmed. Ignored for 'own_share'
-    # requests, which stay a plain approve/reject with no PIN.
+    # Required whenever approve=True, for either request type - the goal's
+    # shared PIN (set at creation). Not required when declining.
     pin: Optional[str] = Field(default=None, min_length=4, max_length=32)
 
 

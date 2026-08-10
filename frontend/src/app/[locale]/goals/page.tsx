@@ -236,15 +236,13 @@ export default function GoalsPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreatePinError('');
-    if (!isGroup) {
-      if (createPin.length < 4) {
-        setCreatePinError(t('pinPlaceholder'));
-        return;
-      }
-      if (createPin !== createPinConfirm) {
-        setCreatePinError(t('pinMismatch'));
-        return;
-      }
+    if (createPin.length < 4) {
+      setCreatePinError(t('pinPlaceholder'));
+      return;
+    }
+    if (createPin !== createPinConfirm) {
+      setCreatePinError(t('pinMismatch'));
+      return;
     }
     setSubmitting(true);
     try {
@@ -263,7 +261,7 @@ export default function GoalsPage() {
         deadline: deadline || undefined,
         currency,
         lock_days: effectiveLockDays,
-        pin: isGroup ? undefined : createPin,
+        pin: createPin,
         is_group: isGroup,
       });
       // Photo is entirely optional and separate from goal creation itself -
@@ -739,9 +737,8 @@ export default function GoalsPage() {
             )}
           </div>
           )}
-          {!isGroup && (
           <div>
-            <p className="text-xs text-textmuted mb-2">{t('setPinHint')}</p>
+            <p className="text-xs text-textmuted mb-2">{isGroup ? t('groupPinHint') : t('setPinHint')}</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label-text">{t('setPinLabel')}</label>
@@ -776,7 +773,6 @@ export default function GoalsPage() {
             </div>
             {createPinError && <p className="text-xs text-danger mt-1.5">{createPinError}</p>}
           </div>
-          )}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">
               {tc('cancel')}
@@ -917,13 +913,29 @@ export default function GoalsPage() {
 
                 {goal.is_completed ? (
                   goal.is_group ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openMembers(goal); }}
-                      className="w-full mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white font-semibold px-4 py-2.5 text-sm hover:brightness-105 transition-all"
-                    >
-                      <Users size={14} />
-                      {t('members')}
-                    </button>
+                    <div className="mt-4 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => openMembers(goal)}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white font-semibold px-4 py-2.5 text-sm hover:brightness-105 transition-all"
+                      >
+                        <Users size={14} />
+                        {t('members')}
+                      </button>
+                      <button
+                        onClick={() => openMembers(goal, true)}
+                        className="w-full text-xs font-medium text-textmuted hover:text-danger transition-colors"
+                      >
+                        {t('requestMyShare')}
+                      </button>
+                      {goal.current_amount > 0 && (
+                        <button
+                          onClick={() => openMembers(goal, false, true)}
+                          className="w-full text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors"
+                        >
+                          {t('collectAllLabel')}
+                        </button>
+                      )}
+                    </div>
                   ) : timeLocked ? (
                     <div className="mt-4 space-y-1.5" onClick={(e) => e.stopPropagation()}>
                       <p className="w-full text-xs font-medium text-textmuted flex items-center justify-center gap-1">
@@ -1314,7 +1326,6 @@ export default function GoalsPage() {
                   {actionable.map((r) => {
                     const requester = members.find((m) => m.user_id === r.user_id);
                     const isCollectAll = r.request_type === 'collect_all';
-                    const memberRow = members.find((m) => m.user_id === user?.id);
                     return (
                       <div key={r.id} className={`rounded-xl p-3 ${isCollectAll ? 'bg-amber-50 border border-amber-200' : 'bg-textmain/[0.03]'}`}>
                         <p className="text-sm text-textmain">
@@ -1323,24 +1334,22 @@ export default function GoalsPage() {
                             : t('memberWantsToWithdraw', { name: requester?.full_name || '', amount: formatCurrency(r.amount, r.currency) })}
                         </p>
                         <p className="text-xs text-textmuted mt-1 italic">"{r.reason}"</p>
-                        {isCollectAll && (
-                          <div className="mt-2">
-                            <PinField
-                              name={`confirm-pin-${r.id}`}
-                              value={confirmPins[r.id] || ''}
-                              onChange={(v) => setConfirmPins((prev) => ({ ...prev, [r.id]: v }))}
-                              placeholder={t('enterConfirmPinLabel')}
-                            />
-                            {!memberRow?.has_confirm_pin && (
-                              <p className="text-[11px] text-textmuted mt-1">{t('confirmPinFirstTimeHint')}</p>
-                            )}
-                            {confirmPinErrors[r.id] && <p className="text-xs text-danger mt-1">{confirmPinErrors[r.id]}</p>}
-                          </div>
-                        )}
+                        <div className="mt-2">
+                          <PinField
+                            name={`confirm-pin-${r.id}`}
+                            value={confirmPins[r.id] || ''}
+                            onChange={(v) => setConfirmPins((prev) => ({ ...prev, [r.id]: v }))}
+                            placeholder={t('enterConfirmPinLabel')}
+                          />
+                          {!membersFor?.has_pin && (
+                            <p className="text-[11px] text-textmuted mt-1">{t('confirmPinFirstTimeHint')}</p>
+                          )}
+                          {confirmPinErrors[r.id] && <p className="text-xs text-danger mt-1">{confirmPinErrors[r.id]}</p>}
+                        </div>
                         <div className="flex items-center gap-2 mt-2.5">
                           <button
-                            onClick={() => handleConfirmWithdraw(r.id, true, isCollectAll ? confirmPins[r.id] : undefined)}
-                            disabled={confirmingId === r.id || (isCollectAll && (confirmPins[r.id] || '').length < 4)}
+                            onClick={() => handleConfirmWithdraw(r.id, true, confirmPins[r.id])}
+                            disabled={confirmingId === r.id || (confirmPins[r.id] || '').length < 4}
                             className={`flex-1 text-xs py-1.5 ${isCollectAll ? 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold hover:brightness-95 transition-all' : 'btn-primary'}`}
                           >
                             {confirmingId === r.id ? <Loader2 size={13} className="animate-spin" /> : t('confirmApprove')}
@@ -1396,6 +1405,42 @@ export default function GoalsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+              );
+            })()}
+
+            {/* Fallback: a pending request exists on this goal but it's
+                neither mine nor one I need to confirm (e.g. I wasn't yet an
+                accepted member when it was created) - without this, the
+                request/collect-all triggers below just silently disappear
+                (both are gated on "no pending request") with no explanation
+                at all for why. */}
+            {(() => {
+              const mine = withdrawRequests.find((r) => r.user_id === user?.id);
+              const actionableIds = new Set(
+                withdrawRequests
+                  .filter((r) => r.user_id !== user?.id)
+                  .filter((r) => {
+                    const c = r.confirmations.find((c) => c.user_id === user?.id);
+                    return !!c && c.decision === 'pending';
+                  })
+                  .map((r) => r.id)
+              );
+              const orphaned = withdrawRequests.filter((r) => r.id !== mine?.id && !actionableIds.has(r.id));
+              if (orphaned.length === 0) return null;
+              return (
+                <div className="rounded-xl p-3 mb-4 bg-textmain/[0.03] border border-textmain/10">
+                  {orphaned.map((r) => {
+                    const requester = members.find((m) => m.user_id === r.user_id);
+                    return (
+                      <p key={r.id} className="text-xs text-textmuted">
+                        {t('pendingRequestBlocking', {
+                          name: requester?.full_name || '',
+                          amount: formatCurrency(r.amount, r.currency),
+                        })}
+                      </p>
+                    );
+                  })}
                 </div>
               );
             })()}

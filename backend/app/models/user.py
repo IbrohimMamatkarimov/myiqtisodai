@@ -1,7 +1,7 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, Integer, JSON, Numeric, String, Text
+from sqlalchemy import Boolean, Date, DateTime, Enum, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base, TimestampMixin, UUIDMixin
@@ -72,6 +72,7 @@ class User(UUIDMixin, TimestampMixin, Base):
     # --------------------------
 
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     gender: Mapped[Gender | None] = mapped_column(
         Enum(Gender),

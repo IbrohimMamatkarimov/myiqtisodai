@@ -635,10 +635,12 @@ def approve_member_withdraw_request(
     entry for exactly the requesting member's amount (never more than what
     they personally put in), reducing both their own share and the goal's
     total. For a 'collect_all' request: the requester gets the goal's
-    ENTIRE current balance instead - every other member's contributed_amount
-    stays exactly as it was (it's a permanent record of what they put in
-    lifetime, not a running balance that withdrawals draw down), only the
-    goal's current_amount empties out."""
+    ENTIRE current balance instead, and every member's contributed_amount
+    (not just the requester's) resets to 0 - the box is empty, so nobody's
+    row should still claim they have money sitting in it. The actual
+    lifetime record of who contributed what already lives on permanently as
+    real Expense/Income rows (visible in Transactions), so nothing is lost
+    by clearing this running total."""
     req = db.get(GoalMemberWithdrawRequest, request_id)
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -685,6 +687,12 @@ def approve_member_withdraw_request(
         )
         if req.request_type == MemberWithdrawRequestType.own_share:
             member.contributed_amount = float(member.contributed_amount) - amount
+        else:
+            # Collect-all empties the whole box - every member's row should
+            # reflect that, not just the person who received the payout.
+            db.execute(
+                update(GoalMember).where(GoalMember.goal_id == goal.id).values(contributed_amount=0)
+            )
         goal.current_amount = max(0, float(goal.current_amount) - amount)
         if goal.current_amount <= 0:
             goal.is_locked = False

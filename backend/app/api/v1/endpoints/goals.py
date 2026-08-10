@@ -67,7 +67,15 @@ def list_goals(current_user: User = Depends(get_current_user), db: Session = Dep
     member_of = select(GoalMember.goal_id).where(
         GoalMember.user_id == current_user.id, GoalMember.status == GoalMemberStatus.accepted
     )
-    return db.scalars(select(Goal).where(Goal.id.in_(owned) | Goal.id.in_(member_of))).all()
+    # Active goals first (a completed one sitting behind an unbounded cap
+    # elsewhere - like the dashboard's mini card row - shouldn't be able to
+    # push a newly-joined active goal out of view), then most recently
+    # created within each group.
+    return db.scalars(
+        select(Goal)
+        .where(Goal.id.in_(owned) | Goal.id.in_(member_of))
+        .order_by(Goal.is_completed.asc(), Goal.created_at.desc())
+    ).all()
 
 
 @router.get("/invites", response_model=list[GoalInviteOut])
@@ -136,13 +144,21 @@ def create_goal(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    if payload.is_group and (not payload.pin or len(payload.pin) < 4):
+        raise HTTPException(status_code=400, detail="Oilaviy maqsad uchun PIN kod majburiy")
+
     data = payload.model_dump(exclude={"pin"})
     if data.get("is_group"):
-        # Group goals never use the self-serve PIN - every withdrawal goes
-        # through an admin instead, regardless of who's asking.
+        # A time-lock doesn't mean much for a group goal - withdrawing
+        # always needs every member's confirmation plus an admin anyway,
+        # so there's no separate self-serve unlock date to protect against.
         data["lock_days"] = None
     goal = Goal(user_id=current_user.id, **data)
-    if payload.pin and not goal.is_group:
+    if payload.pin:
+        # One shared PIN either way: for a personal goal it's what unlocks
+        # a withdrawal later; for a group goal it's what every member
+        # (owner included) types in to confirm someone else's withdrawal
+        # request - see confirm_member_withdraw.
         goal.pin_hash = hash_password(payload.pin)
     # Deliberately no photo cover here (see stock_photos.py's docstring for
     # the full history) - even a moderated stock library can return an
@@ -573,11 +589,12 @@ def confirm_member_withdraw(
     admin. Only once every other member has approved can an admin release
     the money.
 
-    For a 'collect_all' request specifically (someone taking the WHOLE box,
-    not just their own share), approving also requires this member's own
-    PIN - set right here the first time they ever confirm one of these,
-    verified against it every time after. Declining never needs a PIN;
-    saying no doesn't require proving who you are."""
+    Approving either request type (own-share or collect-all) requires the
+    goal's shared PIN - the one set when the group goal was created, same
+    PIN every member uses. Declining never needs a PIN; saying no doesn't
+    require proving who you are. Legacy group goals created before a shared
+    PIN was required at creation have no pin_hash yet - the first person to
+    confirm on one of those sets it for everyone from then on."""
     request = db.get(GoalMemberWithdrawRequest, request_id)
     if not request:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -592,19 +609,13 @@ def confirm_member_withdraw(
     if request.status != MemberWithdrawRequestStatus.pending or confirmation.decision != ConfirmationDecision.pending:
         raise HTTPException(status_code=400, detail="Bu so'rov allaqachon hal qilingan")
 
-    if payload.approve and request.request_type == MemberWithdrawRequestType.collect_all:
-        member = db.scalar(
-            select(GoalMember).where(GoalMember.goal_id == request.goal_id, GoalMember.user_id == current_user.id)
-        )
-        if not member:
-            raise HTTPException(status_code=403, detail="Sizdan bu so'rov uchun tasdiq so'ralmagan")
+    if payload.approve:
+        goal = db.get(Goal, request.goal_id)
         if not payload.pin or len(payload.pin) < 4:
             raise HTTPException(status_code=400, detail="PIN kod kamida 4 ta belgidan iborat bo'lishi kerak")
-        if not member.confirm_pin_hash:
-            # First time confirming one of these - this PIN becomes theirs
-            # for every future collect-all confirmation on any group goal.
-            member.confirm_pin_hash = hash_password(payload.pin)
-        elif not verify_password(payload.pin, member.confirm_pin_hash):
+        if not goal.pin_hash:
+            goal.pin_hash = hash_password(payload.pin)
+        elif not verify_password(payload.pin, goal.pin_hash):
             raise HTTPException(status_code=400, detail="PIN noto'g'ri")
 
     confirmation.decision = ConfirmationDecision.approved if payload.approve else ConfirmationDecision.rejected

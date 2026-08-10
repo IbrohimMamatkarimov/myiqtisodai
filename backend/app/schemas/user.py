@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 import uuid
 
@@ -29,29 +29,15 @@ class SpendingHabits(BaseModel):
 
 
 class CompleteOnboarding(BaseModel):
-    """Payload for POST /users/complete-onboarding, covering all 5 screens."""
+    """Payload for POST /users/complete-onboarding - just the essentials now
+    (full name, date of birth, place). Everything else that used to be
+    asked here (age, gender, occupation, income, spending habits, etc.)
+    still exists as an optional profile field editable later from Settings -
+    it's just no longer collected up front."""
 
-    # Screen 1
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=255)
-    age: Optional[int] = Field(default=None, ge=10, le=100)
-    gender: Optional[Gender] = None
-
-    # Screen 2
+    date_of_birth: Optional[date] = None
     country: Optional[str] = Field(default=None, max_length=100)
-    currency: Optional[Currency] = None
-    occupation: Optional[str] = Field(default=None, max_length=150)
-    monthly_income: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
-
-    # Screen 3
-    financial_goal: Optional[str] = None
-
-    # Screen 4 — monthly_budget becomes an overall Budget row, not a User column
-    monthly_budget: Optional[float] = Field(default=None, ge=0, le=999_999_999_999)
-    salary_day: Optional[int] = Field(default=None, ge=1, le=31)
-    language: Optional[Language] = None
-
-    # Screen 5
-    spending_habits: Optional[SpendingHabits] = None
 
 
 class UserLogin(BaseModel):
@@ -83,6 +69,7 @@ class UserOut(BaseModel):
     notifications_enabled: bool
 
     age: Optional[int]
+    date_of_birth: Optional[date]
     gender: Optional[Gender]
     country: Optional[str]
     occupation: Optional[str]
@@ -109,6 +96,7 @@ class UserUpdate(BaseModel):
     notifications_enabled: Optional[bool] = None
 
     age: Optional[int] = Field(default=None, ge=10, le=100)
+    date_of_birth: Optional[date] = None
     gender: Optional[Gender] = None
     country: Optional[str] = None
     occupation: Optional[str] = None
@@ -165,6 +153,7 @@ class AdminUserOut(BaseModel):
 
     # Full onboarding profile - everything the user told the app about themselves
     age: Optional[int]
+    date_of_birth: Optional[date]
     gender: Optional[Gender]
     country: Optional[str]
     occupation: Optional[str]

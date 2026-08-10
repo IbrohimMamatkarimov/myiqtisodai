@@ -127,7 +127,7 @@ export default function DashboardPage() {
   function loadGoals() {
     api
       .get<Goal[]>('/goals')
-      .then(({ data }) => setGoals(data.slice(0, 2)))
+      .then(({ data }) => setGoals(data.slice(0, 5)))
       .catch(() => setGoals([]));
   }
 
