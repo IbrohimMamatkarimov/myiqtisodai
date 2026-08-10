@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -577,6 +577,53 @@ def list_goal_withdraw_requests(
     return [_serialize_withdraw_request(db, r) for r in requests]
 
 
+def _release_member_withdraw_funds(db: Session, request: GoalMemberWithdrawRequest) -> float:
+    """Actually moves the money, same logic as the admin panel's manual
+    release (approve_member_withdraw_request in admin.py) - kept here too so
+    a request can pay out the moment every member has confirmed, without
+    waiting on an admin. For 'own_share': a real income entry for exactly
+    the requester's own amount (never more than their contributed_amount).
+    For 'collect_all': the requester gets the goal's entire current balance
+    and every member's contributed_amount resets to 0 - the box is empty."""
+    goal = db.get(Goal, request.goal_id)
+    member = db.scalar(
+        select(GoalMember).where(GoalMember.goal_id == request.goal_id, GoalMember.user_id == request.user_id)
+    )
+    if not goal or not member:
+        raise HTTPException(status_code=400, detail="Bu so'rov ortidagi maqsad yoki a'zolik endi mavjud emas.")
+
+    if request.request_type == MemberWithdrawRequestType.collect_all:
+        amount = min(request.amount, float(goal.current_amount))
+        source_label = f"Oilaviy qutidan yig'ib olindi: {request.goal_title}"
+    else:
+        amount = min(request.amount, float(member.contributed_amount))
+        source_label = f"Oilaviy maqsaddan qaytarildi: {request.goal_title}"
+
+    if amount > 0:
+        db.add(
+            Income(
+                user_id=request.user_id,
+                source_name=source_label,
+                amount=amount,
+                currency=request.currency,
+                income_date=date.today(),
+                goal_id=goal.id,
+                is_goal_transfer=True,
+            )
+        )
+        if request.request_type == MemberWithdrawRequestType.own_share:
+            member.contributed_amount = float(member.contributed_amount) - amount
+        else:
+            db.execute(update(GoalMember).where(GoalMember.goal_id == goal.id).values(contributed_amount=0))
+        goal.current_amount = max(0, float(goal.current_amount) - amount)
+        if goal.current_amount <= 0:
+            goal.is_locked = False
+        goal.is_completed = goal.current_amount >= goal.target_amount
+
+    request.status = MemberWithdrawRequestStatus.approved
+    return amount
+
+
 @router.post("/withdraw-requests/{request_id}/confirm", response_model=GoalMemberWithdrawRequestOut)
 def confirm_member_withdraw(
     request_id: uuid.UUID,
@@ -633,21 +680,27 @@ def confirm_member_withdraw(
             )
         )
     else:
-        # Leave status as 'pending' - the admin endpoint (approve_member_withdraw_request)
-        # does its own live check of every confirmation before releasing funds,
-        # and requires status=='pending' as a precondition. Flipping status here
-        # would make that admin endpoint reject a fully-confirmed request as
-        # "already decided". Just let the requester know all members are in.
+        # Once every other member has approved, release the money right
+        # away - no separate admin step required. The admin panel's manual
+        # release endpoint still exists as a fallback (e.g. for a request
+        # stuck in an inconsistent state), but it now only ever finds
+        # already-approved requests here, since this path resolves them
+        # itself the moment the last confirmation comes in.
         all_confirmations = db.scalars(
             select(GoalMemberWithdrawConfirmation).where(GoalMemberWithdrawConfirmation.request_id == request.id)
         ).all()
         if all(c.decision == ConfirmationDecision.approved for c in all_confirmations):
+            amount = _release_member_withdraw_funds(db, request)
+            if request.request_type == MemberWithdrawRequestType.collect_all:
+                notif_title = f"'{request.goal_title}' qutisi butunlay yig'ib olindi"
+            else:
+                notif_title = f"'{request.goal_title}' dagi ulushingiz qaytarildi"
             db.add(
                 Notification(
                     user_id=request.user_id,
                     type=NotificationType.system,
-                    title=f"'{request.goal_title}' so'rovingiz tasdiqlandi",
-                    message="Barcha a'zolar roziligini berdi. Endi administrator pulni yuborishini kutmoqda.",
+                    title=notif_title,
+                    message=f"Barcha a'zolar roziligini berdi. {amount:,.0f} {request.currency} balansingizga o'tkazildi.",
                     link="/goals",
                 )
             )
