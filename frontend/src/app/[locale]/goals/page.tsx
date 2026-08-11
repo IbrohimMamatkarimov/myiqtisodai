@@ -1328,7 +1328,7 @@ export default function GoalsPage() {
                           style={{ background: 'linear-gradient(135deg,#2AABEE22,#2AABEE11)', border: '1px solid #2AABEE44', color: '#2AABEE' }}
                         >
                           <MessageCircle size={14} />
-                          Suhbat
+                          {t('chatTitle')}
                         </button>
                         <div className="flex items-center justify-center gap-3">
                           {goal.current_amount > 0 && (

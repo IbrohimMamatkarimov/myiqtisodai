@@ -260,6 +260,9 @@
     "chatTitle": "Suhbat",
     "chatEmpty": "Hali xabar yo'q. Birinchi bo'lib yozing!",
     "chatPlaceholder": "Xabar yozing...",
+    "memberCountLabel": "{count} a'zo",
+    "chatToday": "Bugun",
+    "chatYesterday": "Kecha",
     "confirmAllocate": "\u00ab{goal}\u00bb uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
   },
   "assistant": {

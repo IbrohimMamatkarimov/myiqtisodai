@@ -260,6 +260,9 @@
     "chatTitle": "Чат",
     "chatEmpty": "Пока нет сообщений. Напишите первым!",
     "chatPlaceholder": "Введите сообщение...",
+    "memberCountLabel": "{count} участник(ов)",
+    "chatToday": "Сегодня",
+    "chatYesterday": "Вчера",
     "confirmAllocate": "Выделить {amount} на «{goal}»? Эта сумма будет списана с вашего баланса и заблокирована в этой цели."
   },
   "assistant": {

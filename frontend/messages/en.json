@@ -260,6 +260,9 @@
     "chatTitle": "Chat",
     "chatEmpty": "No messages yet. Be the first to say something!",
     "chatPlaceholder": "Type a message...",
+    "memberCountLabel": "{count} member(s)",
+    "chatToday": "Today",
+    "chatYesterday": "Yesterday",
     "confirmAllocate": "Allocate {amount} to \"{goal}\"? This will be deducted from your balance and locked toward this goal."
   },
   "assistant": {
