@@ -179,6 +179,14 @@ export interface GoalMember {
   has_confirm_pin?: boolean;
 }
 
+export interface GoalMessage {
+  id: string;
+  user_id: string;
+  full_name: string;
+  body: string;
+  created_at: string;
+}
+
 export interface GoalInvite {
   id: string;
   goal_id: string;

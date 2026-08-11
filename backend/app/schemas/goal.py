@@ -89,6 +89,16 @@ class GoalMemberInvite(BaseModel):
     identifier: str = Field(min_length=3, max_length=255)
 
 
+class GoalMemberSetConfirmPin(BaseModel):
+    # Self-service: the member sets this themselves, no old PIN required (if
+    # they knew the old one they wouldn't need this). Authenticated purely
+    # by already being logged into their own account - same trust level as
+    # everything else a member can do on a goal they belong to. The actual
+    # money-safety here comes from every OTHER member also having to type
+    # their own PIN, not from this one being hard to reset.
+    pin: str = Field(min_length=4, max_length=32)
+
+
 class GoalInviteRespond(BaseModel):
     accept: bool
     # Required when accept=True: the PIN this member is setting for
@@ -150,14 +160,18 @@ class AdminResetGoalPin(BaseModel):
 
 class GoalMemberWithdrawRequestCreate(BaseModel):
     amount: float = Field(gt=0)
-    reason: str = Field(min_length=2, max_length=1000)
+    # No longer required - a member shouldn't have to justify wanting their
+    # own money back. Still accepted and still shown if they choose to add
+    # one (and still required to look back at on older requests made before
+    # this changed - those keep whatever reason was given at the time).
+    reason: Optional[str] = Field(default=None, max_length=1000)
 
 
 class GoalCollectAllRequestCreate(BaseModel):
     # No amount field - it's always the goal's entire current balance,
     # snapshotted server-side at request time, never something the
     # requester types in themselves.
-    reason: str = Field(min_length=2, max_length=1000)
+    reason: Optional[str] = Field(default=None, max_length=1000)
 
 
 class WithdrawConfirmationOut(BaseModel):
@@ -185,7 +199,7 @@ class GoalMemberWithdrawRequestOut(BaseModel):
     goal_title: str
     amount: float
     currency: str
-    reason: str
+    reason: Optional[str] = None
     status: str
     admin_note: Optional[str] = None
     created_at: datetime
@@ -200,3 +214,17 @@ class AdminGoalMemberWithdrawRequestOut(GoalMemberWithdrawRequestOut):
     user_id: uuid.UUID
     user_email: str
     user_full_name: str
+
+
+class GoalMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class GoalMessageOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    full_name: str
+    body: str
+    created_at: datetime

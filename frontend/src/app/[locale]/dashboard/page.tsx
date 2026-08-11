@@ -5,10 +5,11 @@ import { useTranslations, useLocale } from 'next-intl';
 import {
   Plus, Wallet, Sparkles, ArrowRight, Target, Loader2,
   ShoppingCart, Car, Utensils, ShoppingBag, CreditCard, Receipt as ReceiptIcon,
-  Eye, EyeOff, Lock, Unlock, X, Users,
+  Eye, EyeOff, Lock, Unlock, X, Users, MessageCircle,
 } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { AchievementToast } from '@/components/AchievementToast';
+import { GoalChatOverlay } from '@/components/GoalChatOverlay';
 import { Link } from '@/navigation';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
@@ -94,6 +95,10 @@ export default function DashboardPage() {
   const [hideBalance, setHideBalance] = useState(false);
   const [invites, setInvites] = useState<GoalInvite[]>([]);
   const [invitesResponding, setInvitesResponding] = useState<string | null>(null);
+  const [acceptingInviteId, setAcceptingInviteId] = useState<string | null>(null);
+  const [acceptPin, setAcceptPin] = useState('');
+  const [acceptPinConfirm, setAcceptPinConfirm] = useState('');
+  const [acceptPinError, setAcceptPinError] = useState('');
 
   // Allocate (add funds to a goal) - inline on the dashboard so people don't
   // have to leave it just to lock money away toward a goal.
@@ -124,6 +129,10 @@ export default function DashboardPage() {
   const [unlockRequestSentFor, setUnlockRequestSentFor] = useState<string | null>(null);
   const [unlockRequestError, setUnlockRequestError] = useState('');
 
+  // Full-screen TG-style group chat - shared component, also used by the
+  // Goals page's own group-goal cards.
+  const [fullscreenChatGoal, setFullscreenChatGoal] = useState<Goal | null>(null);
+
   function loadGoals() {
     api
       .get<Goal[]>('/goals')
@@ -138,15 +147,41 @@ export default function DashboardPage() {
       .catch(() => setInvites([]));
   }
 
-  async function respondToInvite(inviteId: string, accept: boolean) {
+  async function respondToInvite(inviteId: string, accept: boolean, pin?: string) {
     setInvitesResponding(inviteId);
+    setAcceptPinError('');
     try {
-      await api.post(`/goals/invites/${inviteId}/respond`, { accept });
+      await api.post(`/goals/invites/${inviteId}/respond`, { accept, pin });
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
+      setAcceptingInviteId(null);
+      setAcceptPin('');
+      setAcceptPinConfirm('');
       if (accept) loadGoals();
+    } catch (err: any) {
+      if (accept) setAcceptPinError(getErrorMessage(err, tg('pinMismatch')));
     } finally {
       setInvitesResponding(null);
     }
+  }
+
+  function startAcceptInvite(inviteId: string) {
+    setAcceptingInviteId(inviteId);
+    setAcceptPin('');
+    setAcceptPinConfirm('');
+    setAcceptPinError('');
+  }
+
+  function submitAcceptInvite(inviteId: string) {
+    setAcceptPinError('');
+    if (acceptPin.length < 4) {
+      setAcceptPinError(tg('pinPlaceholder'));
+      return;
+    }
+    if (acceptPin !== acceptPinConfirm) {
+      setAcceptPinError(tg('pinMismatch'));
+      return;
+    }
+    respondToInvite(inviteId, true, acceptPin);
   }
 
   function loadSummary() {
@@ -393,29 +428,86 @@ export default function DashboardPage() {
       {invites.length > 0 && (
         <div className="space-y-2 mb-5">
           {invites.map((inv) => (
-            <div key={inv.id} className="glass-card p-4 flex items-center gap-3 border border-secondary/20">
-              <span className="h-9 w-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
-                <Users size={16} />
-              </span>
-              <p className="text-sm text-textmain flex-1 min-w-0">
-                {tg('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
-              </p>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => respondToInvite(inv.id, true)}
-                  disabled={invitesResponding === inv.id}
-                  className="btn-primary text-sm py-1.5 px-3"
-                >
-                  {invitesResponding === inv.id ? <Loader2 size={14} className="animate-spin" /> : tg('acceptInvite')}
-                </button>
-                <button
-                  onClick={() => respondToInvite(inv.id, false)}
-                  disabled={invitesResponding === inv.id}
-                  className="btn-secondary text-sm py-1.5 px-3"
-                >
-                  {tg('declineInvite')}
-                </button>
+            <div key={inv.id} className="glass-card p-4 border border-secondary/20">
+              <div className="flex items-center gap-3">
+                <span className="h-9 w-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                  <Users size={16} />
+                </span>
+                <p className="text-sm text-textmain flex-1 min-w-0">
+                  {tg('inviteBanner', { owner: inv.owner_name, goal: inv.goal_title })}
+                </p>
+                {acceptingInviteId !== inv.id && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => startAcceptInvite(inv.id)}
+                      disabled={invitesResponding === inv.id}
+                      className="btn-primary text-sm py-1.5 px-3"
+                    >
+                      {tg('acceptInvite')}
+                    </button>
+                    <button
+                      onClick={() => respondToInvite(inv.id, false)}
+                      disabled={invitesResponding === inv.id}
+                      className="btn-secondary text-sm py-1.5 px-3"
+                    >
+                      {tg('declineInvite')}
+                    </button>
+                  </div>
+                )}
               </div>
+              {acceptingInviteId === inv.id && (
+                <div className="mt-3 pt-3 border-t border-textmain/10 space-y-2.5">
+                  <p className="text-xs text-textmuted">{tg('acceptInvitePinHint')}</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label-text">{tg('setPinLabel')}</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="new-password"
+                        name={`dash-accept-pin-${inv.id}`}
+                        autoFocus
+                        value={acceptPin}
+                        onChange={(e) => setAcceptPin(e.target.value)}
+                        className="input-field mt-1"
+                        placeholder={tg('pinPlaceholder')}
+                        maxLength={32}
+                      />
+                    </div>
+                    <div>
+                      <label className="label-text">{tg('confirmPinLabel')}</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="new-password"
+                        name={`dash-accept-pin-confirm-${inv.id}`}
+                        value={acceptPinConfirm}
+                        onChange={(e) => setAcceptPinConfirm(e.target.value)}
+                        className="input-field mt-1"
+                        placeholder={tg('pinPlaceholder')}
+                        maxLength={32}
+                      />
+                    </div>
+                  </div>
+                  {acceptPinError && <p className="text-xs text-danger">{acceptPinError}</p>}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => submitAcceptInvite(inv.id)}
+                      disabled={invitesResponding === inv.id}
+                      className="btn-primary text-sm px-3 py-1.5 flex-1"
+                    >
+                      {invitesResponding === inv.id ? <Loader2 size={14} className="animate-spin" /> : tg('acceptInvite')}
+                    </button>
+                    <button
+                      onClick={() => setAcceptingInviteId(null)}
+                      disabled={invitesResponding === inv.id}
+                      className="btn-secondary text-sm px-3 py-1.5"
+                    >
+                      {tc('cancel')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -721,6 +813,14 @@ export default function DashboardPage() {
                         </div>
                       ) : goal.is_group ? (
                         <div className="px-3 pb-3 space-y-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setFullscreenChatGoal(goal); }}
+                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold transition-all"
+                            style={{ background: 'linear-gradient(135deg,#2AABEE22,#2AABEE11)', border: '1px solid #2AABEE44', color: '#2AABEE' }}
+                          >
+                            <MessageCircle size={13} />
+                            Suhbat
+                          </button>
                           <Link
                             href="/goals"
                             onClick={(e) => e.stopPropagation()}
@@ -944,6 +1044,12 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Full-screen TG-style chat overlay - shared component, also used
+          by the Goals page's own group-goal cards. */}
+      {fullscreenChatGoal && (
+        <GoalChatOverlay goal={fullscreenChatGoal} onClose={() => setFullscreenChatGoal(null)} />
       )}
     </AppShell>
   );

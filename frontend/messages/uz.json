@@ -24,7 +24,7 @@
     "expenses": "Xarajatlar",
     "income": "Daromadlar",
     "budgets": "Byudjetlar",
-    "goals": "Maqsadlar",
+    "goals": "Maqsad qutisi",
     "debts": "Qarz daftarcha",
     "investments": "Investitsiyalar",
     "reports": "Hisobotlar",
@@ -102,7 +102,7 @@
     "uploadReceiptHint": "Chek yoki rasm yuklang",
     "uploadReceiptMaxSize": "max 10MB",
     "scanWithCamera": "Kamera bilan skanerlash",
-    "myGoalsTitle": "Maqsadlarim",
+    "myGoalsTitle": "Maqsad qutim",
     "today": "Bugun",
     "income": "Daromad",
     "expenses": "Xarajat",
@@ -111,7 +111,7 @@
     "financialHealth": "Moliyaviy salomatlik ko'rsatkichi",
     "budgetProgress": "Byudjet bajarilishi",
     "recentTransactions": "So'nggi tranzaksiyalar",
-    "goals": "Maqsadlar",
+    "goals": "Maqsad qutisi",
     "aiRecommendations": "AI tavsiyalari",
     "vsLastMonth": "o'tgan oyga nisbatan",
     "topExpenseCategories": "Eng ko'p xarajat toifalari",
@@ -172,7 +172,7 @@
     "source": "Manba"
   },
   "goals": {
-    "title": "Jamg'arma maqsadlari",
+    "title": "Maqsad qutisi",
     "addGoal": "Maqsad qo'shish",
     "addNewGoal": "Yangi maqsad",
     "titleLabel": "Maqsad nomi",
@@ -228,7 +228,7 @@
     "enterPinLabel": "PIN kodni kiriting",
     "wrongPin": "PIN kod noto'g'ri",
     "aiAdvice": "AI maslahati",
-    "noGoals": "Hozircha maqsad yo'q",
+    "noGoals": "Hozircha maqsad qutisi yo'q",
     "noGoalsSubtitle": "Jamg'arma maqsadi qo'ying va har oy taraqqiyotini kuzating.",
     "groupGoalLabel": "Oilaviy maqsad (bir nechta odam qo'shishi mumkin)",
     "groupGoalHint": "Boshqa foydalanuvchilarni taklif qilishingiz mumkin. Har kim faqat o'zi qo'shgan mablag'ni qaytarib olishi mumkin — bu doim boshqa a'zolarning tasdig'i orqali amalga oshadi.",
@@ -257,6 +257,9 @@
     "collectAllRequestSent": "So'rov yuborildi — barcha a'zolar tasdiqlashi kerak",
     "memberWantsToCollectAll": "{name} qutidagi barcha {amount} ni yig'ib olishni so'ramoqda",
     "enterConfirmPinLabel": "Tasdiqlash PIN kodini kiriting",
+    "chatTitle": "Suhbat",
+    "chatEmpty": "Hali xabar yo'q. Birinchi bo'lib yozing!",
+    "chatPlaceholder": "Xabar yozing...",
     "confirmAllocate": "\u00ab{goal}\u00bb uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
   },
   "assistant": {
@@ -363,7 +366,7 @@
     "totalIncome": "Jami daromad",
     "totalExpenses": "Jami xarajat",
     "totalSavings": "Jamg'arma",
-    "lockedInGoals": "Maqsadlarda qulflangan",
+    "lockedInGoals": "Maqsad qutisida qulflangan",
     "currentBalance": "Joriy balans",
     "empty": "Hisoblar haqida ma'lumot uchun daromad va xarajat qo'shing."
   },

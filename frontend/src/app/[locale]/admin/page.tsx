@@ -98,7 +98,7 @@ interface MemberWithdrawRequest {
   goal_title: string;
   amount: number;
   currency: string;
-  reason: string;
+  reason: string | null;
   status: 'pending' | 'approved' | 'rejected';
   admin_note: string | null;
   created_at: string;
@@ -214,6 +214,8 @@ export default function AdminPage() {
   const [withdrawReqLoading, setWithdrawReqLoading] = useState(true);
   const [withdrawRejectingId, setWithdrawRejectingId] = useState<string | null>(null);
   const [withdrawReqNote, setWithdrawReqNote] = useState('');
+  const [resetMemberPinFor, setResetMemberPinFor] = useState<string | null>(null); // `${goal_id}:${user_id}`
+  const [resetMemberPinValue, setResetMemberPinValue] = useState('');
 
   // Browse-any-user's-goals unlock tool
   const [unlockSearch, setUnlockSearch] = useState('');
@@ -414,6 +416,20 @@ export default function AdminPage() {
       setWithdrawRequests((prev) => prev.filter((r) => r.id !== id));
       setWithdrawRejectingId(null);
       setWithdrawReqNote('');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetMemberConfirmPin(goalId: string, userId: string) {
+    setBusy(true);
+    try {
+      await api.post(`/admin/goals/${goalId}/members/${userId}/reset-confirm-pin`, {
+        new_pin: resetMemberPinValue || undefined,
+      });
+      setResetMemberPinFor(null);
+      setResetMemberPinValue('');
+      alert('PIN reset. The new PIN was sent to the member in their notifications.');
     } finally {
       setBusy(false);
     }
@@ -908,7 +924,58 @@ export default function AdminPage() {
                       <p className="text-xs text-textmuted mt-0.5">
                         {r.user_full_name} — {r.user_email} · {new Date(r.created_at).toLocaleString()}
                       </p>
-                      <p className="text-sm text-textmain mt-2">"{r.reason}"</p>
+                      {r.reason && <p className="text-sm text-textmain mt-2">"{r.reason}"</p>}
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {r.confirmations.map((c) => (
+                          <span
+                            key={c.user_id}
+                            className={`text-[10px] font-medium rounded-full px-2 py-0.5 flex items-center gap-1 ${
+                              c.decision === 'approved'
+                                ? 'text-secondary bg-secondary/10'
+                                : c.decision === 'rejected'
+                                ? 'text-danger bg-danger/10'
+                                : 'text-textmuted bg-textmain/5'
+                            }`}
+                          >
+                            {c.full_name} · {c.decision}
+                            <button
+                              type="button"
+                              title={`Reset ${c.full_name}'s confirm PIN`}
+                              onClick={() => {
+                                setResetMemberPinFor(`${r.goal_id}:${c.user_id}`);
+                                setResetMemberPinValue('');
+                              }}
+                              className="hover:text-primary"
+                            >
+                              <KeyRound size={10} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      {resetMemberPinFor?.startsWith(`${r.goal_id}:`) && (
+                        <div className="mt-2.5">
+                          <p className="text-xs text-textmuted mb-2">
+                            Leave blank to auto-generate a PIN - it's sent straight to the member, you won't see it.
+                          </p>
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              value={resetMemberPinValue}
+                              onChange={(e) => setResetMemberPinValue(e.target.value)}
+                              placeholder="New PIN (optional)"
+                              className="input-field flex-1 text-sm"
+                            />
+                            <button
+                              disabled={busy}
+                              onClick={() => resetMemberConfirmPin(r.goal_id, resetMemberPinFor!.split(':')[1])}
+                              className="btn-primary text-sm shrink-0"
+                            >
+                              {busy ? <Loader2 size={14} className="animate-spin" /> : 'Confirm'}
+                            </button>
+                            <button onClick={() => setResetMemberPinFor(null)} className="btn-secondary text-sm shrink-0">Cancel</button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <button onClick={() => openChat(r.user_id)} title="Chat with this user" className="text-textmuted hover:text-primary">

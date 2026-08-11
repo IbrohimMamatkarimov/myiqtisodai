@@ -20,6 +20,7 @@ from app.models.goal_member_withdraw_request import (
     MemberWithdrawRequestStatus,
     MemberWithdrawRequestType,
 )
+from app.models.goal_message import GoalMessage
 from app.models.income import Income
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
@@ -31,8 +32,11 @@ from app.schemas.goal import (
     GoalInviteRespond,
     GoalMemberInvite,
     GoalMemberOut,
+    GoalMemberSetConfirmPin,
     GoalMemberWithdrawRequestCreate,
     GoalMemberWithdrawRequestOut,
+    GoalMessageCreate,
+    GoalMessageOut,
     GoalOut,
     GoalUnlockRequestCreate,
     GoalUnlockRequestOut,
@@ -56,6 +60,32 @@ ALLOWED_GOAL_IMAGE_MIME_TYPES = {
     "image/heic",
     "image/heif",
 }
+
+
+@router.get("/pending-confirmations", response_model=list[uuid.UUID])
+def list_my_pending_confirmation_goal_ids(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
+    """Goal ids where I personally have an unconfirmed withdraw-request
+    waiting on me right now - used to put a red badge on the goal card
+    itself on the main list, since the actual confirm UI only loads once
+    the Members modal for that specific goal is opened. Without this,
+    finding out you need to confirm something required already knowing
+    which box to check."""
+    rows = db.scalars(
+        select(GoalMemberWithdrawRequest.goal_id)
+        .join(
+            GoalMemberWithdrawConfirmation,
+            GoalMemberWithdrawConfirmation.request_id == GoalMemberWithdrawRequest.id,
+        )
+        .where(
+            GoalMemberWithdrawRequest.status == MemberWithdrawRequestStatus.pending,
+            GoalMemberWithdrawConfirmation.user_id == current_user.id,
+            GoalMemberWithdrawConfirmation.decision == ConfirmationDecision.pending,
+        )
+        .distinct()
+    ).all()
+    return rows
 
 
 @router.get("", response_model=list[GoalOut])
@@ -212,6 +242,57 @@ def _get_member_goal(db: Session, goal_id: uuid.UUID, user_id: uuid.UUID) -> tup
     return goal, member
 
 
+@router.post("/{goal_id}/members/set-my-confirm-pin", status_code=status.HTTP_200_OK)
+def set_my_confirm_pin(
+    goal_id: uuid.UUID,
+    payload: GoalMemberSetConfirmPin,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Lets an accepted member set (or overwrite) their OWN confirm PIN at
+    any time, directly - no admin, no old PIN required. This is the actual
+    fix for 'forgot/wrong PIN': rather than routing every reset through
+    support chat + an admin, a member who already knows their PIN is wrong
+    (or never got one, e.g. accepted before per-member PINs existed) can
+    just set a new one themselves and immediately use it. forgot_confirm_pin
+    above still exists for anyone who'd rather loop in an admin, but this is
+    faster and doesn't require anyone else's involvement."""
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None or member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+    member.confirm_pin_hash = hash_password(payload.pin)
+    db.commit()
+    return {"message": "PIN kod yangilandi"}
+
+
+@router.post("/{goal_id}/members/forgot-confirm-pin", status_code=status.HTTP_200_OK)
+def forgot_confirm_pin(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Same idea as forgot_pin above, but for a group member's OWN confirm
+    PIN rather than a personal goal's PIN - no self-serve reset, since that
+    PIN is what stands between the box's money and anyone who guesses it.
+    Drops a message into the user's support chat so an admin can verify who
+    they're talking to before resetting it via the admin panel."""
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None or member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+
+    message = ChatMessage(
+        user_id=current_user.id,
+        sender_id=current_user.id,
+        sender_is_admin=False,
+        body=f"\U0001f510 «{goal.title}» oilaviy qutisidagi shaxsiy PIN kodimni unutdim. Yordam bera olasizmi?",
+        is_read_by_user=True,
+        is_read_by_admin=False,
+    )
+    db.add(message)
+    db.commit()
+    return {"message": "Yordam so'rovi yuborildi. Administrator tez orada javob beradi."}
+
+
 @router.get("/{goal_id}/members", response_model=list[GoalMemberOut])
 def list_goal_members(
     goal_id: uuid.UUID,
@@ -234,6 +315,74 @@ def list_goal_members(
         )
         for member, user in rows
     ]
+
+
+@router.get("/{goal_id}/messages", response_model=list[GoalMessageOut])
+def list_goal_messages(
+    goal_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The box's own chat thread - visible to any accepted member (owner
+    included), for the ordinary back-and-forth of running a shared goal
+    together ("I added 50k today", "can we hit this by June?") without it
+    getting mixed into the withdrawal-request/confirmation notifications."""
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None or member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+    rows = db.execute(
+        select(GoalMessage, User)
+        .join(User, User.id == GoalMessage.user_id)
+        .where(GoalMessage.goal_id == goal.id)
+        .order_by(GoalMessage.created_at.asc())
+        .limit(200)
+    ).all()
+    return [
+        GoalMessageOut(id=m.id, user_id=m.user_id, full_name=u.full_name, body=m.body, created_at=m.created_at)
+        for m, u in rows
+    ]
+
+
+@router.post("/{goal_id}/messages", response_model=GoalMessageOut, status_code=status.HTTP_201_CREATED)
+def post_goal_message(
+    goal_id: uuid.UUID,
+    payload: GoalMessageCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    goal, member = _get_member_goal(db, goal_id, current_user.id)
+    if not goal.is_group or member is None or member.status != GoalMemberStatus.accepted:
+        raise HTTPException(status_code=400, detail="Bu oilaviy maqsad emas")
+
+    message = GoalMessage(goal_id=goal.id, user_id=current_user.id, body=payload.body.strip())
+    db.add(message)
+    db.flush()
+
+    other_members = db.scalars(
+        select(GoalMember).where(
+            GoalMember.goal_id == goal.id,
+            GoalMember.status == GoalMemberStatus.accepted,
+            GoalMember.user_id != current_user.id,
+        )
+    ).all()
+    db.bulk_save_objects(
+        [
+            Notification(
+                user_id=m.user_id,
+                type=NotificationType.system,
+                title=f"'{goal.title}' qutisida yangi xabar",
+                message=f"{current_user.full_name}: {payload.body.strip()[:120]}",
+                link="/goals",
+            )
+            for m in other_members
+        ]
+    )
+
+    db.commit()
+    db.refresh(message)
+    return GoalMessageOut(
+        id=message.id, user_id=current_user.id, full_name=current_user.full_name, body=message.body, created_at=message.created_at
+    )
 
 
 @router.post("/{goal_id}/members", response_model=GoalMemberOut, status_code=status.HTTP_201_CREATED)
@@ -565,6 +714,10 @@ def _serialize_withdraw_request(db: Session, request: GoalMemberWithdrawRequest)
     data["confirmations"] = confirmations
     data["all_confirmed"] = all_confirmed
     data["request_type"] = request.request_type.value
+    # Stored as "" (not NULL) in the DB, since the column predates reason
+    # becoming optional - normalize back to None here so the frontend can
+    # just check truthiness instead of also handling an empty string.
+    data["reason"] = data["reason"] or None
     return GoalMemberWithdrawRequestOut(**data)
 
 
@@ -772,7 +925,7 @@ def request_member_withdraw(
         goal_title=goal.title,
         amount=payload.amount,
         currency=goal.currency,
-        reason=payload.reason,
+        reason=payload.reason or "",
         request_type=MemberWithdrawRequestType.own_share,
     )
     db.add(request)
@@ -829,7 +982,7 @@ def request_collect_all(
         goal_title=goal.title,
         amount=float(goal.current_amount),
         currency=goal.currency,
-        reason=payload.reason,
+        reason=payload.reason or "",
         request_type=MemberWithdrawRequestType.collect_all,
     )
     db.add(request)

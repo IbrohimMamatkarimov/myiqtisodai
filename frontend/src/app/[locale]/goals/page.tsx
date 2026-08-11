@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Plus, Target, Sparkles, Trash2, Loader2, X, Lock, Unlock, Users, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Plus, Target, Sparkles, Trash2, Loader2, X, Lock, Unlock, Users, UserPlus, Eye, EyeOff, MessageCircle, Send } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { GoalChatOverlay } from '@/components/GoalChatOverlay';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
@@ -91,6 +92,7 @@ export default function GoalsPage() {
 
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingConfirmationGoalIds, setPendingConfirmationGoalIds] = useState<Set<string>>(new Set());
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -139,6 +141,8 @@ export default function GoalsPage() {
   // pending on a goal at once.
   const [confirmPins, setConfirmPins] = useState<Record<string, string>>({});
   const [confirmPinErrors, setConfirmPinErrors] = useState<Record<string, string>>({});
+  const [forgotConfirmPinSentFor, setForgotConfirmPinSentFor] = useState<string | null>(null);
+  const [forgotConfirmPinSubmitting, setForgotConfirmPinSubmitting] = useState(false);
 
   // Allocate (add funds) panel state
   const [allocateFor, setAllocateFor] = useState<string | null>(null);
@@ -185,9 +189,22 @@ export default function GoalsPage() {
   // modal - confirm/reject shows for whichever ones name ME as a needed
   // confirmer (every other accepted member gets one, not just the admin).
   const [withdrawRequests, setWithdrawRequests] = useState<
-    { id: string; user_id: string; amount: number; currency: string; reason: string; status: string; request_type: string; confirmations: { user_id: string; full_name: string; decision: string }[] }[]
+    { id: string; user_id: string; amount: number; currency: string; reason: string | null; status: string; request_type: string; confirmations: { user_id: string; full_name: string; decision: string }[] }[]
   >([]);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  // Chat thread — now a full-screen overlay (GoalChatOverlay, shared with
+  // the dashboard) opened directly from the goal card. The in-modal chat
+  // toggle further down (chatOpen) is a separate, still-inline mini version
+  // shown inside the Members modal - not yet consolidated into the same
+  // component, since it renders inline rather than full-screen.
+  const [fullscreenChatGoal, setFullscreenChatGoal] = useState<Goal | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<{ id: string; user_id: string; full_name: string; body: string; created_at: string }[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   function loadInvites() {
     api.get<GoalInvite[]>('/goals/invites').then(({ data }) => setInvites(data)).catch(() => setInvites([]));
@@ -235,10 +252,18 @@ export default function GoalsPage() {
     api.get<Goal[]>('/goals').then(({ data }) => setGoals(data)).finally(() => setLoading(false));
   }
 
+  function loadPendingConfirmations() {
+    api
+      .get<string[]>('/goals/pending-confirmations')
+      .then(({ data }) => setPendingConfirmationGoalIds(new Set(data)))
+      .catch(() => {});
+  }
+
   useEffect(() => {
     if (!checked) return;
     loadGoals();
     loadInvites();
+    loadPendingConfirmations();
   }, [checked]);
 
   // Deep link from the dashboard's compact group card (?openWithdraw=<id>) -
@@ -449,7 +474,13 @@ export default function GoalsPage() {
     setUnlockRequestError('');
   }
 
-  async function openMembers(goal: Goal, autoWithdraw?: boolean, autoCollectAll?: boolean) {
+  function openFullscreenChat(goal: Goal) {
+    // GoalChatOverlay fetches and owns all of its own state - nothing to
+    // prefetch here.
+    setFullscreenChatGoal(goal);
+  }
+
+  async function openMembers(goal: Goal, autoWithdraw?: boolean, autoCollectAll?: boolean, autoChat?: boolean) {
     setMembersFor(goal);
     setMembers([]);
     setWithdrawRequests([]);
@@ -464,7 +495,12 @@ export default function GoalsPage() {
     setCollectAllError('');
     setConfirmPins({});
     setConfirmPinErrors({});
+    setForgotConfirmPinSentFor(null);
+    setChatOpen(!!autoChat);
+    setMessages([]);
+    setNewMessage('');
     setMembersLoading(true);
+    if (autoChat) loadMessages(goal.id);
     try {
       const [membersRes, requestsRes] = await Promise.all([
         api.get<GoalMember[]>(`/goals/${goal.id}/members`),
@@ -472,6 +508,15 @@ export default function GoalsPage() {
       ]);
       setMembers(membersRes.data);
       setWithdrawRequests((requestsRes.data || []).filter((r: any) => r.status === 'pending'));
+      // Opening the modal is how a pending confirmation actually gets
+      // acted on - once they're looking at it, the red badge on the card
+      // itself has done its job and shouldn't keep nagging.
+      setPendingConfirmationGoalIds((prev) => {
+        if (!prev.has(goal.id)) return prev;
+        const next = new Set(prev);
+        next.delete(goal.id);
+        return next;
+      });
       if (autoWithdraw) {
         const mine = membersRes.data.find((m) => m.user_id === user?.id);
         if (mine && mine.contributed_amount > 0) {
@@ -486,6 +531,49 @@ export default function GoalsPage() {
       setMembers([]);
     } finally {
       setMembersLoading(false);
+    }
+  }
+
+  async function loadMessages(goalId: string) {
+    setMessagesLoading(true);
+    try {
+      const { data } = await api.get(`/goals/${goalId}/messages`);
+      setMessages(data);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ block: 'nearest' }), 50);
+    } catch {
+      setMessages([]);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }
+
+  function toggleChat() {
+    if (!membersFor) return;
+    const opening = !chatOpen;
+    setChatOpen(opening);
+    if (opening && messages.length === 0) loadMessages(membersFor.id);
+  }
+
+  async function handleSendMessage() {
+    if (!membersFor || newMessage.trim().length === 0) return;
+    setSendingMessage(true);
+    try {
+      const { data } = await api.post(`/goals/${membersFor.id}/messages`, { body: newMessage.trim() });
+      setMessages((prev) => [...prev, data]);
+      setNewMessage('');
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ block: 'nearest' }), 50);
+    } finally {
+      setSendingMessage(false);
+    }
+  }
+
+  async function handleForgotConfirmPin(goalId: string) {
+    setForgotConfirmPinSubmitting(true);
+    try {
+      await api.post(`/goals/${goalId}/members/forgot-confirm-pin`);
+      setForgotConfirmPinSentFor(goalId);
+    } finally {
+      setForgotConfirmPinSubmitting(false);
     }
   }
 
@@ -506,11 +594,13 @@ export default function GoalsPage() {
   }
 
   async function handleCollectAllRequest() {
-    if (!membersFor || collectAllReason.trim().length < 2) return;
+    if (!membersFor) return;
     setCollectAllSubmitting(true);
     setCollectAllError('');
     try {
-      const { data } = await api.post(`/goals/${membersFor.id}/request-collect-all`, { reason: collectAllReason.trim() });
+      const { data } = await api.post(`/goals/${membersFor.id}/request-collect-all`, {
+        reason: collectAllReason.trim() || undefined,
+      });
       setWithdrawRequests((prev) => [...prev, data]);
       setCollectAllSentFor(membersFor.id);
       setCollectAllOpen(false);
@@ -551,13 +641,13 @@ export default function GoalsPage() {
   async function handleMemberWithdrawRequest() {
     if (!membersFor) return;
     const amount = parseFloat(memberWithdrawAmount);
-    if (!amount || amount <= 0 || memberWithdrawReason.trim().length < 2) return;
+    if (!amount || amount <= 0) return;
     setMemberWithdrawSubmitting(true);
     setMemberWithdrawError('');
     try {
       const { data } = await api.post(`/goals/${membersFor.id}/request-member-withdraw`, {
         amount,
-        reason: memberWithdrawReason.trim(),
+        reason: memberWithdrawReason.trim() || undefined,
       });
       // So the collect-all trigger below also disappears immediately,
       // without needing to reopen the modal - both read "is there already a
@@ -634,7 +724,10 @@ export default function GoalsPage() {
   return (
     <AppShell>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-textmain">{t('title')}</h1>
+        <h1 className="font-display text-2xl font-bold text-textmain flex items-center gap-2.5">
+          <img src="/box.png" alt="" className="h-8 w-8 object-contain" />
+          {t('title')}
+        </h1>
         <button onClick={() => setShowForm((v) => !v)} className="btn-primary">
           <Plus size={18} />
           {t('addGoal')}
@@ -932,6 +1025,9 @@ export default function GoalsPage() {
                           <Lock size={12} className="text-white" />
                         </span>
                       )}
+                      {pendingConfirmationGoalIds.has(goal.id) && (
+                        <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-danger border-2 border-surface animate-pulse" />
+                      )}
                     </span>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -1224,26 +1320,37 @@ export default function GoalsPage() {
                       )}
                     </div>
                     {goal.is_group && (
-                      <div className="flex items-center justify-center gap-3 mt-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-col gap-1.5 mt-2" onClick={(e) => e.stopPropagation()}>
+                        {/* Suhbat — prominent chat button visible on the card itself */}
                         <button
-                          onClick={() => openMembers(goal, true)}
-                          className="text-xs font-medium text-textmuted hover:text-danger transition-colors flex items-center justify-center gap-1"
+                          onClick={() => openFullscreenChat(goal)}
+                          className="w-full flex items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold transition-all"
+                          style={{ background: 'linear-gradient(135deg,#2AABEE22,#2AABEE11)', border: '1px solid #2AABEE44', color: '#2AABEE' }}
                         >
-                          <Unlock size={12} />
-                          {t('requestMyShare')}
+                          <MessageCircle size={14} />
+                          Suhbat
                         </button>
-                        {goal.current_amount > 0 && (
-                          <>
-                            <span className="text-textmuted/30">·</span>
-                            <button
-                              onClick={() => openMembers(goal, false, true)}
-                              className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors flex items-center justify-center gap-1"
-                            >
-                              <Unlock size={12} />
-                              {t('collectAllLabel')}
-                            </button>
-                          </>
-                        )}
+                        <div className="flex items-center justify-center gap-3">
+                          {goal.current_amount > 0 && (
+                            <>
+                              <button
+                                onClick={() => openMembers(goal, true)}
+                                className="text-xs font-medium text-textmuted hover:text-danger transition-colors flex items-center justify-center gap-1"
+                              >
+                                <Unlock size={12} />
+                                {t('requestMyShare')}
+                              </button>
+                              <span className="text-textmuted/30">·</span>
+                              <button
+                                onClick={() => openMembers(goal, false, true)}
+                                className="text-xs font-medium text-amber-600 hover:text-amber-700 transition-colors flex items-center justify-center gap-1"
+                              >
+                                <Unlock size={12} />
+                                {t('collectAllLabel')}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
                     {!goal.is_group && goal.is_locked && (
@@ -1345,6 +1452,48 @@ export default function GoalsPage() {
             </div>
             <p className="text-xs text-textmuted mb-4 truncate">{membersFor.title}</p>
 
+            {false && chatOpen && (
+              <div className="border border-textmain/10 rounded-xl mb-4 flex flex-col overflow-hidden">
+                <div className="h-56 overflow-y-auto p-3 space-y-2">
+                  {messagesLoading ? (
+                    <p className="text-xs text-textmuted text-center py-6">{tc('loading')}</p>
+                  ) : messages.length === 0 ? (
+                    <p className="text-xs text-textmuted text-center py-6">{t('chatEmpty')}</p>
+                  ) : (
+                    messages.map((m) => {
+                      const mine = m.user_id === user?.id;
+                      return (
+                        <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-1.5 ${mine ? 'bg-primary text-white' : 'bg-textmain/[0.06] text-textmain'}`}>
+                            <p className="text-[10px] font-semibold opacity-70">{m.full_name}</p>
+                            <p className="text-sm break-words">{m.body}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                <div className="flex items-center gap-2 border-t border-textmain/10 p-2">
+                  <input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                    placeholder={t('chatPlaceholder')}
+                    className="input-field flex-1 text-sm py-1.5"
+                    maxLength={2000}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage || newMessage.trim().length === 0}
+                    className="h-8 w-8 rounded-lg bg-primary text-white flex items-center justify-center disabled:opacity-40 shrink-0"
+                  >
+                    {sendingMessage ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {membersLoading ? (
               <p className="text-sm text-textmuted text-center py-6">{tc('loading')}</p>
             ) : (
@@ -1414,7 +1563,7 @@ export default function GoalsPage() {
                             ? t('memberWantsToCollectAll', { name: requester?.full_name || '', amount: formatCurrency(r.amount, r.currency) })
                             : t('memberWantsToWithdraw', { name: requester?.full_name || '', amount: formatCurrency(r.amount, r.currency) })}
                         </p>
-                        <p className="text-xs text-textmuted mt-1 italic">"{r.reason}"</p>
+                        {r.reason && <p className="text-xs text-textmuted mt-1 italic">"{r.reason}"</p>}
                         <div className="mt-2">
                           <PinField
                             name={`confirm-pin-${r.id}`}
@@ -1423,6 +1572,18 @@ export default function GoalsPage() {
                             placeholder={t('enterConfirmPinLabel')}
                           />
                           {confirmPinErrors[r.id] && <p className="text-xs text-danger mt-1">{confirmPinErrors[r.id]}</p>}
+                          {forgotConfirmPinSentFor === membersFor.id ? (
+                            <p className="text-xs text-primary font-medium mt-1">{t('forgotPinSent')}</p>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleForgotConfirmPin(membersFor.id)}
+                              disabled={forgotConfirmPinSubmitting}
+                              className="text-xs font-medium text-textmuted hover:text-primary transition-colors disabled:opacity-50 mt-1"
+                            >
+                              {t('forgotPin')}
+                            </button>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-2.5">
                           <button
@@ -1572,7 +1733,7 @@ export default function GoalsPage() {
                       <textarea
                         value={memberWithdrawReason}
                         onChange={(e) => setMemberWithdrawReason(e.target.value)}
-                        placeholder={t('unlockRequestPlaceholder')}
+                        placeholder={`${t('unlockRequestPlaceholder')} (${t('optional')})`}
                         rows={2}
                         className="input-field resize-none"
                       />
@@ -1618,7 +1779,7 @@ export default function GoalsPage() {
                       autoFocus
                       value={collectAllReason}
                       onChange={(e) => setCollectAllReason(e.target.value)}
-                      placeholder={t('collectAllReasonPlaceholder')}
+                      placeholder={`${t('collectAllReasonPlaceholder')} (${t('optional')})`}
                       rows={2}
                       className="input-field resize-none"
                     />
@@ -1626,7 +1787,7 @@ export default function GoalsPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleCollectAllRequest}
-                        disabled={collectAllSubmitting || collectAllReason.trim().length < 2}
+                        disabled={collectAllSubmitting}
                         className="flex-1 text-sm py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold hover:brightness-95 transition-all flex items-center justify-center gap-1.5"
                       >
                         {collectAllSubmitting ? <Loader2 size={14} className="animate-spin" /> : t('unlockRequestSubmit')}
@@ -1647,8 +1808,210 @@ export default function GoalsPage() {
                 )}
               </div>
             )}
+
+            {/* Chat — TG-style group chat, below all action sections */}
+            <div className="border-t border-textmain/10 pt-3 mt-2">
+              <button
+                onClick={toggleChat}
+                className={`w-full h-9 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-colors ${
+                  chatOpen ? 'bg-primary text-white' : 'text-primary bg-primary/10 hover:bg-primary/15'
+                }`}
+              >
+                <MessageCircle size={15} />
+                {t('chatTitle')}
+              </button>
+
+              {chatOpen && (() => {
+                // Assign a stable color to each unique sender so their avatar + name stay the same hue throughout the thread
+                const AVATAR_COLORS = [
+                  ['#2AABEE','#1a8bc4'], // TG blue
+                  ['#8B5CF6','#6d3fc4'], // purple
+                  ['#10B981','#0a8f63'], // green
+                  ['#F59E0B','#c47f09'], // amber
+                  ['#EF4444','#c02020'], // red
+                  ['#EC4899','#c0207a'], // pink
+                  ['#06B6D4','#0591a8'], // cyan
+                ];
+                const colorMap: Record<string, [string,string]> = {};
+                let colorIdx = 0;
+                messages.forEach((m) => {
+                  if (!colorMap[m.user_id]) {
+                    colorMap[m.user_id] = AVATAR_COLORS[colorIdx % AVATAR_COLORS.length];
+                    colorIdx++;
+                  }
+                });
+
+                // Group consecutive messages by the same sender so we only
+                // show the avatar + name on the FIRST bubble of each run
+                type MsgGroup = { userId: string; fullName: string; msgs: typeof messages };
+                const groups: MsgGroup[] = [];
+                messages.forEach((m) => {
+                  const last = groups[groups.length - 1];
+                  if (last && last.userId === m.user_id) {
+                    last.msgs.push(m);
+                  } else {
+                    groups.push({ userId: m.user_id, fullName: m.full_name, msgs: [m] });
+                  }
+                });
+
+                function fmtTime(iso: string) {
+                  const d = new Date(iso);
+                  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                function fmtDate(iso: string) {
+                  const d = new Date(iso);
+                  const today = new Date();
+                  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+                  if (d.toDateString() === today.toDateString()) return 'Bugun';
+                  if (d.toDateString() === yesterday.toDateString()) return 'Kecha';
+                  return d.toLocaleDateString([], { day: 'numeric', month: 'long' });
+                }
+
+                // Collect date-separator positions (one per calendar day)
+                const dateSeparators: Record<string, boolean> = {};
+                messages.forEach((m) => {
+                  const key = new Date(m.created_at).toDateString();
+                  if (!dateSeparators[key]) dateSeparators[key] = true;
+                });
+                const shownDates = new Set<string>();
+
+                return (
+                  <div className="mt-3 rounded-2xl overflow-hidden flex flex-col" style={{ background: 'var(--color-surface, #1a1a2e)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    {/* TG-style header bar */}
+                    <div className="flex items-center gap-2.5 px-3 py-2.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}>
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#2AABEE,#1a6fa8)' }}>
+                        <Users size={14} className="text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-textmain truncate">{membersFor.title}</p>
+                        <p className="text-[10px] text-textmuted">{members.filter(m => m.status === 'accepted').length} a'zo</p>
+                      </div>
+                    </div>
+
+                    {/* Messages area */}
+                    <div
+                      className="overflow-y-auto px-3 py-3 space-y-[2px]"
+                      style={{ height: '320px', background: 'var(--tg-chat-bg, rgba(0,0,0,0.25))' }}
+                    >
+                      {messagesLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                          <Loader2 size={20} className="animate-spin text-textmuted" />
+                        </div>
+                      ) : messages.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-full gap-2">
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                            <MessageCircle size={20} className="text-primary" />
+                          </div>
+                          <p className="text-xs text-textmuted text-center">{t('chatEmpty')}</p>
+                        </div>
+                      ) : (
+                        groups.map((grp, gi) => {
+                          const mine = grp.userId === user?.id;
+                          const [avatarBg] = colorMap[grp.userId] || ['#888','#666'];
+                          const initials = grp.fullName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+
+                          return (
+                            <div key={gi} className={`flex items-end gap-1.5 mt-3 ${mine ? 'flex-row-reverse' : 'flex-row'}`}>
+                              {/* Avatar — shown once per group on the left/right */}
+                              {!mine ? (
+                                <div
+                                  className="h-7 w-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold text-white mb-0.5"
+                                  style={{ background: avatarBg }}
+                                >
+                                  {initials}
+                                </div>
+                              ) : (
+                                <div className="w-7 shrink-0" />
+                              )}
+
+                              {/* Bubble column */}
+                              <div className={`flex flex-col gap-0.5 max-w-[75%] ${mine ? 'items-end' : 'items-start'}`}>
+                                {/* Sender name — only for others, only on first bubble */}
+                                {!mine && (
+                                  <p className="text-[10px] font-semibold px-1" style={{ color: avatarBg }}>
+                                    {grp.fullName}
+                                  </p>
+                                )}
+
+                                {grp.msgs.map((m, mi) => {
+                                  const dateKey = new Date(m.created_at).toDateString();
+                                  const showDate = !shownDates.has(dateKey);
+                                  if (showDate) shownDates.add(dateKey);
+                                  const isLast = mi === grp.msgs.length - 1;
+
+                                  return (
+                                    <div key={m.id}>
+                                      {showDate && (
+                                        <div className="flex items-center justify-center my-3">
+                                          <span className="text-[10px] text-textmuted px-2.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                            {fmtDate(m.created_at)}
+                                          </span>
+                                        </div>
+                                      )}
+                                      <div
+                                        className="px-2.5 py-1.5 text-sm break-words"
+                                        style={{
+                                          background: mine
+                                            ? 'linear-gradient(135deg,#2AABEE,#1a8bc4)'
+                                            : 'rgba(255,255,255,0.08)',
+                                          color: mine ? '#fff' : 'var(--color-textmain, #f0f0f0)',
+                                          borderRadius: mine
+                                            ? (mi === 0 ? '16px 4px 16px 16px' : isLast ? '4px 16px 16px 16px' : '4px 4px 16px 16px')
+                                            : (mi === 0 ? '4px 16px 16px 16px' : isLast ? '16px 4px 4px 16px' : '4px 4px 4px 16px'),
+                                        }}
+                                      >
+                                        {m.body}
+                                        {isLast && (
+                                          <span className="inline-block ml-2 text-[9px] opacity-60 align-bottom whitespace-nowrap">{fmtTime(m.created_at)}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* TG-style input bar */}
+                    <div
+                      className="flex items-center gap-2 px-2 py-2"
+                      style={{ borderTop: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}
+                    >
+                      <input
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                        placeholder={t('chatPlaceholder')}
+                        maxLength={2000}
+                        className="flex-1 text-sm bg-transparent outline-none text-textmain placeholder:text-textmuted px-1"
+                        style={{ minWidth: 0 }}
+                      />
+                      <button
+                        onClick={handleSendMessage}
+                        disabled={sendingMessage || newMessage.trim().length === 0}
+                        className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30"
+                        style={{ background: newMessage.trim().length > 0 ? 'linear-gradient(135deg,#2AABEE,#1a8bc4)' : 'rgba(255,255,255,0.08)' }}
+                      >
+                        {sendingMessage
+                          ? <Loader2 size={14} className="animate-spin text-white" />
+                          : <Send size={14} className="text-white" style={{ marginLeft: '1px' }} />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
+      )}
+      {/* Full-screen TG-style chat overlay - shared component, also used
+          by the dashboard's compact group card. */}
+      {fullscreenChatGoal && (
+        <GoalChatOverlay goal={fullscreenChatGoal} onClose={() => setFullscreenChatGoal(null)} />
       )}
     </AppShell>
   );

@@ -14,7 +14,7 @@ from app.models.chat_message import ChatMessage
 from app.models.expense import Expense
 from app.models.goal import Goal
 from app.models.goal_unlock_request import GoalUnlockRequest, UnlockRequestStatus
-from app.models.goal_member import GoalMember
+from app.models.goal_member import GoalMember, GoalMemberStatus
 from app.models.goal_member_withdraw_confirmation import ConfirmationDecision, GoalMemberWithdrawConfirmation
 from app.models.goal_member_withdraw_request import (
     GoalMemberWithdrawRequest,
@@ -31,6 +31,7 @@ from app.schemas.goal import (
     AdminGoalUnlockRequestOut,
     AdminResetGoalPin,
     AdminUnlockDecision,
+    GoalMemberOut,
     GoalMemberWithdrawRequestOut,
     GoalOut,
     GoalUnlockRequestOut,
@@ -463,6 +464,74 @@ def admin_reset_goal_pin(
     db.commit()
     db.refresh(goal)
     return goal
+
+
+@router.get("/goals/{goal_id}/members", response_model=list[GoalMemberOut])
+def admin_list_goal_members(
+    goal_id: uuid.UUID,
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """So the admin panel's reset-member-PIN tool can show who's actually
+    on a group goal, rather than requiring the admin to already know the
+    exact user id from the support chat."""
+    goal = db.get(Goal, goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    rows = db.execute(
+        select(GoalMember, User).join(User, User.id == GoalMember.user_id).where(GoalMember.goal_id == goal.id)
+    ).all()
+    return [
+        GoalMemberOut(
+            user_id=user.id,
+            full_name=user.full_name,
+            email=user.email,
+            contributed_amount=float(member.contributed_amount),
+            is_owner=(user.id == goal.user_id),
+            status=member.status.value,
+            has_confirm_pin=bool(member.confirm_pin_hash),
+        )
+        for member, user in rows
+    ]
+
+
+@router.post("/goals/{goal_id}/members/{user_id}/reset-confirm-pin", status_code=204)
+def admin_reset_member_confirm_pin(
+    goal_id: uuid.UUID,
+    user_id: uuid.UUID,
+    payload: AdminResetGoalPin = Body(default=AdminResetGoalPin()),
+    _: User = Depends(get_current_superuser),
+    db: Session = Depends(get_db),
+):
+    """Resets ONE member's own confirm PIN (GoalMember.confirm_pin_hash) -
+    the PIN they personally set when joining the box, used to sign off on
+    other members' withdrawal requests. Never touches anyone else's PIN.
+    Members can already self-serve this via set_my_confirm_pin without any
+    admin involved - this exists as the admin-mediated fallback for anyone
+    who'd rather go through support. If no PIN is given, generates a random
+    one, so the admin never has to see or choose the actual PIN themselves."""
+    goal = db.get(Goal, goal_id)
+    if not goal or not goal.is_group:
+        raise HTTPException(status_code=400, detail="Not a group goal.")
+    member = db.scalar(select(GoalMember).where(GoalMember.goal_id == goal_id, GoalMember.user_id == user_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    new_pin = payload.new_pin or secrets.token_hex(3)  # e.g. "a1b2c3" if auto-generated
+    member.confirm_pin_hash = hash_password(new_pin)
+
+    db.add(
+        Notification(
+            user_id=member.user_id,
+            type=NotificationType.system,
+            title=f"'{goal.title}' qutisi uchun yangi PIN kod o'rnatildi",
+            message=f"Yangi shaxsiy PIN kodingiz: {new_pin}\n\nBu kodni xavfsiz joyda saqlang - boshqa a'zolarning yechish so'rovlarini tasdiqlash uchun keyingi safar shu kod kerak bo'ladi.",
+            link="/goals",
+        )
+    )
+
+    db.commit()
+    return None
 
 
 @router.get("/unlock-requests", response_model=list[AdminGoalUnlockRequestOut])

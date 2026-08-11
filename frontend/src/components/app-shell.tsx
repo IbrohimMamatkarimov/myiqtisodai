@@ -6,7 +6,7 @@ import { Link, usePathname, useRouter } from '@/navigation';
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  Target,
+  Package,
   BookUser,
   Sparkles,
   Settings as SettingsIcon,
@@ -49,7 +49,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const regularNavItems = [
     { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { href: '/transactions', label: t('transactions'), icon: ArrowLeftRight },
-    { href: '/goals', label: t('goals'), icon: Target },
+    { href: '/goals', label: t('goals'), icon: Package },
     { href: '/debts', label: t('debts'), icon: BookUser },
     { href: '/assistant', label: t('assistant'), icon: Sparkles },
     { href: '/settings', label: t('settings'), icon: SettingsIcon },

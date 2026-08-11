@@ -24,7 +24,7 @@
     "expenses": "Expenses",
     "income": "Income",
     "budgets": "Budgets",
-    "goals": "Goals",
+    "goals": "Goal Box",
     "debts": "Debt tracker",
     "investments": "Investments",
     "reports": "Reports",
@@ -102,7 +102,7 @@
     "uploadReceiptHint": "Upload a receipt or photo",
     "uploadReceiptMaxSize": "max 10MB",
     "scanWithCamera": "Scan with camera",
-    "myGoalsTitle": "My goals",
+    "myGoalsTitle": "My Goal Box",
     "today": "Today",
     "income": "Income",
     "expenses": "Expenses",
@@ -111,7 +111,7 @@
     "financialHealth": "Financial Health Score",
     "budgetProgress": "Budget progress",
     "recentTransactions": "Recent transactions",
-    "goals": "Goals",
+    "goals": "Goal Box",
     "aiRecommendations": "AI recommendations",
     "vsLastMonth": "vs last month",
     "topExpenseCategories": "Top expense categories",
@@ -172,7 +172,7 @@
     "source": "Source"
   },
   "goals": {
-    "title": "Savings goals",
+    "title": "Goal Box",
     "addGoal": "Add goal",
     "addNewGoal": "New goal",
     "titleLabel": "Goal name",
@@ -228,7 +228,7 @@
     "enterPinLabel": "Enter PIN",
     "wrongPin": "Incorrect PIN",
     "aiAdvice": "AI advice",
-    "noGoals": "No goals yet",
+    "noGoals": "No goal box yet",
     "noGoalsSubtitle": "Set a savings goal and track your progress toward it every month.",
     "groupGoalLabel": "Family/group goal (more than one person can contribute)",
     "groupGoalHint": "You can invite other users. Everyone can only ever get back what they personally put in — that always goes through the other members' confirmation.",
@@ -257,6 +257,9 @@
     "collectAllRequestSent": "Request sent — every member needs to confirm",
     "memberWantsToCollectAll": "{name} wants to collect the entire box ({amount})",
     "enterConfirmPinLabel": "Enter your confirmation PIN",
+    "chatTitle": "Chat",
+    "chatEmpty": "No messages yet. Be the first to say something!",
+    "chatPlaceholder": "Type a message...",
     "confirmAllocate": "Allocate {amount} to \"{goal}\"? This will be deducted from your balance and locked toward this goal."
   },
   "assistant": {
@@ -360,7 +363,7 @@
     "totalIncome": "Total income",
     "totalExpenses": "Total expenses",
     "totalSavings": "Savings",
-    "lockedInGoals": "Locked in goals",
+    "lockedInGoals": "Locked in the goal box",
     "currentBalance": "Current balance",
     "empty": "Add income and expenses to see your accounts here."
   },
