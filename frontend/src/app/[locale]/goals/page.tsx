@@ -1823,7 +1823,7 @@ export default function GoalsPage() {
 
               {chatOpen && (() => {
                 // Assign a stable color to each unique sender so their avatar + name stay the same hue throughout the thread
-                const AVATAR_COLORS = [
+                const AVATAR_COLORS: [string, string][] = [
                   ['#2AABEE','#1a8bc4'], // TG blue
                   ['#8B5CF6','#6d3fc4'], // purple
                   ['#10B981','#0a8f63'], // green
