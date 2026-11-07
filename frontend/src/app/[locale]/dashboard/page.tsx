@@ -587,7 +587,7 @@ export default function DashboardPage() {
 
             {/* Quick actions */}
             <div className="glass-card dashboard-quick-actions p-5 sm:p-6">
-              <div className="mb-4 flex items-end justify-between gap-3"><div><p className="finance-section-eyebrow">Make a move</p><h2 className="mt-1 font-display text-lg font-bold text-textmain">{t('quickActionsTitle')}</h2></div><span className="hidden text-xs font-medium text-textmuted sm:block">Your most-used actions</span></div>
+              <h2 className="mb-4 font-display text-lg font-bold text-textmain">{t('quickActionsTitle')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Link href="/expenses" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
                   <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
