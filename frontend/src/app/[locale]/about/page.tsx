@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
   TrendingDown,
@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Link } from '@/navigation';
 import { AuthHeader, trackPointer } from '@/components/auth-shell';
-import { SavingsBox } from '@/components/savings-box';
 import { HowItWorks } from '@/components/how-it-works';
 
 // Public on purpose: no auth hook here, so anyone can see what's inside
@@ -30,6 +29,8 @@ const INSIDE = [
 ] as const;
 
 export default function AboutPage() {
+  const locale = useLocale();
+  const companionLabel = locale === 'uz' ? 'Moli — kundalik moliyaviy hamrohingiz' : locale === 'ru' ? 'Моли — ваш финансовый помощник' : 'Moli — your everyday money companion';
   const t = useTranslations('auth');
   const nav = useTranslations('nav');
   const common = useTranslations('common');
@@ -50,7 +51,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="finance-auth-visual" aria-hidden="true">
-            <SavingsBox className="finance-auth-illustration" />
+            <div className="finance-welcome-scene"><span className="finance-welcome-orbit finance-welcome-orbit--one"/><span className="finance-welcome-orbit finance-welcome-orbit--two"/><img src="/companions/robot.png" width={1096} height={1440} className="finance-welcome-robot" alt="" decoding="async"/><span className="finance-welcome-label"><span/>{companionLabel}</span></div>
           </div>
         </section>
 

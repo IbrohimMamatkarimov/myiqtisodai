@@ -93,8 +93,8 @@
     "howStepFour": "See the full picture",
     "howStepFourDescription": "Review your activity and get help planning your next step.",
     "aboutLink": "About",
-    "aboutTitle": "See what’s inside before you sign up.",
-    "aboutLead": "Goals, spending, receipts and debts in one place. Look around, then create an account when you’re ready.",
+    "aboutTitle": "Your money. A clearer plan.",
+    "aboutLead": "Understand your spending, build a savings habit, and keep every goal in sight. Meet Moli, your everyday IqtisodAI companion.",
     "aboutInside": "Inside IqtisodAI"
   },
   "chat": {
@@ -306,6 +306,8 @@
     "errorGeneric": "Sorry, something went wrong answering that."
   },
   "settings": {
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
     "title": "Settings",
     "profile": "Profile",
     "language": "Language",
