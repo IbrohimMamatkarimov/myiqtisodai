@@ -15,20 +15,24 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 const STORAGE_KEY = 'iqtisodai-theme';
+const LIGHT_DEFAULT_MIGRATION = 'iqtisodai-light-default-v1';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
 
-  // Runs once on mount: pick up a saved preference, otherwise fall back to
-  // the OS/browser's prefers-color-scheme.
+  // Make the refreshed finance workspace open in light mode once.
+  // A later manual theme choice is still remembered.
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY) as Theme | null) : null;
-    const initial: Theme =
-      saved === 'dark' || saved === 'light'
-        ? saved
-        : window.matchMedia?.('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light';
+    const migrated = localStorage.getItem(LIGHT_DEFAULT_MIGRATION) === '1';
+    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (!migrated) {
+      localStorage.setItem(STORAGE_KEY, 'light');
+      localStorage.setItem(LIGHT_DEFAULT_MIGRATION, '1');
+      setTheme('light');
+      document.documentElement.classList.remove('dark');
+      return;
+    }
+    const initial: Theme = saved === 'dark' ? 'dark' : 'light';
     setTheme(initial);
     document.documentElement.classList.toggle('dark', initial === 'dark');
   }, []);
