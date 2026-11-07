@@ -468,3 +468,30 @@ html:not(.dark) .finance-activity-card__icon { color: #267348; background: #eaf5
   .finance-auth-coinDrop { animation: none; opacity: 1; transform: translate(42px,31px); }
   .finance-auth-how__card:hover { transform: none; }
 }
+
+
+/* A richer, quieter forest palette for the sign-in story and guide. */
+html:not(.dark) .finance-auth-story {
+  border-color: #244934;
+  color: #f5f8f2;
+  background:
+    radial-gradient(360px circle at var(--pointer-x, 75%) var(--pointer-y, 40%), rgb(93 175 112 / .22), transparent 72%),
+    radial-gradient(ellipse at 82% 5%, rgb(61 130 82 / .18), transparent 24rem),
+    linear-gradient(145deg, #142b20 0%, #1d3a29 58%, #223f2d 100%);
+  box-shadow: 0 22px 58px rgb(17 45 27 / .2), inset 0 1px rgb(255 255 255 / .08);
+}
+html:not(.dark) .finance-auth-story::before { opacity: .75; background: radial-gradient(330px circle at var(--pointer-x, 75%) var(--pointer-y, 40%), rgb(124 214 144 / .2), transparent 72%); }
+html:not(.dark) .finance-auth-story::after { display: block; opacity: .45; }
+html:not(.dark) .finance-auth-eyebrow { color: #a6e0b3; }
+html:not(.dark) .finance-auth-eyebrow span { background: #69cf86; box-shadow: 0 0 12px rgb(105 207 134 / .5); }
+html:not(.dark) .finance-auth-story h2 { color: #f5f8f2; }
+html:not(.dark) .finance-auth-story__description,
+html:not(.dark) .finance-auth-story__footnote { color: #c1d1c4; }
+html:not(.dark) .finance-auth-orbit { border-color: rgb(178 225 185 / .2); }
+html:not(.dark) .finance-auth-orbit--two { border-color: rgb(178 225 185 / .27); }
+html:not(.dark) .finance-auth-how__card { border-color: #d7e2d8; background: linear-gradient(145deg, #fff, #f3f7f2); box-shadow: 0 8px 24px rgb(23 55 34 / .06); }
+html:not(.dark) .finance-auth-how__card:hover { border-color: #a9c9ae; box-shadow: 0 14px 30px rgb(23 55 34 / .12); }
+html:not(.dark) .finance-auth-how__number { color: #245d37; background: #e4f0e5; }
+html:not(.dark) .finance-auth-how__card h3 { color: #1c3324; }
+html:not(.dark) .finance-auth-how__card p { color: #53665a; }
+html:not(.dark) .finance-auth-how__heading > p { color: #286240; }
