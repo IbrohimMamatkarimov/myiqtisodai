@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { Link } from '@/navigation';
 import { AuthHeader, trackPointer } from '@/components/auth-shell';
+import { RobotMascot } from '@/components/robot-mascot';
+import { FinancePlanner } from '@/components/finance-planner';
 import { HowItWorks } from '@/components/how-it-works';
 
 // Public on purpose: no auth hook here, so anyone can see what's inside
@@ -30,7 +32,7 @@ const INSIDE = [
 
 export default function AboutPage() {
   const locale = useLocale();
-  const companionLabel = locale === 'uz' ? 'Moli — kundalik moliyaviy hamrohingiz' : locale === 'ru' ? 'Моли — ваш финансовый помощник' : 'Moli — your everyday money companion';
+  const companionLabel = locale === 'uz' ? 'Quti — jamg‘arma hamrohingiz' : locale === 'ru' ? 'Quti — ваш помощник по накоплениям' : 'Quti — your savings companion';
   const t = useTranslations('auth');
   const nav = useTranslations('nav');
   const common = useTranslations('common');
@@ -51,7 +53,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="finance-auth-visual" aria-hidden="true">
-            <div className="finance-welcome-scene"><span className="finance-welcome-orbit finance-welcome-orbit--one"/><span className="finance-welcome-orbit finance-welcome-orbit--two"/><img src="/companions/robot.png" width={1096} height={1440} className="finance-welcome-robot" alt="" decoding="async"/><span className="finance-welcome-label"><span/>{companionLabel}</span></div>
+            <div className="finance-welcome-scene"><span className="finance-welcome-orbit finance-welcome-orbit--one"/><span className="finance-welcome-orbit finance-welcome-orbit--two"/><RobotMascot tone="forest" className="finance-welcome-quti" /><span className="finance-welcome-label"><span/>{companionLabel}</span></div>
           </div>
         </section>
 
@@ -66,6 +68,7 @@ export default function AboutPage() {
             ))}
           </ul>
         </section>
+        <FinancePlanner/>
       </main>
 
       <HowItWorks id="finance-about-how-title" />

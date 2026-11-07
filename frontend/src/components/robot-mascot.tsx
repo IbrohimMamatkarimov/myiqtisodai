@@ -1,52 +1,22 @@
 "use client";
 import { useId } from "react";
-
-export function RobotMascot({ mood = "idle", tone = "blue", className = "" }: {
-  mood?: "idle" | "thinking" | "happy" | "error";
-  tone?: "blue" | "forest";
-  className?: string;
-}) {
-  const uid = useId().replace(/:/g, "");
-  return <span className={"robot-mascot " + className} data-mood={mood} data-tone={tone} aria-hidden="true"
-    onPointerMove={(event) => {
-      if (event.pointerType !== "mouse") return;
-      const box = event.currentTarget.getBoundingClientRect();
-      event.currentTarget.style.setProperty("--eye-x", ((event.clientX - box.left) / box.width - .5) * 5 + "px");
-      event.currentTarget.style.setProperty("--eye-y", ((event.clientY - box.top) / box.height - .5) * 4 + "px");
-    }}
-    onPointerLeave={(event) => {
-      event.currentTarget.style.setProperty("--eye-x", "0px");
-      event.currentTarget.style.setProperty("--eye-y", "0px");
-    }}>
-    <svg viewBox="0 0 120 132" fill="none">
-      <defs>
-        <linearGradient id={uid + "shell"} x1="25" y1="14" x2="98" y2="120" gradientUnits="userSpaceOnUse"><stop stopColor="#fff"/><stop offset="1" stopColor="#cbdbea"/></linearGradient>
-        <linearGradient id={uid + "screen"} x1="30" y1="35" x2="92" y2="73" gradientUnits="userSpaceOnUse"><stop stopColor="#233d5b"/><stop offset="1" stopColor="#0a192c"/></linearGradient>
-      </defs>
-      <ellipse className="robot-shadow" cx="60" cy="126" rx="27" ry="4" fill="currentColor" opacity=".16"/>
-      <g className="robot-body">
-        <path d="M49 111v10M71 111v10" stroke="#98aec7" strokeWidth="9" strokeLinecap="round"/>
-        <path d="M40 122h15M65 122h15" stroke="#e8f2fa" strokeWidth="9" strokeLinecap="round"/>
-        <rect x="38" y="78" width="44" height="37" rx="16" fill={"url(#" + uid + "shell)"} stroke="#afc3d9" strokeWidth="1.5"/>
-        <rect x="47" y="86" width="26" height="16" rx="7" className="robot-chest"/>
-        <path d="m56 94 3 3 6-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M37 87 26 99" stroke="#adbed2" strokeWidth="8" strokeLinecap="round"/>
-        <circle cx="24" cy="101" r="7" fill="#edf5fc" stroke="#b6c9de"/>
-        <g className="robot-wave"><path d="m83 88 13-12" stroke="#adbed2" strokeWidth="8" strokeLinecap="round"/><path d="m95 78 7-12" stroke="#edf5fc" strokeWidth="10" strokeLinecap="round"/><path d="m99 65-1-5M104 67l3-4" stroke="#edf5fc" strokeWidth="4" strokeLinecap="round"/></g>
-        <g className="robot-head">
-          <path d="M60 25V15" stroke="#a7bbd1" strokeWidth="4" strokeLinecap="round"/>
-          <circle className="robot-antenna" cx="60" cy="10" r="6"/>
-          <rect x="13" y="43" width="12" height="23" rx="6" className="robot-ear"/>
-          <rect x="95" y="43" width="12" height="23" rx="6" className="robot-ear"/>
-          <rect x="22" y="24" width="76" height="56" rx="23" fill={"url(#" + uid + "shell)"} stroke="#afc3d9" strokeWidth="1.5"/>
-          <rect x="29" y="33" width="62" height="38" rx="16" fill={"url(#" + uid + "screen)"}/>
-          <path d="M37 39c8-4 17-4 25-3" stroke="white" strokeOpacity=".12" strokeWidth="3" strokeLinecap="round"/>
-          <g className="robot-eyes"><rect className="robot-eye" x="40" y="43" width="9" height="14" rx="4.5"/><rect className="robot-eye" x="71" y="43" width="9" height="14" rx="4.5"/></g>
-          <path className="robot-smile" d="M54 61q6 5 12 0" strokeWidth="2.5" strokeLinecap="round"/>
-          <circle cx="36" cy="59" r="3" fill="#faaca5" opacity=".4"/><circle cx="84" cy="59" r="3" fill="#faaca5" opacity=".4"/>
-          <path className="robot-scan" d="M34 51h52" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        </g>
-      </g>
-    </svg>
-  </span>;
+export function RobotMascot({mood="idle",className=""}:{mood?:"idle"|"thinking"|"happy"|"error";tone?:"blue"|"forest";className?:string}){
+ const id=useId().replace(/:/g,"");
+ return <span className={"robot-mascot brand-mascot quti-mascot "+className} data-mood={mood} aria-hidden="true"><svg viewBox="0 0 160 180" fill="none">
+ <defs><linearGradient id={id+"box"} x1="32" y1="74" x2="124" y2="154" gradientUnits="userSpaceOnUse"><stop stopColor="#6aa67b"/><stop offset=".55" stopColor="#407c54"/><stop offset="1" stopColor="#245337"/></linearGradient><linearGradient id={id+"gold"} x1="58" y1="17" x2="91" y2="50" gradientUnits="userSpaceOnUse"><stop stopColor="#fff0ac"/><stop offset="1" stopColor="#c99535"/></linearGradient></defs>
+ <ellipse cx="80" cy="165" rx="44" ry="6" fill="#163f28" opacity=".14"/>
+ <g className="quti-box"><rect x="39" y="150" width="19" height="12" rx="5" fill="#244a34"/><rect x="102" y="150" width="19" height="12" rx="5" fill="#244a34"/>
+ <rect x="30" y="72" width="100" height="83" rx="17" fill={"url(#"+id+"box)"} stroke="#2f6543" strokeWidth="2"/>
+ <path d="M122 86v51c0 6-4 10-10 10" stroke="#193f2b" strokeOpacity=".4" strokeWidth="3" strokeLinecap="round"/>
+ <path d="M38 91v34" stroke="#b4dab6" strokeOpacity=".25" strokeWidth="3" strokeLinecap="round"/>
+ <g className="quti-lid"><rect x="23" y="63" width="114" height="23" rx="11" fill="#73ad82" stroke="#3f7952" strokeWidth="2"/><path d="M34 68h90" stroke="#c5e4c5" strokeWidth="2" strokeLinecap="round" opacity=".4"/><rect x="56" y="68" width="48" height="9" rx="4.5" fill="#163f29" stroke="#e0c779" strokeWidth="2"/></g>
+ <g className="brand-eyes"><rect x="57" y="104" width="8" height="12" rx="4" fill="#e6f5d8"/><rect x="95" y="104" width="8" height="12" rx="4" fill="#e6f5d8"/></g>
+ <path d={mood==="error"?"M73 123h14":"M73 120q7 7 14 0"} stroke="#e6f5d8" strokeWidth="2.5" strokeLinecap="round"/>
+ <circle cx="49" cy="119" r="4" fill="#dba589" opacity=".5"/><circle cx="111" cy="119" r="4" fill="#dba589" opacity=".5"/>
+ <path d="M52 140h56" stroke="#17442d" strokeWidth="6" strokeLinecap="round"/><path d="M52 140h35" stroke="#d4c37d" strokeWidth="4" strokeLinecap="round"/>
+ <path className="quti-leaf-stem" d="M135 96c-1-12 0-22 9-30" stroke="#75b58a" strokeWidth="3" strokeLinecap="round"/><path d="M141 76c-4-14 5-20 14-20-1 12-4 19-14 20Z" fill="#8cc69b"/>
+ </g>
+ <g className="quti-coin"><circle cx="80" cy="37" r="15" fill={"url(#"+id+"gold)"} stroke="#e9cc77" strokeWidth="2"/><circle cx="80" cy="37" r="10.5" stroke="#fff0b4" strokeWidth="1.5"/><path d="M80 30v14M76 33h6c4 0 4 5 0 5h-4c-4 0-4 5 0 5h6" stroke="#fff4c5" strokeWidth="1.8" strokeLinecap="round"/></g>
+ <path className="quti-spark" d="M30 45v10M25 50h10M123 31v8M119 35h8" stroke="#dcc780" strokeWidth="2" strokeLinecap="round"/>
+ </svg></span>;
 }
