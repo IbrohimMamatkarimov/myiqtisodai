@@ -580,3 +580,12 @@ html.dark .finance-auth-how__heading > p { color: #8fd7a6; }
   .finance-auth-how__card, .finance-auth-how__grid.is-in .finance-auth-how__card { opacity: 1; transform: none; transition: none; }
   .finance-auth-how__card:hover .finance-auth-how__number { transform: none; }
 }
+
+/* Compact story, responsive product introduction and pointer depth. */
+.finance-auth-story h2 { font-size: clamp(1.8rem, 3.1vw, 2.85rem); max-width: 18ch; line-height: 1.1; }
+.finance-about__hero { padding: clamp(1.5rem, 4vw, 3rem); }
+.finance-about__title { font-size: clamp(1.9rem, 3.4vw, 3rem); max-width: 20ch; line-height: 1.12; }
+.finance-auth-story .finance-auth-visual { transform: perspective(1000px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateZ(12px); transition: transform 180ms ease-out; }
+.finance-auth-navlink { font-weight: 750; border: 1px solid rgb(63 157 99 / .25); }
+.finance-auth-navlink:last-of-type { color: white; background: #207647; }
+@media (prefers-reduced-motion: reduce) { .finance-auth-story .finance-auth-visual { transform: none; transition: none; } }
