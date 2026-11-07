@@ -313,6 +313,9 @@ body { background-image: radial-gradient(ellipse at 96% 0%, rgb(31 170 92 / .055
 .finance-auth-eyebrow span { width: 7px; height: 7px; border-radius: 50%; background: #54dc8b; box-shadow: 0 0 16px rgba(84,220,139,.8); animation: finance-led 2.2s ease-in-out infinite; }
 .finance-auth-story h2 { margin-top: 1.25rem; max-width: 12ch; color: white; font-family: var(--font-display); font-size: clamp(2.45rem, 4.1vw, 4.1rem); font-weight: 800; letter-spacing: -.065em; line-height: .99; }
 .finance-auth-story__description { max-width: 44ch; margin-top: 1.2rem; color: rgba(238,248,240,.7); font-size: 15px; line-height: 1.75; }
+.finance-auth-tour-link { display: inline-flex; align-items: center; gap: .35rem; margin-top: .9rem; color: #b8edc8; font-size: 13px; font-weight: 700; text-decoration: none; transition: color 160ms ease, gap 160ms ease; }
+.finance-auth-tour-link:hover { gap: .55rem; color: #fff; }
+.finance-auth-tour-link:focus-visible { outline: 2px solid #b8edc8; outline-offset: 4px; border-radius: 4px; }
 .finance-auth-visual { position: relative; display: grid; min-height: 265px; place-items: center; margin: .8rem 0; }
 .finance-auth-orbit { position: absolute; left: 50%; top: 50%; border: 1px solid rgba(137,228,164,.16); border-radius: 50%; transform: translate(-50%,-50%) rotate(-18deg); }
 .finance-auth-orbit--one { width: min(87%, 350px); height: 210px; }
@@ -476,6 +479,7 @@ html:not(.dark) .finance-activity-card__icon { color: #267348; background: #eaf5
 @media (prefers-reduced-motion: reduce) {
   .finance-auth-coinDrop { animation: none; opacity: 1; transform: translate(54px,39px) scale(.85); }
   .finance-auth-depositPulse { animation: none; opacity: .3; transform: scale(1); }
+  .finance-auth-tour-link { transition: none; }
   .finance-auth-how__card:hover { transform: none; }
 }
 
