@@ -214,3 +214,60 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce) {
   .dashboard-card:hover, .stat-card:hover, .btn-primary:hover:not(:disabled) { transform: none; }
 }
+
+
+/* Full finance workspace art direction: forest navigation and clearer money hierarchy. */
+.finance-sidebar {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 100% 8%, rgba(76, 198, 124, .2), transparent 18rem),
+    radial-gradient(circle at 0% 100%, rgba(37, 115, 82, .28), transparent 22rem),
+    linear-gradient(160deg, #102a20, #0b1c15 72%);
+  border-right: 1px solid rgba(255,255,255,.075);
+  box-shadow: 14px 0 42px rgba(16,42,32,.08);
+}
+.finance-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .2;
+  background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(180deg, black, transparent 70%);
+}
+.finance-sidebar > * { position: relative; z-index: 1; }
+.finance-sidebar nav a { min-height: 44px; border: 1px solid transparent; }
+.finance-sidebar nav a:hover { border-color: rgba(255,255,255,.08); }
+.finance-sidebar nav a svg { transition: transform 180ms ease, color 180ms ease; }
+.finance-sidebar nav a:hover svg { transform: scale(1.08); }
+body { background-image: radial-gradient(ellipse at 96% 0%, rgb(31 170 92 / .055), transparent 32rem); }
+.hero-balance-card {
+  min-height: 280px;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(110, 240, 171, .34), transparent 20rem),
+    radial-gradient(ellipse at 4% 95%, rgba(43, 163, 106, .22), transparent 24rem),
+    linear-gradient(128deg, #0b261a 0%, #0e5637 52%, #1c8c57 100%);
+  box-shadow: 0 26px 65px rgb(10 46 26 / .24);
+}
+.hero-balance-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: .28;
+  background-image: radial-gradient(rgba(255,255,255,.3) .7px, transparent .7px);
+  background-size: 17px 17px;
+  mask-image: linear-gradient(120deg, transparent 36%, black 100%);
+}
+.hero-balance-card > * { z-index: 1; }
+.glass-card, .dashboard-card, .stat-card {
+  border-radius: 22px;
+  border-color: rgb(var(--color-textmain) / .075);
+  box-shadow: 0 2px 4px rgb(var(--color-textmain) / .025), 0 16px 42px rgb(var(--color-textmain) / .055);
+}
+.dashboard-card:hover, .stat-card:hover { transform: translateY(-4px); box-shadow: 0 22px 48px rgb(var(--color-textmain) / .1); }
+@media (prefers-reduced-motion: reduce) { .dashboard-card:hover, .stat-card:hover, .finance-sidebar nav a:hover svg { transform: none; } }
