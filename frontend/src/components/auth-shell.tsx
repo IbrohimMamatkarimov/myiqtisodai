@@ -29,6 +29,8 @@ export function AuthShell({
     const y = ((event.clientY - bounds.top) / bounds.height) * 100;
     event.currentTarget.style.setProperty('--pointer-x', `${x}%`);
     event.currentTarget.style.setProperty('--pointer-y', `${y}%`);
+    event.currentTarget.style.setProperty('--tilt-x', `${(0.5 - y / 100) * 5}deg`);
+    event.currentTarget.style.setProperty('--tilt-y', `${(x / 100 - 0.5) * 7}deg`);
   }
 
   return (
