@@ -20,6 +20,7 @@ import { LanguageSwitcher } from './language-switcher';
 import { NotificationsBell } from './NotificationsBell';
 import { GlobalSearch } from './GlobalSearch';
 import { SupportChatWidget } from './SupportChatWidget';
+import { FinanceCompanion } from './finance-companion';
 import { api } from '@/lib/api-client';
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -187,7 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         })}
       </nav>
 
-      {!user?.is_superuser && <SupportChatWidget />}
+      {!user?.is_superuser && <><SupportChatWidget /><FinanceCompanion /></>}
     </div>
   );
 }
