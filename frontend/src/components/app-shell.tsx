@@ -81,14 +81,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <div className="flex">
-        <aside className="hidden md:flex md:flex-col w-60 shrink-0 border-r border-textmain/[0.06] min-h-screen p-5 relative">
+        <aside className="hidden md:flex md:flex-col w-[17rem] shrink-0 border-r border-textmain/[0.06] min-h-screen h-screen sticky top-0 p-5 relative overflow-hidden bg-surface/90 backdrop-blur-xl">
           <Link
             href={user?.is_superuser ? '/admin' : '/dashboard'}
             onClick={() => router.refresh()}
             className="flex items-center gap-2 mb-8 px-1 justify-between"
           >
             <span className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl overflow-hidden flex items-center justify-center bg-primary/10 ring-1 ring-primary/10 shadow-sm">
                 <img
                   src="/iqtisodaiphoto.png"
                   alt="IqtisodAI"
@@ -96,21 +96,21 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               </div>
-              <span className="font-display font-semibold text-textmain">IqtisodAI</span>
+              <span className="font-display text-[15px] font-bold tracking-tight text-textmain">IqtisodAI<span className="ml-1 text-primary">.</span><span className="mt-0.5 block text-[10px] font-medium tracking-[0.12em] text-textmuted">PERSONAL FINANCE</span></span>
             </span>
           </Link>
 
-          <nav className="flex-1 space-y-0.5">
+          <nav className="flex-1 space-y-1 pt-3">
             {navItems.map(({ href, label, icon: Icon }) => {
               const active = pathname === href;
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative ${
+                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 relative ${
                     active
-                      ? 'bg-primary/10 text-primary font-semibold'
-                      : 'text-textmuted hover:bg-textmain/5 hover:text-textmain'
+                      ? 'bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/10'
+                       : 'text-textmuted hover:translate-x-0.5 hover:bg-textmain/[0.045] hover:text-textmain'
                   }`}
                 >
                   <Icon size={17} />
@@ -135,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="flex-1 min-h-screen pb-16 md:pb-0">
-          <header className="flex items-center justify-between gap-3 px-4 md:px-8 py-4 border-b border-textmain/[0.06]">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 md:px-8 py-4 border-b border-textmain/[0.06] bg-surface/80 backdrop-blur-xl">
             <div className="min-w-0 flex-1">
               <GlobalSearch />
             </div>
@@ -166,7 +166,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Mobile bottom nav - horizontal, only shown below md breakpoint */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch justify-around border-t border-textmain/[0.08] bg-surface overflow-x-auto">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-stretch justify-around border-t border-textmain/[0.08] bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl overflow-x-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
