@@ -77,7 +77,10 @@
     "boxGoalLabel": "Jamg‘arma maqsadingiz",
     "boxProgressLabel": "Yig‘ilgan",
     "boxActivity": "Har bir kichik qo‘shimcha sizni maqsadga yaqinlashtiradi.",
-    "boxFootnote": "Rejalaringiz uchun sodda raqamli jamg‘arma qutisi."
+    "boxFootnote": "Rejalaringiz uchun sodda raqamli jamg‘arma qutisi.",
+    "resendingVerification": "Tasdiqlash xati yuborilmoqda…",
+    "verificationSent": "Xat yuborildi. Kiruvchi xabarlarni tekshiring.",
+    "resendVerification": "Tasdiqlash xatini qayta yuborish"
   },
   "chat": {
     "button": "Chat",
