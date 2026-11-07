@@ -4,12 +4,12 @@ import { Inter, Manrope } from 'next/font/google';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://iqtisodai.uz'),
-  title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
+  title: 'IqtisodAI',
   description:
-    'IqtisodAI bilan xarajat va daromadlaringizni kuzating, chekni skanerlab avtomatik yozdiring, maqsadlar uchun pul jamg‘aring va AI moliyaviy maslahatchidan real vaqtda tavsiya oling — barchasi o‘zbek, rus va ingliz tillarida.',
+    'Xarajatlarni kuzating va jamg‘arma maqsadlariga yeting.',
   openGraph: {
-    title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
-    description: 'Xarajatlaringizni kuzating, maqsadlar uchun jamg‘aring va AI yordamchidan maslahat oling.',
+    title: 'IqtisodAI',
+    description: 'Xarajatlarni kuzating va jamg‘arma maqsadlariga yeting.',
     url: 'https://iqtisodai.uz',
     siteName: 'IqtisodAI',
     images: [{ url: '/iqtisodaiphoto.png', width: 1254, height: 1254, alt: 'IqtisodAI' }],
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'IqtisodAI — Shaxsiy moliya va AI yordamchi',
+    title: 'IqtisodAI',
     description: 'Xarajatlaringizni kuzating, maqsadlar uchun jamg‘aring va AI yordamchidan maslahat oling.',
     images: ['/iqtisodaiphoto.png'],
   },
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
     // more aggressively than regular assets and often ignore normal cache
     // invalidation, so a plain path swap alone can keep showing the old one
     // indefinitely. Bump this number again if it ever needs to change further.
-    icon: '/iqtisodaiphoto.png?v=2',
-    apple: '/iqtisodaiphoto.png?v=2',
+    icon: '/iqtisodai-mark.svg?v=3',
+    apple: '/iqtisodaiphoto.png?v=3',
   },
 };
 
@@ -36,7 +36,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#16A34A',
+  themeColor: '#F5FAF6',
 };
 
 const inter = Inter({
