@@ -62,6 +62,7 @@ export function AuthShell({
             <p className="finance-auth-eyebrow"><span />{t('boxEyebrow')}</p>
             <h2>{t('boxHeading')}</h2>
             <p className="finance-auth-story__description">{t('boxDescription')}</p>
+            <a href="#finance-auth-how-title" className="finance-auth-tour-link">{t('howTitle')} <ArrowUpRight size={15} aria-hidden="true" /></a>
           </div>
 
           <div className="finance-auth-visual" aria-hidden="true">
