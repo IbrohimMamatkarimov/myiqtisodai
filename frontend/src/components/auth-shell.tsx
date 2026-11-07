@@ -81,6 +81,7 @@ export function AuthShell({
               <path d="M248 165h37" stroke="#7eaa87" strokeWidth="2" strokeDasharray="3 4"/>
               <circle cx="267" cy="194" r="10" fill="#e6f2e8"/>
               <path d="M264 194h6M267 191v6" stroke="#438455" strokeWidth="2" strokeLinecap="round"/>
+              <circle className="finance-auth-depositPulse" cx="267" cy="165" r="14" stroke="#73b783" strokeWidth="2"/>
               <path d="M187 122c14-4 29-7 49-4" stroke="#f2c39d" strokeWidth="13" strokeLinecap="round"/>
               <path d="M180 120c5-6 12-7 18-4" stroke="#f2c39d" strokeWidth="11" strokeLinecap="round"/>
               <g className="finance-auth-coinDrop">
