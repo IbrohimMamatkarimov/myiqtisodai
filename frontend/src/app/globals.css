@@ -437,12 +437,21 @@ html:not(.dark) .finance-activity-card__icon { color: #267348; background: #eaf5
 
 /* Sign-in story: a small hand-drawn scene and a useful guide under the form. */
 .finance-auth-illustration { display: block; width: min(100%, 390px); height: auto; overflow: visible; }
-.finance-auth-coinDrop { transform-box: fill-box; transform-origin: center; animation: finance-coin-drop 3.4s cubic-bezier(.42,0,.58,1) infinite; }
+.finance-auth-coinDrop { transform-box: fill-box; transform-origin: center; animation: finance-coin-drop 5.2s cubic-bezier(.22,.68,.18,1) infinite; }
+.finance-auth-depositPulse { transform-box: fill-box; transform-origin: center; opacity: 0; animation: finance-deposit-pulse 5.2s ease-out infinite; }
 @keyframes finance-coin-drop {
-  0%, 12% { opacity: 0; transform: translate(0, 0) scale(.7); }
-  20% { opacity: 1; transform: translate(0, 0) scale(1); }
-  66% { opacity: 1; transform: translate(54px, 39px) scale(.88); }
-  75%, 100% { opacity: 0; transform: translate(54px, 39px) scale(.75); }
+  0%, 18% { opacity: 0; transform: translate(0, 0) scale(.72) rotate(-25deg); }
+  24% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0); }
+  34% { opacity: 1; transform: translate(3px, -5px) scale(1.04) rotate(8deg); }
+  57% { opacity: 1; transform: translate(38px, 21px) scale(.96) rotate(145deg); }
+  65% { opacity: 1; transform: translate(54px, 39px) scale(.76) rotate(220deg); }
+  70%, 100% { opacity: 0; transform: translate(54px, 39px) scale(.58) rotate(250deg); }
+}
+@keyframes finance-deposit-pulse {
+  0%, 62% { opacity: 0; transform: scale(.55); }
+  68% { opacity: .5; transform: scale(.8); }
+  78% { opacity: 0; transform: scale(1.65); }
+  100% { opacity: 0; transform: scale(1.65); }
 }
 .finance-auth-how { width: min(1160px, calc(100% - 3rem)); margin: 0 auto; padding: 1rem 0 4.5rem; }
 .finance-auth-how__heading { max-width: 620px; margin-bottom: 1.4rem; }
@@ -465,7 +474,8 @@ html:not(.dark) .finance-activity-card__icon { color: #267348; background: #eaf5
   .finance-auth-how__card h3 { margin-top: .75rem; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .finance-auth-coinDrop { animation: none; opacity: 1; transform: translate(42px,31px); }
+  .finance-auth-coinDrop { animation: none; opacity: 1; transform: translate(54px,39px) scale(.85); }
+  .finance-auth-depositPulse { animation: none; opacity: .3; transform: scale(1); }
   .finance-auth-how__card:hover { transform: none; }
 }
 
