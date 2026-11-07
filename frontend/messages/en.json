@@ -80,7 +80,18 @@
     "boxFootnote": "Your money, set aside for a plan.",
     "resendingVerification": "Sending…",
     "verificationSent": "Email sent. Check your inbox.",
-    "resendVerification": "Resend verification email"
+    "resendVerification": "Resend verification email",
+    "howEyebrow": "A simple way to stay on top of money",
+    "howTitle": "Your money, easier to follow.",
+    "howDescription": "Set a plan, keep your records up to date, and see how you’re doing.",
+    "howStepOne": "Set a goal",
+    "howStepOneDescription": "Choose what you’re saving for and track your progress.",
+    "howStepTwo": "Add what comes in and goes out",
+    "howStepTwoDescription": "Record income and spending in one place.",
+    "howStepThree": "Keep useful details",
+    "howStepThreeDescription": "Save receipts and keep an eye on debts and investments.",
+    "howStepFour": "See the full picture",
+    "howStepFourDescription": "Review your activity and get help planning your next step."
   },
   "chat": {
     "button": "Chat",

@@ -80,7 +80,18 @@
     "boxFootnote": "Maqsadingiz uchun alohida jamg‘arma.",
     "resendingVerification": "Tasdiqlash xati yuborilmoqda…",
     "verificationSent": "Xat yuborildi. Kiruvchi xabarlarni tekshiring.",
-    "resendVerification": "Tasdiqlash xatini qayta yuborish"
+    "resendVerification": "Tasdiqlash xatini qayta yuborish",
+    "howEyebrow": "Pulni boshqarishning sodda usuli",
+    "howTitle": "Pulingiz qayerga ketayotganini biling.",
+    "howDescription": "Reja tuzing, ma’lumotlarni yangilab boring va natijani kuzating.",
+    "howStepOne": "Maqsad belgilang",
+    "howStepOneDescription": "Nima uchun pul yig‘ayotganingizni tanlang va jarayonni kuzating.",
+    "howStepTwo": "Kirim va chiqimni yozing",
+    "howStepTwoDescription": "Daromad va xarajatlarni bir joyda qayd eting.",
+    "howStepThree": "Muhim ma’lumotlarni saqlang",
+    "howStepThreeDescription": "Cheklarni saqlang, qarz va investitsiyalarni kuzating.",
+    "howStepFour": "Umumiy holatni ko‘ring",
+    "howStepFourDescription": "Faollikni ko‘rib chiqing va keyingi rejangiz bo‘yicha yordam oling."
   },
   "chat": {
     "button": "Chat",
