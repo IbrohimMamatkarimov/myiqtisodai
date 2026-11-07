@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './language-switcher';
 import { SavingsBox } from './savings-box';
 import { HowItWorks } from './how-it-works';
-import { Sun, Moon, ArrowUpRight } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from './theme-provider';
 import { Link, useRouter } from '@/navigation';
 
@@ -24,7 +24,6 @@ export function trackPointer(event: ReactPointerEvent<HTMLElement>) {
 }
 
 export function AuthHeader() {
-  const t = useTranslations('auth');
   const settingsT = useTranslations('settings');
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
@@ -40,8 +39,6 @@ export function AuthHeader() {
         Iqtisod<span>AI</span>
       </Link>
       <div className="flex items-center gap-2">
-        <Link href="/login" className="finance-auth-navlink">{t('signIn')}</Link>
-        <Link href="/register" className="finance-auth-navlink">{t('register')}</Link>
         <button
           onClick={toggleTheme}
           className="finance-auth-utility"
