@@ -433,3 +433,38 @@ html:not(.dark) .finance-activity-card {
 }
 html:not(.dark) .finance-activity-card small { color: #718075; }
 html:not(.dark) .finance-activity-card__icon { color: #267348; background: #eaf5ed; }
+
+
+/* Sign-in story: a small hand-drawn scene and a useful guide under the form. */
+.finance-auth-illustration { display: block; width: min(100%, 390px); height: auto; overflow: visible; }
+.finance-auth-coinDrop { transform-box: fill-box; transform-origin: center; animation: finance-coin-drop 3.4s cubic-bezier(.42,0,.58,1) infinite; }
+@keyframes finance-coin-drop {
+  0%, 12% { opacity: 0; transform: translate(0, 0) scale(.7); }
+  20% { opacity: 1; transform: translate(0, 0) scale(1); }
+  66% { opacity: 1; transform: translate(54px, 39px) scale(.88); }
+  75%, 100% { opacity: 0; transform: translate(54px, 39px) scale(.75); }
+}
+.finance-auth-how { width: min(1160px, calc(100% - 3rem)); margin: 0 auto; padding: 1rem 0 4.5rem; }
+.finance-auth-how__heading { max-width: 620px; margin-bottom: 1.4rem; }
+.finance-auth-how__heading > p { color: #287348; font-size: 11px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.finance-auth-how__heading h2 { margin-top: .45rem; color: rgb(var(--color-textmain)); font-family: var(--font-display); font-size: clamp(1.65rem,3vw,2.25rem); font-weight: 800; letter-spacing: -.05em; }
+.finance-auth-how__heading span { display: block; margin-top: .5rem; color: rgb(var(--color-textmuted)); font-size: 14px; line-height: 1.65; }
+.finance-auth-how__grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .85rem; }
+.finance-auth-how__card { min-height: 160px; padding: 1.15rem; border: 1px solid #e7eee8; border-radius: 18px; background: #fff; box-shadow: 0 6px 20px rgb(23 55 34 / .035); transition: transform 180ms ease,border-color 180ms ease,box-shadow 180ms ease; }
+.finance-auth-how__card:hover { transform: translateY(-3px); border-color: #cfe1d3; box-shadow: 0 13px 28px rgb(23 55 34 / .08); }
+.finance-auth-how__number { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 10px; color: #287348; background: #eff7f0; font-size: 11px; font-weight: 800; }
+.finance-auth-how__card h3 { margin-top: 1rem; color: #213429; font-size: 14px; font-weight: 750; line-height: 1.4; }
+.finance-auth-how__card p { margin-top: .45rem; color: #68776e; font-size: 12px; line-height: 1.6; }
+@media (max-width: 900px) { .finance-auth-how__grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 700px) {
+  .finance-auth-visual { display: grid; min-height: 155px; margin: .35rem 0 0; }
+  .finance-auth-illustration { width: min(100%,320px); max-height: 175px; }
+  .finance-auth-how { width: min(100% - 1.25rem,440px); padding: .3rem 0 2.5rem; }
+  .finance-auth-how__grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .6rem; }
+  .finance-auth-how__card { min-height: 150px; padding: .9rem; }
+  .finance-auth-how__card h3 { margin-top: .75rem; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .finance-auth-coinDrop { animation: none; opacity: 1; transform: translate(42px,31px); }
+  .finance-auth-how__card:hover { transform: none; }
+}
