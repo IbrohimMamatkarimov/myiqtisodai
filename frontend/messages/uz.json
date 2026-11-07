@@ -60,9 +60,9 @@
     "signUp": "Ro'yxatdan o'tish",
     "signIn": "Kirish",
     "welcomeBack": "Xush kelibsiz",
-    "welcomeBackSubtitle": "Moliyangizni kuzatish uchun tizimga kiring.",
+    "welcomeBackSubtitle": "Maqsad va jamg‘armalaringizni ko‘rish uchun tizimga kiring.",
     "createAccountTitle": "Hisob yarating",
-    "createAccountSubtitle": "Moliyangizni aqlliroq boshqarishni boshlang.",
+    "createAccountSubtitle": "Jamg‘arma maqsadini yarating va unga pul yig‘ishni boshlang.",
     "resetPassword": "Parolni tiklash",
     "newPassword": "Yangi parol",
     "sendResetLink": "Havola yuborish",
@@ -70,7 +70,14 @@
     "changePassword": "Parolni o'zgartirish",
     "currentPassword": "Joriy parol",
     "signUpAgain": "Qayta ro'yxatdan o'tish",
-    "orContinueWith": "yoki quyidagi orqali kiring"
+    "orContinueWith": "yoki quyidagi orqali kiring",
+    "boxEyebrow": "Istagan narsangiz uchun jamg‘aring",
+    "boxHeading": "Bugungi kichik jamg‘arma — ertangi katta reja.",
+    "boxDescription": "Maqsad belgilang, imkoningizga qarab pul qo‘shing va jamg‘armangiz qanday o‘sayotganini kuzating.",
+    "boxGoalLabel": "Jamg‘arma maqsadingiz",
+    "boxProgressLabel": "Yig‘ilgan",
+    "boxActivity": "Har bir kichik qo‘shimcha sizni maqsadga yaqinlashtiradi.",
+    "boxFootnote": "Rejalaringiz uchun sodda raqamli jamg‘arma qutisi."
   },
   "chat": {
     "button": "Chat",
@@ -121,7 +128,7 @@
     "qaAskAI": "AI'dan so'rash",
     "qaMonthlyReport": "Oylik hisobot",
     "aiCoachBadge": "AI Moliyaviy Murabbiy",
-    "aiCoachLoading": "Moliyangiz tahlil qilinmoqda\u2026",
+    "aiCoachLoading": "Moliyangiz tahlil qilinmoqda…",
     "aiCoachGreeting": "Salom, {name},",
     "aiCoachEmpty": "Shaxsiy tavsiyalar olish uchun daromad va xarajat qo'shing.",
     "aiCoachAnalyze": "Byudjetni tahlil qilish",
@@ -141,9 +148,9 @@
     "highlightExpensesUp": "Xarajatlaringiz o'tgan oyga nisbatan {percent}% oshdi.",
     "highlightExpensesDown": "O'tgan oyga qaraganda kamroq sarfladingiz. Ajoyib!",
     "highlightOnTrack": "Moliyaviy maqsadlaringiz bo'yicha yo'lda davom etyapsiz.",
-    "highlightBudgetOverspend": "Bu oy \u00ab{category}\u00bb byudjetining {percent}% allaqachon ishlatildi.",
-    "highlightGoalProjection": "Hozirgi sur'atda \u00ab{goal}\u00bb maqsadingizga taxminan {weeks} haftada erishasiz.",
-    "highlightGoalBoost": "Haftasiga yana {extra} tejang \u2014 \u00ab{goal}\u00bb maqsadingizga taxminan {weeks} hafta oldin erishasiz."
+    "highlightBudgetOverspend": "Bu oy «{category}» byudjetining {percent}% allaqachon ishlatildi.",
+    "highlightGoalProjection": "Hozirgi sur'atda «{goal}» maqsadingizga taxminan {weeks} haftada erishasiz.",
+    "highlightGoalBoost": "Haftasiga yana {extra} tejang — «{goal}» maqsadingizga taxminan {weeks} hafta oldin erishasiz."
   },
   "expenses": {
     "title": "Xarajatlar",
@@ -156,7 +163,7 @@
     "noResults": "Xarajatlar topilmadi.",
     "scanReceipt": "Chekni skanerlash",
     "scanReceiptSubtitle": "1 marta bosing — rasmga oling, qolganini biz bajaramiz",
-    "scanning": "Chekingiz o'qilmoqda\u2026",
+    "scanning": "Chekingiz o'qilmoqda…",
     "scanErrorGeneric": "Chekni o'qib bo'lmadi. Ma'lumotlarni qo'lda kiritishingiz mumkin.",
     "reviewTitle": "Skanerlangan chekni tekshiring",
     "merchant": "Sotuvchi",
@@ -263,7 +270,7 @@
     "memberCountLabel": "{count} a'zo",
     "chatToday": "Bugun",
     "chatYesterday": "Kecha",
-    "confirmAllocate": "\u00ab{goal}\u00bb uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
+    "confirmAllocate": "«{goal}» uchun {amount} ajratilsinmi? Bu summa balansingizdan yechiladi va shu maqsadga qulflanadi."
   },
   "assistant": {
     "title": "AI Moliyaviy Yordamchi",
