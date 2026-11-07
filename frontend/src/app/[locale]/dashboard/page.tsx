@@ -570,10 +570,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="finance-cashflow">
-                <div className="finance-cashflow__head"><span>{locale==='uz'?'PUL OQIMI':locale==='ru'?'ДЕНЕЖНЫЙ ПОТОК':'CASH FLOW'}</span><span>{user?.currency||'UZS'}</span></div>
-                {[{label:t('income'),amount:summary.total_income,tone:'income'},{label:locale==='uz'?'Xarajatlar':locale==='ru'?'Расходы':'Expenses',amount:summary.total_expenses,tone:'expense'}].map(row=><div className="finance-cashflow__row" key={row.tone} data-tone={row.tone}><div><span>{row.label}</span><strong>{hideBalance?'••••••':formatAmount(row.amount,user?.currency||'UZS')}</strong></div><span className="finance-cashflow__track"><i style={{width:hideBalance?'0%':Math.max(0,Math.min(100,row.amount/Math.max(summary.total_income,summary.total_expenses,1)*100))+'%'}}/></span></div>)}
-                <Link href="/transactions" className="finance-cashflow__activity"><ReceiptIcon size={15}/><span>{t('recentTransactions')}<strong>{summary.recent_transactions_count??0}</strong></span><ArrowRight size={14}/></Link>
+              <div className="finance-balance-panel__art">
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--one" />
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--two" />
+                <img src="/wallet-illustration.png" alt="" className="finance-wallet-art" />
+                <div className="finance-activity-card">
+                  <span className="finance-activity-card__icon"><ReceiptIcon size={16} /></span>
+                  <span className="min-w-0 flex-1">
+                    <small>{t('recentTransactions')}</small>
+                    <strong>{summary?.recent_transactions_count ?? 0}</strong>
+                  </span>
+                  <ArrowRight size={15} className="text-primary" />
+                </div>
               </div>
             </section>
 
