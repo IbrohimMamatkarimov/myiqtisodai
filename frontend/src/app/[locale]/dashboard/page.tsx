@@ -521,58 +521,73 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5 items-start">
           {/* Main column */}
           <div className="space-y-5 min-w-0">
+
             {/* Hero: personal greeting + balance */}
-            <div className="hero-balance-card relative overflow-hidden">
-              <img
-                src="/wallet-illustration.png"
-                alt=""
-                className="absolute -right-2 bottom-0 h-36 w-36 sm:h-40 sm:w-40 object-contain pointer-events-none select-none"
-              />
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-white/15">
-                  <img src="/iqtisodaiphoto.png" alt="" className="h-full w-full object-cover" />
+            <section className="hero-balance-card finance-balance-panel relative overflow-hidden">
+              <div className="finance-balance-panel__main">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl overflow-hidden shrink-0 bg-white/15 ring-1 ring-white/20">
+                    <img src="/iqtisodaiphoto.png" alt="" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-white truncate">
+                      {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
+                    </p>
+                    <p className="text-xs text-white/65">{t('heroSubtitle')}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="font-display font-semibold text-white truncate">
-                    {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
+
+                <div className="mt-8">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-white/70">{t('balance')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setHideBalance((v) => !v)}
+                      aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
+                      className="finance-balance-visibility text-white/60 hover:text-white transition-colors"
+                    >
+                      {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                  <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-white tabular-nums sm:text-5xl">
+                    {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
                   </p>
-                  <p className="text-xs text-white/70">{t('heroSubtitle')}</p>
+                  <p className="mt-2 max-w-lg text-sm leading-6 text-white/70">
+                    {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
+                  </p>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-2.5">
+                  <Link href="/expenses" className="finance-balance-panel__primary">
+                    <Plus size={16} />
+                    {t('qaAddExpense')}
+                    <ArrowRight size={15} />
+                  </Link>
+                  <Link href="/income" className="finance-balance-panel__secondary">
+                    <Plus size={16} />
+                    {t('qaAddIncome')}
+                  </Link>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm text-white/75 font-medium">{t('balance')}</p>
-                <button
-                  type="button"
-                  onClick={() => setHideBalance((v) => !v)}
-                  aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
-                  className="text-white/60 hover:text-white/90 transition-colors"
-                >
-                  {hideBalance ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
+              <div className="finance-balance-panel__art">
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--one" />
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--two" />
+                <img src="/wallet-illustration.png" alt="" className="finance-wallet-art" />
+                <div className="finance-activity-card">
+                  <span className="finance-activity-card__icon"><ReceiptIcon size={16} /></span>
+                  <span className="min-w-0 flex-1">
+                    <small>{t('recentTransactions')}</small>
+                    <strong>{summary?.recent_transactions_count ?? 0}</strong>
+                  </span>
+                  <ArrowRight size={15} className="text-primary" />
+                </div>
               </div>
-              <p className="mt-1 font-display text-4xl font-bold text-white tabular-nums">
-                {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
-              </p>
-              <p className="mt-1 text-sm text-white/75">
-                {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
-              </p>
-
-              <div className="flex flex-wrap gap-2 mt-5 relative">
-                <Link href="/expenses" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white text-primary font-semibold px-4 py-3 hover:brightness-95 transition-all active:scale-[0.98]">
-                  <Plus size={16} />
-                  {t('qaAddExpense')}
-                </Link>
-                <Link href="/income" className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/15 text-white font-medium px-4 py-3 hover:bg-white/25 transition-colors">
-                  <Plus size={16} />
-                  {t('qaAddIncome')}
-                </Link>
-              </div>
-            </div>
+            </section>
 
             {/* Quick actions */}
-            <div className="glass-card p-5">
-              <h2 className="font-display font-semibold text-textmain mb-3">{t('quickActionsTitle')}</h2>
+            <div className="glass-card dashboard-quick-actions p-5 sm:p-6">
+              <div className="mb-4 flex items-end justify-between gap-3"><div><p className="finance-section-eyebrow">Make a move</p><h2 className="mt-1 font-display text-lg font-bold text-textmain">{t('quickActionsTitle')}</h2></div><span className="hidden text-xs font-medium text-textmuted sm:block">Your most-used actions</span></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Link href="/expenses" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
                   <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
