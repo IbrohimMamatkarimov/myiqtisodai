@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               </div>
-              <span className="font-display text-[15px] font-bold tracking-tight text-white">IqtisodAI<span className="ml-1 text-primary">.</span><span className="mt-0.5 block text-[10px] font-medium tracking-[0.12em] text-textmuted">PERSONAL FINANCE</span></span>
+              <span className="font-display text-[16px] font-bold tracking-tight text-white">IqtisodAI<span className="ml-1 text-primary">.</span></span>
             </span>
           </Link>
 
