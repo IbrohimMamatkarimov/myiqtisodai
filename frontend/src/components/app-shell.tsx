@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <div className="flex">
-        <aside className="hidden md:flex md:flex-col w-[17rem] shrink-0 border-r border-textmain/[0.06] min-h-screen h-screen sticky top-0 p-5 relative overflow-hidden bg-surface/90 backdrop-blur-xl">
+        <aside className="finance-sidebar hidden md:flex md:flex-col w-[17rem] shrink-0 min-h-screen h-screen sticky top-0 p-5 relative overflow-hidden">
           <Link
             href={user?.is_superuser ? '/admin' : '/dashboard'}
             onClick={() => router.refresh()}
@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
               </div>
-              <span className="font-display text-[15px] font-bold tracking-tight text-textmain">IqtisodAI<span className="ml-1 text-primary">.</span><span className="mt-0.5 block text-[10px] font-medium tracking-[0.12em] text-textmuted">PERSONAL FINANCE</span></span>
+              <span className="font-display text-[16px] font-bold tracking-tight text-white">IqtisodAI<span className="ml-1 text-primary">.</span></span>
             </span>
           </Link>
 
@@ -109,8 +109,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   href={href}
                   className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 relative ${
                     active
-                      ? 'bg-primary/10 text-primary font-semibold shadow-sm ring-1 ring-primary/10'
-                       : 'text-textmuted hover:translate-x-0.5 hover:bg-textmain/[0.045] hover:text-textmain'
+                      ? 'bg-white/12 text-white font-semibold shadow-sm ring-1 ring-white/10'
+                       : 'text-white/60 hover:translate-x-0.5 hover:bg-white/[0.07] hover:text-white'
                   }`}
                 >
                   <Icon size={17} />
@@ -127,7 +127,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-textmuted hover:bg-danger/10 hover:text-danger transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-white/55 hover:bg-rose-500/10 hover:text-rose-200 transition-colors"
           >
             <LogOut size={17} />
             {t('logout')}

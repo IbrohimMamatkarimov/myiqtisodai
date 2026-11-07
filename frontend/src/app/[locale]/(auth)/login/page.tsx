@@ -102,7 +102,7 @@ export default function LoginPage() {
                 disabled={resending || resent}
                 className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
               >
-                {resending ? 'Sending...' : resent ? 'Verification email sent - check your inbox' : 'Resend verification email'}
+                {resending ? t('resendingVerification') : resent ? t('verificationSent') : t('resendVerification')}
               </button>
             )}
           </div>
