@@ -19,11 +19,11 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'IqtisodAI',
-    description: 'Xarajatlaringizni kuzating, maqsadlar uchun jamg‘aring va AI yordamchidan maslahat oling.',
+    description: 'Xarajatlarni kuzating va jamg‘arma maqsadlariga yeting.',
     images: ['/iqtisodaiphoto.png'],
   },
   icons: {
-    // ?v=2 cache-busts the favicon specifically - browsers cache favicons far
+    // ?v=3 cache-busts the favicon specifically - browsers cache favicons far
     // more aggressively than regular assets and often ignore normal cache
     // invalidation, so a plain path swap alone can keep showing the old one
     // indefinitely. Bump this number again if it ever needs to change further.
