@@ -77,7 +77,10 @@
     "boxGoalLabel": "Your savings goal",
     "boxProgressLabel": "Progress so far",
     "boxActivity": "Every small deposit moves you closer.",
-    "boxFootnote": "A simple digital savings box for your plans."
+    "boxFootnote": "A simple digital savings box for your plans.",
+    "resendingVerification": "Sending…",
+    "verificationSent": "Email sent. Check your inbox.",
+    "resendVerification": "Resend verification email"
   },
   "chat": {
     "button": "Chat",
