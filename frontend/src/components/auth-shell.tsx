@@ -32,7 +32,7 @@ export function AuthHeader() {
   return (
     <header className="finance-auth-header">
       <Link
-        href="/login"
+        href="/"
         onClick={() => router.refresh()}
         className="finance-auth-brand select-none"
         aria-label="IqtisodAI"
@@ -40,9 +40,8 @@ export function AuthHeader() {
         Iqtisod<span>AI</span>
       </Link>
       <div className="flex items-center gap-2">
-        <Link href="/about" className="finance-auth-navlink">
-          {t('aboutLink')}
-        </Link>
+        <Link href="/login" className="finance-auth-navlink">{t('signIn')}</Link>
+        <Link href="/register" className="finance-auth-navlink">{t('register')}</Link>
         <button
           onClick={toggleTheme}
           className="finance-auth-utility"
@@ -78,9 +77,6 @@ export function AuthShell({
             <p className="finance-auth-eyebrow"><span />{t('boxEyebrow')}</p>
             <h2>{t('boxHeading')}</h2>
             <p className="finance-auth-story__description">{t('boxDescription')}</p>
-            <Link href="/about" className="finance-auth-tour-link">
-              {t('aboutLink')} <ArrowUpRight size={15} aria-hidden="true" />
-            </Link>
           </div>
 
           <div className="finance-auth-visual" aria-hidden="true">
