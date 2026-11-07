@@ -77,7 +77,10 @@
     "boxGoalLabel": "Ваша цель накоплений",
     "boxProgressLabel": "Уже накоплено",
     "boxActivity": "Каждый взнос приближает вас к цели.",
-    "boxFootnote": "Простая цифровая копилка для ваших планов."
+    "boxFootnote": "Простая цифровая копилка для ваших планов.",
+    "resendingVerification": "Отправляем письмо…",
+    "verificationSent": "Письмо отправлено. Проверьте входящие.",
+    "resendVerification": "Отправить письмо ещё раз"
   },
   "chat": {
     "button": "Чат",
