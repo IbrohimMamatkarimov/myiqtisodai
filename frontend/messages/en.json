@@ -91,7 +91,11 @@
     "howStepThree": "Keep useful details",
     "howStepThreeDescription": "Save receipts and keep an eye on debts and investments.",
     "howStepFour": "See the full picture",
-    "howStepFourDescription": "Review your activity and get help planning your next step."
+    "howStepFourDescription": "Review your activity and get help planning your next step.",
+    "aboutLink": "About",
+    "aboutTitle": "See what’s inside before you sign up.",
+    "aboutLead": "Goals, spending, receipts and debts in one place. Look around, then create an account when you’re ready.",
+    "aboutInside": "Inside IqtisodAI"
   },
   "chat": {
     "button": "Chat",
