@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 const MAX_QUESTION_CHARS = 1200;
+function offlineFinanceHelp(question: string) {
+  const q = question.toLowerCase();
+  if (/(budget|byudjet|xarajat|oylik)/.test(q)) return "Boshlash uchun sodda usul:\n\n1. Bir oyga kiradigan barcha pulni yozing.\n2. Zarur xarajatlarni alohida yozing.\n3. Qolgan xarajatlar uchun kichik limit belgilang.\n4. Hech bo‘lmasa oz miqdorni jamg‘armaga ajrating.\n\nShaxsiy tahlil va kuzatish ro‘yxatdan keyin ochiladi.";
+  return "Men hozir ham umumiy moliyaviy savollarda yordam bera olaman. Maqsadingizni ayting: xarajatlarni nazorat qilish, jamg‘arish yoki byudjet tuzish. Shaxsiy hisob-kitoblar uchun tizimga kirishingiz mumkin.";
+}
+
 
 export async function POST(request: NextRequest) {
   if (!process.env.GEMINI_API_KEY) {
@@ -38,12 +44,12 @@ export async function POST(request: NextRequest) {
         signal: AbortSignal.timeout(15_000),
       }
     );
-    if (!response.ok) return NextResponse.json({ error: "The companion could not answer right now. Please try again." }, { status: 502 });
+    if (!response.ok) return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
     const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     const answer = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
-    if (!answer) return NextResponse.json({ error: "The companion could not answer right now. Please try again." }, { status: 502 });
+    if (!answer) return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
     return NextResponse.json({ answer });
   } catch {
-    return NextResponse.json({ error: "The companion is temporarily unavailable. Please try again." }, { status: 502 });
+    return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
   }
 }
