@@ -1,5 +1,8 @@
 'use client';
 
+// This route depends on URL parameters and is intentionally rendered on demand.
+export const dynamic = 'force-dynamic';
+
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
