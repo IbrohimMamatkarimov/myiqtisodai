@@ -1,13 +1,15 @@
 """AI financial assistant.
 
 Builds a compact snapshot of the user's own financial data (income, expenses,
-budgets, goals) and sends it to Groq's LLM API alongside the user's question,
-so answers are grounded in the user's real numbers rather than generic advice.
+budgets, goals) and sends it to Gemini alongside the user's question, so answers
+are grounded in the user's real numbers rather than generic advice.
 """
+import json
 import logging
 from datetime import date, timedelta
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
-from groq import Groq
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -19,6 +21,34 @@ from app.models.income import Income
 from app.models.user import User
 
 logger = logging.getLogger("myiqtisod.ai")
+
+
+def ask_gemini(system_prompt: str, user_prompt: str, max_tokens: int) -> str | None:
+    """Call Gemini only from the backend, keeping its key out of browser code."""
+    if not settings.GEMINI_API_KEY:
+        return None
+
+    model = settings.GEMINI_MODEL or "gemini-flash-latest"
+    payload = {
+        "systemInstruction": {"parts": [{"text": system_prompt}]},
+        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": max_tokens},
+    }
+    request = Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "x-goog-api-key": settings.GEMINI_API_KEY},
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=15) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        parts = data["candidates"][0]["content"]["parts"]
+        return "".join(part.get("text", "") for part in parts).strip() or None
+    except (HTTPError, URLError, KeyError, IndexError, TypeError, ValueError):
+        logger.exception("Gemini API call failed")
+        return None
+
 
 SYSTEM_PROMPT = """You are the IqtisodAI financial assistant, embedded in a personal
 finance app used in Uzbekistan. You answer using ONLY the financial snapshot data given
@@ -46,19 +76,13 @@ def _build_financial_snapshot(db: Session, user: User) -> str:
     total_income = db.query(func.coalesce(func.sum(Income.amount), 0)).filter(
         Income.user_id == user.id, Income.income_date >= month_start
     ).scalar()
-
     total_expenses = db.query(func.coalesce(func.sum(Expense.amount), 0)).filter(
         Expense.user_id == user.id, Expense.expense_date >= month_start
     ).scalar()
-
     recent_expenses = (
-        db.query(Expense)
-        .filter(Expense.user_id == user.id, Expense.expense_date >= last_30)
-        .order_by(Expense.expense_date.desc())
-        .limit(20)
-        .all()
+        db.query(Expense).filter(Expense.user_id == user.id, Expense.expense_date >= last_30)
+        .order_by(Expense.expense_date.desc()).limit(20).all()
     )
-
     goals = db.query(Goal).filter(Goal.user_id == user.id, Goal.is_completed.is_(False)).all()
     budgets = db.query(Budget).filter(Budget.user_id == user.id).all()
 
@@ -70,10 +94,6 @@ def _build_financial_snapshot(db: Session, user: User) -> str:
         f"Number of budgets configured: {len(budgets)}",
         f"Active savings goals: {len(goals)}",
     ]
-
-    # Onboarding context - what the user told us about themselves and what
-    # they're actually trying to achieve, so advice can be tailored instead
-    # of generic.
     if user.financial_goal:
         lines.append(f"User's stated primary financial goal: {user.financial_goal.value}")
     if user.occupation:
@@ -84,40 +104,21 @@ def _build_financial_snapshot(db: Session, user: User) -> str:
         habits = ", ".join(f"{k}: {v}" for k, v in user.spending_habits.items() if v)
         if habits:
             lines.append(f"User's self-reported typical monthly spending habits: {habits}")
-
-    for g in goals[:5]:
-        lines.append(f"  Goal '{g.title}': {g.current_amount}/{g.target_amount} (deadline: {g.deadline})")
+    for goal in goals[:5]:
+        lines.append(f"  Goal '{goal.title}': {goal.current_amount}/{goal.target_amount} (deadline: {goal.deadline})")
     lines.append(f"Last 30 days transaction count: {len(recent_expenses)}")
-    for e in recent_expenses[:15]:
-        lines.append(f"  {e.expense_date}: {e.amount} {e.currency} - {e.description or 'no description'}")
-
+    for expense in recent_expenses[:15]:
+        lines.append(f"  {expense.expense_date}: {expense.amount} {expense.currency} - {expense.description or 'no description'}")
     return "\n".join(lines)
 
 
 def ask_financial_assistant(db: Session, user: User, question: str) -> str:
-    if not settings.GROQ_API_KEY:
-        return (
-            "The AI assistant isn't configured yet. Add a GROQ_API_KEY in the backend "
-            ".env file to enable AI-powered answers."
-        )
+    if not settings.GEMINI_API_KEY:
+        return "The AI assistant isn't configured yet. Add a GEMINI_API_KEY in the backend environment to enable AI-powered answers."
 
-    snapshot = _build_financial_snapshot(db, user)
-
-    client = Groq(api_key=settings.GROQ_API_KEY)
-    try:
-        completion = client.chat.completions.create(
-            model=settings.GROQ_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {
-                    "role": "user",
-                    "content": f"My financial snapshot:\n{snapshot}\n\nMy question: {question}",
-                },
-            ],
-            temperature=0.4,
-            max_tokens=700,
-        )
-        return completion.choices[0].message.content
-    except Exception:
-        logger.exception("Groq API call failed")
-        return "Sorry, the AI assistant is temporarily unavailable. Please try again shortly."
+    answer = ask_gemini(
+        SYSTEM_PROMPT,
+        f"My financial snapshot:\n{_build_financial_snapshot(db, user)}\n\nMy question: {question}",
+        max_tokens=700,
+    )
+    return answer or "Sorry, the AI assistant is temporarily unavailable. Please try again shortly."
