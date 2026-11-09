@@ -7,9 +7,6 @@ export default createMiddleware({
   localePrefix: 'always',
 });
 
-// Localized URLs already contain all routing information. Let Next serve
-// those public pages directly from its cache; keep middleware only for bare
-// URLs that need locale detection and a redirect.
 export const config = {
-  matcher: ['/((?!api|_next|_vercel|.*\\..*|(?:uz|en|ru)(?:/|$)).*)'],
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
 };
