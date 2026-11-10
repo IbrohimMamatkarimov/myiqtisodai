@@ -20,7 +20,9 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
   useEffect(()=>()=>{for(const cached of audioCache.current.values()){if(cached.startsWith("blob:"))URL.revokeObjectURL(cached);}},[]);
   function deviceSpeak(text:string){
     if(!("speechSynthesis" in window))return false;
-    const voice=window.speechSynthesis.getVoices().find(v=>v.lang.toLowerCase().startsWith(lang));
+    const voices=window.speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang));
+    const voice=voices.find(v=>/\b(Jasur|Sardor|David|Daniel|George|Guy|Ryan|Mark|James)\b/i.test(v.name));
+    if(!voice)return false;
     if(!voice)return false;
     const utterance=new SpeechSynthesisUtterance(text);
     utterance.voice=voice;utterance.lang=voice.lang;
@@ -30,7 +32,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
     return true;
   }
   async function send(body:FormData|string) {
-    const cacheKey=typeof body==="string"?lang+body:"";
+    const cacheKey=typeof body==="string"?lang+":jasur-v2:"+body:"";
     const cached=cacheKey&&audioCache.current.get(cacheKey);
     if(cached){setUrl(cached);return;}
     request.current?.abort();
