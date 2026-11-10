@@ -770,3 +770,9 @@ html.dark .finance-planner__result{background:#17302644}
 .quti-body button,.quti-body a{cursor:pointer;}
 .quti-body textarea{cursor:text;}
 @media(max-width:640px){.quti-panel{height:min(640px,calc(100dvh - 120px));}}
+
+/* Keep short conversations compact and let long replies scroll. */
+.quti-panel{height:auto!important;max-height:calc(100dvh - 136px)!important}
+.quti-body{flex:0 1 auto!important;min-height:0!important}
+.quti-panel>aside{margin-top:0!important}
+@media(max-width:640px){.quti-panel{height:auto!important;max-height:calc(100dvh - 120px)!important}}
