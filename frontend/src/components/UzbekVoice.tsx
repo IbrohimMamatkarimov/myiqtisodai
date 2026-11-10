@@ -21,7 +21,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
   function deviceSpeak(text:string){
     if(!("speechSynthesis" in window))return false;
     const voices=window.speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang));
-    const voice=voices.find(v=>/\b(Jasur|Sardor|David|Daniel|George|Guy|Ryan|Mark|James)\b/i.test(v.name));
+    const voice=voices.find(v=>/\b(Lola|Sevinch|Shoira|Madina|Jenny|Aria|Samantha|Susan|Victoria|Zira|Sonia)\b/i.test(v.name));
     if(!voice)return false;
     if(!voice)return false;
     const utterance=new SpeechSynthesisUtterance(text);
@@ -32,7 +32,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
     return true;
   }
   async function send(body:FormData|string) {
-    const cacheKey=typeof body==="string"?lang+":jasur-v2:"+body:"";
+    const cacheKey=typeof body==="string"?lang+":lola-v3:"+body:"";
     const cached=cacheKey&&audioCache.current.get(cacheKey);
     if(cached){setUrl(cached);return;}
     request.current?.abort();
