@@ -22,13 +22,13 @@ export async function POST(request: NextRequest) {
     "You are IqtisodAI's welcoming financial learning companion for visitors in Uzbekistan.",
     "Give general financial-literacy guidance only. Do not request personal information, account details, passwords, or card numbers.",
     "Do not claim to know the visitor's finances. Explain that personal budgeting analysis becomes available after sign-in.",
-    (body?.language === "en" ? "Answer in English." : body?.language === "uz" ? "Answer in Uzbek." : "Answer in the language of the question.") + " Keep it under 180 words and use clear practical steps.",
+    (body?.language === "en" ? "Answer in English." : body?.language === "uz" ? "Answer in Uzbek." : "Answer in the language of the question.") + " Keep it under 100 words and use clear practical steps.",
     "Visitor question:",
     question,
   ].join("\n\n");
 
   try {
-    const model = "gemini-flash-lite-latest";
+    const model = "gemini-3.5-flash-lite";
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 500, temperature: 0.35 },
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.35, thinkingConfig: { thinkingLevel: "minimal" } },
         }),
         signal: AbortSignal.timeout(18_000),
       }
