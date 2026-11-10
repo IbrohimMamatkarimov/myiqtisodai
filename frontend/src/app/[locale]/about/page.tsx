@@ -28,25 +28,27 @@ function QutiCompanion() {
   const language=useLocale();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
+  const [sentQuestion,setSentQuestion]=useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   async function ask() {
     if (!question.trim() || loading) return;
+    const submitted=question.trim();setSentQuestion(submitted);setQuestion("");
     setLoading(true); setError(""); setAnswer("");
     try {
-      const response = await fetch("/api/guest-companion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question,language }) });
+      const response = await fetch("/api/guest-companion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question:submitted,language }) });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Try again shortly.");
-      if (!data.answer?.trim()) throw new Error("Please try again."); setAnswer(data.answer); setQuestion(draft => draft.trim() === question.trim() ? "" : draft);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Try again shortly."); }
+      if (!data.answer?.trim()) throw new Error("Please try again."); setAnswer(data.answer); 
+    } catch (cause) { setQuestion(draft=>draft||submitted); setError(cause instanceof Error ? cause.message : "Try again shortly."); }
     finally { setLoading(false); }
   }
   if(!mounted)return null;
   return createPortal(<div className="quti-companion-root fixed bottom-5 right-5 z-50">
     {open && <section role="dialog" aria-label="Quti companion" className="quti-panel mb-3 w-[min(370px,calc(100vw-2.5rem))] overflow-hidden rounded-3xl border border-[#377553]/30 bg-[#f8fcf8] shadow-2xl">
       <header className="flex items-center gap-3 bg-[#173d29] px-4 py-3 text-white"><img src="/coach-avatar.png" alt="" className="h-12 w-12 shrink-0 rounded-2xl object-cover object-top" /><div className="flex-1"><strong className="text-sm">Sizning jamg‘arish murabbiyingiz</strong><p className="text-xs text-emerald-100">Quti bilan birga reja qilamiz</p></div><button type="button" onClick={() => setOpen(false)} aria-label="Close"><X size={18}/></button></header>
-      <div className="quti-body space-y-3 p-4 text-sm text-[#173d29]"><p>Jamg‘arish yoki byudjetni boshlash haqida so‘rang. Shaxsiy raqamlaringizni kiritmang — hisobingizga kirgach, Quti ularni xavfsiz tahlil qiladi.</p>{answer && <FinanceAnswer value={answer}/>}{error && <p role="alert" className="text-red-700">{error}</p>}<textarea value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();void ask();}}} maxLength={1200} className="min-h-24 w-full rounded-2xl border border-[#377553]/30 bg-white p-3" placeholder="Har oy qanday pul jamg‘arsam bo‘ladi?" /></div>
+      <div className="quti-body space-y-3 p-4 text-sm text-[#173d29]">{sentQuestion&&<p className="ml-6 rounded-2xl bg-emerald-100 p-3">{sentQuestion}</p>}<p>Jamg‘arish yoki byudjetni boshlash haqida so‘rang. Shaxsiy raqamlaringizni kiritmang — hisobingizga kirgach, Quti ularni xavfsiz tahlil qiladi.</p>{answer && <FinanceAnswer value={answer}/>}{error && <p role="alert" className="text-red-700">{error}</p>}<textarea value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==="Enter"&&!event.shiftKey&&!event.nativeEvent.isComposing&&!event.repeat){event.preventDefault();void ask();}}} maxLength={1200} className="min-h-24 w-full rounded-2xl border border-[#377553]/30 bg-white p-3" placeholder="Har oy qanday pul jamg‘arsam bo‘ladi?" /></div>
       <UzbekVoice language={language} answer={answer} onText={setQuestion}/><div className="flex justify-end border-t border-[#377553]/15 p-3"><button type="button" onClick={ask} disabled={!question.trim() || loading} className="inline-flex items-center gap-2 rounded-xl bg-[#2d7550] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"><Send size={15}/>{loading ? "O‘ylayapman…" : "Qutidan so‘rash"}</button></div>
     </section>}
     <button type="button" onClick={() => setOpen((value) => !value)} aria-label="Ask Quti" className="group flex items-center gap-2 rounded-full border border-[#a5d4af] bg-[#f7fcf7] py-1.5 pl-2 pr-4 text-sm font-bold text-[#173d29] shadow-[0_10px_30px_rgba(24,68,43,.22)]"><img src="/coach-avatar.png" alt="" className="h-11 w-11 rounded-full object-cover object-top ring-2 ring-emerald-200 transition-transform group-hover:-translate-y-1" /><span>Jamg‘arish bo‘yicha yordam</span></button>
