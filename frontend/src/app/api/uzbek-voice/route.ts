@@ -32,6 +32,7 @@ export async function POST(req: Request) {
    if(!response.ok)throw Error();
    data=await response.json();
   }
+  if(!stt && (data.model_substituted === true || (data.model && data.model !== "jasur")))return error("Jasur ovozi hozir mavjud emas. Keyinroq urinib ko‘ring.");
   if(stt&&typeof data.result?.text==="string")return Response.json({text:data.result.text});
   if(!stt&&typeof data.result?.url==="string"&&data.result.url.startsWith("https://"))return Response.json({url:data.result.url});
   throw Error();
