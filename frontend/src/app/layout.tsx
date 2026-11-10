@@ -1,3 +1,4 @@
+import {CreatorTeam} from "@/components/CreatorTeam";
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
@@ -75,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
       </head>
-      <body>{children}</body>
+      <body><CreatorTeam brand="IqtisodAI" accent="#21734f"/>{children}</body>
     </html>
   );
 }
