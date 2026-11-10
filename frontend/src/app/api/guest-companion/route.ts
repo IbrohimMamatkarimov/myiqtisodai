@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 500, temperature: 0.35 },
         }),
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(3_000),
       }
     );
     if (!response.ok) return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
