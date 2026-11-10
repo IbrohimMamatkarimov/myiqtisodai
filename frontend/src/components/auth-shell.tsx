@@ -1,4 +1,5 @@
 'use client';
+import {CreatorTeam} from "@/components/CreatorTeam";
 
 import { type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
@@ -25,7 +26,7 @@ export function AuthHeader() {
   const settingsT = useTranslations('settings');
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  return <header className="finance-auth-header"><Link href="/" onClick={() => router.refresh()} className="finance-auth-brand select-none" aria-label="IqtisodAI">Iqtisod<span>AI</span></Link><div className="flex items-center gap-2"><button onClick={toggleTheme} className="finance-auth-utility" aria-label={theme === 'dark' ? settingsT('lightMode') : settingsT('darkMode')}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button><LanguageSwitcher /></div></header>;
+  return <header className="finance-auth-header"><Link href="/" onClick={() => router.refresh()} className="finance-auth-brand select-none" aria-label="IqtisodAI">Iqtisod<span>AI</span></Link><div className="creator-header-center"><CreatorTeam brand="IqtisodAI" accent="#21734f"/></div><div className="flex items-center gap-2"><button onClick={toggleTheme} className="finance-auth-utility" aria-label={theme === 'dark' ? settingsT('lightMode') : settingsT('darkMode')}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button><LanguageSwitcher /></div></header>;
 }
 
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode; }) {
