@@ -32,7 +32,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
     return true;
   }
   async function send(body:FormData|string) {
-    const cacheKey=typeof body==="string"?lang+":lola-v3:"+body:"";
+    const cacheKey=typeof body==="string"?lang+":sevinch-v4:"+body:"";
     const cached=cacheKey&&audioCache.current.get(cacheKey);
     if(cached){setUrl(cached);return;}
     request.current?.abort();
