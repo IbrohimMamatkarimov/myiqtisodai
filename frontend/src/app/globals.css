@@ -776,3 +776,9 @@ html.dark .finance-planner__result{background:#17302644}
 .quti-body{flex:0 1 auto!important;min-height:0!important}
 .quti-panel>aside{margin-top:0!important}
 @media(max-width:640px){.quti-panel{height:auto!important;max-height:calc(100dvh - 120px)!important}}
+
+.finance-auth-header{display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;align-items:center;gap:12px}
+.finance-auth-header>:last-child{justify-self:end;min-width:0}
+.finance-auth-header>:first-child{min-width:0}
+.creator-header-center{justify-self:center;position:relative;z-index:2}
+@media(max-width:760px){.finance-auth-header{grid-template-columns:minmax(0,1fr) auto!important;height:auto!important;min-height:64px;row-gap:8px;padding-top:10px;padding-bottom:10px}.finance-auth-header>.creator-header-center{grid-row:2;grid-column:1/-1;padding-bottom:3px}.finance-auth-header>:last-child{grid-column:2;grid-row:1}}
