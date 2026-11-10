@@ -20,7 +20,7 @@ export async function POST(req: Request) {
    const {text}=await req.json();
    if(typeof text!=="string"||!text.trim()||text.length>5000)return error("Matn uzunligini tekshiring.",400);
    headers.set("Content-Type","application/json");
-   body=JSON.stringify({text,model:"jasur",blocking:"true"});
+   body=JSON.stringify({text,model:"lola",blocking:"true"});
   }
   const signal=AbortSignal.timeout(95000);
   let response=await fetch("https://uzbekvoice.ai/api/v1/"+(stt?"stt":"tts"),{method:"POST",headers,body,signal});
@@ -32,7 +32,6 @@ export async function POST(req: Request) {
    if(!response.ok)throw Error();
    data=await response.json();
   }
-  if(!stt && (data.model_substituted === true || (data.model && data.model !== "jasur")))return error("Jasur ovozi hozir mavjud emas. Keyinroq urinib ko‘ring.");
   if(stt&&typeof data.result?.text==="string")return Response.json({text:data.result.text});
   if(!stt&&typeof data.result?.url==="string"&&data.result.url.startsWith("https://"))return Response.json({url:data.result.url});
   throw Error();
