@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "The companion is being prepared. Please try again shortly." }, { status: 503 });
   }
 
-  const body = await request.json().catch(() => null) as { question?: unknown } | null;
+  const body = await request.json().catch(() => null) as { language?: unknown; question?: unknown } | null;
   const question = typeof body?.question === "string" ? body.question.trim() : "";
   if (!question || question.length > MAX_QUESTION_CHARS) {
     return NextResponse.json({ error: "Please keep your question under 1,200 characters." }, { status: 400 });
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     "You are IqtisodAI's welcoming financial learning companion for visitors in Uzbekistan.",
     "Give general financial-literacy guidance only. Do not request personal information, account details, passwords, or card numbers.",
     "Do not claim to know the visitor's finances. Explain that personal budgeting analysis becomes available after sign-in.",
-    "Answer in the same language as the question. Keep it under 180 words and use clear practical steps.",
+    (body?.language === "en" ? "Answer in English." : body?.language === "uz" ? "Answer in Uzbek." : "Answer in the language of the question.") + " Keep it under 180 words and use clear practical steps.",
     "Visitor question:",
     question,
   ].join("\n\n");
