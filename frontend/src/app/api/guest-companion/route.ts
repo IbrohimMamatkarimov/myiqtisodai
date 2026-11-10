@@ -3,11 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 
 const MAX_QUESTION_CHARS = 1200;
-function offlineFinanceHelp(question: string) {
-  const q = question.toLowerCase();
-  if (/(budget|byudjet|xarajat|oylik)/.test(q)) return "Boshlash uchun sodda usul:\n\n1. Bir oyga kiradigan barcha pulni yozing.\n2. Zarur xarajatlarni alohida yozing.\n3. Qolgan xarajatlar uchun kichik limit belgilang.\n4. Hech bo‘lmasa oz miqdorni jamg‘armaga ajrating.\n\nShaxsiy tahlil va kuzatish ro‘yxatdan keyin ochiladi.";
-  return "Men hozir ham umumiy moliyaviy savollarda yordam bera olaman. Maqsadingizni ayting: xarajatlarni nazorat qilish, jamg‘arish yoki byudjet tuzish. Shaxsiy hisob-kitoblar uchun tizimga kirishingiz mumkin.";
-}
+
 
 
 export async function POST(request: NextRequest) {
@@ -31,7 +27,7 @@ export async function POST(request: NextRequest) {
   ].join("\n\n");
 
   try {
-    const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+    const model = "gemini-flash-lite-latest";
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       {
@@ -41,15 +37,15 @@ export async function POST(request: NextRequest) {
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 500, temperature: 0.35 },
         }),
-        signal: AbortSignal.timeout(3_000),
+        signal: AbortSignal.timeout(18_000),
       }
     );
-    if (!response.ok) return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
+    if (!response.ok) return NextResponse.json({ error: "Javob olinmadi. Iltimos, qayta urinib ko‘ring." }, { status: 503 });
     const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
     const answer = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("").trim();
-    if (!answer) return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
+    if (!answer) return NextResponse.json({ error: "Javob olinmadi. Iltimos, qayta urinib ko‘ring." }, { status: 503 });
     return NextResponse.json({ answer });
   } catch {
-    return NextResponse.json({ answer: offlineFinanceHelp(question), fallback: true });
+    return NextResponse.json({ error: "Javob olinmadi. Iltimos, qayta urinib ko‘ring." }, { status: 503 });
   }
 }
