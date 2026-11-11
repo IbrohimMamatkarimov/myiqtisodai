@@ -6,7 +6,7 @@ import { Sparkles, Send, Plus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { AppShell } from '@/components/app-shell';
 import { useRequireAuth } from '@/hooks/use-require-auth';
-import { api } from '@/lib/api-client';
+import { api, getErrorMessage } from '@/lib/api-client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -64,6 +64,7 @@ export default function AssistantPage() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -87,18 +88,21 @@ export default function AssistantPage() {
     e.preventDefault();
     if (!question.trim() || loading) return;
 
-    const q = question;
-    setMessages((prev) => [...prev, { role: 'user', content: q }]);
+    const q = question.trim();
+    setRequestError(null);
+    setMessages((prev) => prev.at(-1)?.role === 'user' && prev.at(-1)?.content === q ? prev : [...prev, { role: 'user', content: q }]);
     setQuestion('');
     setLoading(true);
     setActiveId(null);
 
     try {
       const { data } = await api.post('/ai/ask', { question: q });
+      if (typeof data.answer !== 'string' || !data.answer.trim()) throw new Error('Empty AI reply');
       setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
       loadHistory();
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: t('errorGeneric') }]);
+    } catch (error) {
+      setRequestError(getErrorMessage(error, t('errorGeneric')));
+      setQuestion((current) => current || q);
     } finally {
       setLoading(false);
     }
@@ -106,6 +110,7 @@ export default function AssistantPage() {
 
   function startNewChat() {
     setMessages([]);
+    setRequestError(null);
     setActiveId(null);
   }
 
@@ -230,7 +235,7 @@ export default function AssistantPage() {
             {messages.map((m, i) => (
               <div
                 key={i}
-                className={`flex items-end gap-2 ${m.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}
+                className={`flex items-end gap-2 ${m.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'} max-w-[90%] min-w-0`}
               >
                 {m.role === 'assistant' && (
                   <div className="h-7 w-7 rounded-full overflow-hidden shrink-0 relative">
@@ -238,7 +243,7 @@ export default function AssistantPage() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
+                  className={`min-w-0 break-words rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap leading-relaxed ${
                     m.role === 'user'
                       ? 'bg-primary text-bgdark'
                       : 'bg-black/5 text-textmain'
@@ -261,6 +266,7 @@ export default function AssistantPage() {
             <div ref={bottomRef} />
           </div>
 
+          {requestError && <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{requestError}</p>}
           <form onSubmit={handleAsk} className="flex gap-2 mt-4 pt-4 border-t border-black/5">
             <input
               value={question}
