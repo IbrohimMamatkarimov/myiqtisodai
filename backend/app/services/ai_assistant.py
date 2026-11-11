@@ -10,6 +10,7 @@ from datetime import date, timedelta
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -24,30 +25,45 @@ logger = logging.getLogger("myiqtisod.ai")
 
 
 def ask_gemini(system_prompt: str, user_prompt: str, max_tokens: int) -> str | None:
-    """Call Gemini only from the backend, keeping its key out of browser code."""
+    """Bound each provider attempt and fail over without logging private prompts."""
     if not settings.GEMINI_API_KEY:
         return None
 
-    model = settings.GEMINI_MODEL or "gemini-flash-latest"
-    payload = {
-        "systemInstruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-        "generationConfig": {"temperature": 0.4, "maxOutputTokens": max_tokens},
-    }
-    request = Request(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "x-goog-api-key": settings.GEMINI_API_KEY},
-        method="POST",
-    )
-    try:
-        with urlopen(request, timeout=15) as response:
-            data = json.loads(response.read().decode("utf-8"))
-        parts = data["candidates"][0]["content"]["parts"]
-        return "".join(part.get("text", "") for part in parts).strip() or None
-    except (HTTPError, URLError, KeyError, IndexError, TypeError, ValueError):
-        logger.exception("Gemini API call failed")
-        return None
+    models = list(dict.fromkeys([
+        "gemini-3.5-flash-lite",
+        "gemini-3.1-flash-lite",
+    ]))
+    for model in models:
+        payload = {
+            "systemInstruction": {"parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+            "generationConfig": {
+                "temperature": 0.4,
+                "maxOutputTokens": max(1024, max_tokens),
+                "thinkingConfig": {"thinkingLevel": "minimal"},
+            },
+        }
+        request = Request(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json", "x-goog-api-key": settings.GEMINI_API_KEY},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=6) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+            answer = "".join(part.get("text", "") for part in parts if not part.get("thought")).strip()
+            if answer:
+                return answer
+            logger.warning("Gemini returned no answer: model=%s", model)
+        except HTTPError as error:
+            logger.warning("Gemini request failed: model=%s status=%s", model, error.code)
+            if error.code not in (404, 408, 429, 500, 502, 503, 504):
+                return None
+        except (TimeoutError, URLError, OSError, KeyError, IndexError, TypeError, ValueError):
+            logger.warning("Gemini response unavailable: model=%s", model)
+    return None
 
 
 SYSTEM_PROMPT = """You are the IqtisodAI financial assistant, embedded in a personal
@@ -121,4 +137,11 @@ def ask_financial_assistant(db: Session, user: User, question: str) -> str:
         f"My financial snapshot:\n{_build_financial_snapshot(db, user)}\n\nMy question: {question}",
         max_tokens=700,
     )
-    return answer or "Sorry, the AI assistant is temporarily unavailable. Please try again shortly."
+    if not answer:
+        messages = {
+            "uz": "Hozir javob olinmadi. Savolingizni qayta yuborib ko‘ring.",
+            "en": "We could not get a reply right now. Please try your question again.",
+            "ru": "Сейчас не удалось получить ответ. Попробуйте отправить вопрос ещё раз.",
+        }
+        raise HTTPException(status_code=503, detail=messages.get(user.language.value, messages["uz"]))
+    return answer
