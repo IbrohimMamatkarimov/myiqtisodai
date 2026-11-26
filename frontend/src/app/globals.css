@@ -1118,3 +1118,52 @@ html.dark .finance-savings-stage { background-color: #314d39; }
   .quti-public-launch { width: 64px; height: 64px; }
   .quti-public-launch .quti-launch-art { width: 58px; height: 62px; }
 }
+
+:is(.quti-public-launch, .finance-companion-trigger) {
+  display: grid !important;
+  justify-items: center;
+  align-content: end;
+  gap: 4px !important;
+  width: 112px !important;
+  height: auto !important;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:is(.quti-public-launch, .finance-companion-trigger)::before { display: none !important; }
+
+:is(.quti-public-launch, .finance-companion-trigger) > span.companion-caption {
+  display: grid !important;
+  position: static !important;
+  gap: 2px;
+  width: 100% !important;
+  height: auto !important;
+  padding: 5px 6px 6px !important;
+  clip: auto !important;
+  clip-path: none;
+  border: 1px solid #a0b99b;
+  border-radius: 10px;
+  background: #f3f8ec !important;
+  color: #214836 !important;
+  white-space: normal !important;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 3px 10px #17223517;
+}
+
+:is(.quti-public-launch, .finance-companion-trigger) > .companion-caption strong,
+:is(.quti-public-launch, .finance-companion-trigger) > .companion-caption small { color: inherit; text-align: center; }
+:is(.quti-public-launch, .finance-companion-trigger) > .companion-caption strong { font-size: 13px !important; font-weight: 750; }
+:is(.quti-public-launch, .finance-companion-trigger) > .companion-caption small { display: block; font-size: 10px; }
+
+.finance-companion-trigger { padding: 0 !important; }
+.finance-companion-trigger .finance-companion-robot { margin: 0; }
+.finance-support-trigger:has(~ .finance-companion-trigger) {
+  right: calc(max(16px, env(safe-area-inset-right)) + 122px);
+}
+.quti-companion-root .quti-panel { bottom: calc(max(22px, env(safe-area-inset-bottom)) + 124px) !important; max-height: calc(100dvh - 165px) !important; }
+.finance-companion-panel { bottom: 140px; max-height: calc(100dvh - 158px); }
+@media (max-width: 767px) {
+  .finance-companion-panel { bottom: calc(193px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 211px - env(safe-area-inset-bottom)); }
+}

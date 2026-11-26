@@ -69,12 +69,12 @@ function QutiCompanion() {
       ref={launcher}
       type="button"
       onClick={() => setOpen((value) => !value)}
-      aria-label={t('qutiAsk')}
       aria-expanded={open}
       aria-controls={open ? 'quti-public-chat' : undefined}
       className="quti-public-launch"
     >
       <RobotMascot className="quti-launch-art" />
+      <span className="companion-caption"><strong>Quti</strong><small>{t('qutiRole')}</small></span>
     </button>
   </div>,document.body);
 }
