@@ -1064,3 +1064,57 @@ html:not(.dark) .finance-workspace-grid .finance-balance-panel.hero-balance-card
   35% { translate: 0 -6px; rotate: -3deg; }
   70% { translate: 0 -2px; rotate: 2deg; }
 }
+
+.finance-auth-header { grid-template-columns: minmax(0, 1fr) auto !important; }
+.finance-auth-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.finance-editorial-hero { gap: clamp(22px, 4vw, 60px); }
+.finance-editorial-intro h1 { font-size: clamp(2.65rem, 5vw, 4.65rem); }
+.finance-savings-scene {
+  padding: clamp(14px, 2.7vw, 30px);
+  border-radius: 24px;
+  border: 1px solid #9cb298;
+  background: #e5eee0;
+}
+.finance-savings-stage {
+  display: grid;
+  place-items: center;
+  height: 162px;
+  margin-bottom: 14px;
+  border-radius: 14px;
+  background: repeating-linear-gradient(90deg, transparent 0 29px, #4c714815 29px 30px),
+    repeating-linear-gradient(0deg, transparent 0 29px, #4c714815 29px 30px), #dbe9d5;
+}
+.finance-savings-stage .finance-savings-character { width: 150px; height: 168px; }
+.finance-savings-scene .finance-example { padding: 16px 20px; box-shadow: none; }
+.finance-savings-scene .finance-example header { margin-bottom: 10px; }
+.finance-savings-scene .finance-example dl > div { padding-block: 9px; }
+html.dark .finance-savings-scene { background: #263d2e; border-color: #4c6b56; }
+html.dark .finance-savings-stage { background-color: #314d39; }
+.quti-companion-root {
+  right: max(clamp(20px, 2vw, 36px), env(safe-area-inset-right));
+  bottom: max(22px, env(safe-area-inset-bottom));
+}
+.quti-public-launch { width: 76px; height: 76px; background: #f0f4e8; border-color: #709677; }
+.quti-public-launch .quti-launch-art { width: 69px; height: 74px; }
+.quti-companion-root .quti-panel { bottom: calc(max(22px, env(safe-area-inset-bottom)) + 86px) !important; }
+.quti-panel > header .quti-chat-character { width: 52px; height: 58px; }
+@media (prefers-reduced-motion: no-preference) {
+  .finance-savings-stage .quti-coin { animation: savings-deposit 3.2s ease-in-out infinite; }
+  .quti-public-launch .quti-launch-art,
+  .finance-companion-trigger .finance-companion-robot { animation: quti-idle 2.8s ease-in-out infinite; animation-play-state: running; }
+  .quti-public-launch[aria-expanded=true] .quti-launch-art,
+  .finance-companion-trigger[aria-expanded=true] .finance-companion-robot { animation-play-state: paused; }
+}
+@keyframes savings-deposit {
+  0% { transform: translateY(-12px); opacity: 0; }
+  16%, 48% { opacity: 1; transform: translateY(0); }
+  70%, 100% { opacity: 0; transform: translateY(29px); }
+}
+@media (max-width: 480px) {
+  .finance-auth-header { column-gap: 6px; }
+  .finance-auth-controls { gap: 5px; }
+  .finance-savings-stage { height: 134px; }
+  .finance-savings-stage .finance-savings-character { width: 120px; height: 135px; }
+  .quti-public-launch { width: 64px; height: 64px; }
+  .quti-public-launch .quti-launch-art { width: 58px; height: 62px; }
+}
