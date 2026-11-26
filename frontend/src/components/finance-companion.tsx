@@ -40,7 +40,7 @@ export function FinanceCompanion() {
     finally { setLoading(false); }
   }
   return <>
-    <button ref={trigger} type="button" className="finance-companion-trigger" aria-expanded={open} aria-controls="finance-companion" onClick={() => setOpen(!open)}><RobotMascot tone="forest" className="finance-companion-robot" mood={loading ? "thinking" : error ? "error" : answer ? "happy" : "idle"}/><span><strong>Quti · IqtisodAI</strong><small>{c.sub}</small></span></button>
+    <button ref={trigger} type="button" className="finance-companion-trigger" aria-label={c.name} aria-expanded={open} aria-controls={open ? "finance-companion" : undefined} onClick={() => setOpen(value => !value)}><RobotMascot tone="forest" className="finance-companion-robot" mood={loading ? "thinking" : error ? "error" : answer ? "happy" : "idle"}/><span><strong>Quti · IqtisodAI</strong><small>{c.sub}</small></span></button>
     {open && <section id="finance-companion" role="dialog" aria-label={c.name} className="finance-companion-panel">
       <header><RobotMascot tone="forest" className="finance-companion-robot" mood={loading ? "thinking" : error ? "error" : answer ? "happy" : "idle"}/><div className="flex-1"><h2>{c.name}</h2><p>{c.sub}</p></div><button type="button" aria-label={c.close} onClick={() => {setOpen(false);trigger.current?.focus();}}><X size={18}/></button></header>
       <div className="finance-companion-body"><p>{c.hello}</p><div className="finance-companion-ideas">{c.ideas.map((idea) => <button type="button" key={idea} onClick={() => {setQuestion(idea);input.current?.focus();}}>{idea}</button>)}</div>

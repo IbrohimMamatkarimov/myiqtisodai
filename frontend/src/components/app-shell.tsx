@@ -108,6 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <Link
                   key={href}
                   href={href}
+                  aria-current={active ? "page" : undefined}
                   className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 relative ${
                     active
                       ? 'bg-white/12 text-white font-semibold shadow-sm ring-1 ring-white/10'
@@ -174,6 +175,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={href}
               href={href}
+              aria-current={active ? "page" : undefined}
               className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] relative min-w-[3.5rem] ${
                 active ? 'text-primary font-semibold' : 'text-textmuted'
               }`}

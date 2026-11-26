@@ -79,6 +79,7 @@ function parseTips(raw: string): string[] {
 export default function DashboardPage() {
   const checked = useRequireAuth();
   const t = useTranslations('dashboard');
+  const nav = useTranslations('nav');
   const ta = useTranslations('accounts');
   const tg = useTranslations('goals');
   const tc = useTranslations('common');
@@ -525,34 +526,26 @@ export default function DashboardPage() {
             {/* Hero: personal greeting + balance */}
             <section className="hero-balance-card finance-balance-panel relative overflow-hidden">
               <div className="finance-balance-panel__main">
-                <div className="flex items-center gap-3">
-                  <div className="h-11 w-11 rounded-2xl overflow-hidden shrink-0 bg-white/15 ring-1 ring-white/20">
-                    <img src="/iqtisodaiphoto.png" alt="" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-display font-bold text-white truncate">
-                      {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
-                    </p>
-                    <p className="text-xs text-white/65">{t('heroSubtitle')}</p>
-                  </div>
-                </div>
+                <h1 className="finance-dashboard-title">
+                  {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
+                </h1>
 
                 <div className="mt-8">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-white/70">{t('balance')}</p>
+                    <p className="text-sm font-semibold text-textmuted">{t('balance')}</p>
                     <button
                       type="button"
                       onClick={() => setHideBalance((v) => !v)}
                       aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
-                      className="finance-balance-visibility text-white/60 hover:text-white transition-colors"
+                      className="finance-balance-visibility text-textmuted hover:text-textmain transition-colors"
                     >
                       {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
-                  <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-white tabular-nums sm:text-5xl">
+                  <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-textmain tabular-nums sm:text-5xl">
                     {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
                   </p>
-                  <p className="mt-2 max-w-lg text-sm leading-6 text-white/70">
+                  <p className="mt-2 max-w-lg text-sm leading-6 text-textmuted">
                     {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
                   </p>
                 </div>
@@ -570,19 +563,20 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="finance-balance-panel__art">
-                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--one" />
-                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--two" />
-                <img src="/wallet-illustration.png" alt="" className="finance-wallet-art" />
-                <div className="finance-activity-card">
-                  <span className="finance-activity-card__icon"><ReceiptIcon size={16} /></span>
-                  <span className="min-w-0 flex-1">
-                    <small>{t('recentTransactions')}</small>
-                    <strong>{summary?.recent_transactions_count ?? 0}</strong>
-                  </span>
-                  <ArrowRight size={15} className="text-primary" />
+              <dl className="finance-balance-ledger">
+                <div>
+                  <dt>{nav('income')}</dt>
+                  <dd>{hideBalance ? '••••••' : formatAmount(summary.total_income, user?.currency || 'UZS')}</dd>
                 </div>
-              </div>
+                <div>
+                  <dt>{nav('expenses')}</dt>
+                  <dd>{hideBalance ? '••••••' : formatAmount(summary.total_expenses, user?.currency || 'UZS')}</dd>
+                </div>
+                <div>
+                  <dt>{t('recentTransactions')}</dt>
+                  <dd><Link href="/transactions">{summary.recent_transactions_count ?? 0}<ArrowRight size={14} aria-hidden="true" /></Link></dd>
+                </div>
+              </dl>
             </section>
 
             {/* Quick actions */}

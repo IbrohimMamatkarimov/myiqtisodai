@@ -93,9 +93,17 @@
     "howStepFour": "See the full picture",
     "howStepFourDescription": "Review your activity and get help planning your next step.",
     "aboutLink": "About",
-    "aboutTitle": "Save with a clear plan.",
-    "aboutLead": "Track spending. Set a goal. Build your savings. All in one place.",
-    "aboutInside": "Inside IqtisodAI"
+    "aboutTitle": "A clearer picture of your money.",
+    "aboutLead": "See what came in, where it went, and what you can set aside. Keep your spending and savings goals in one place.",
+    "aboutInside": "For your everyday finances",
+    "aboutExample": "Example month",
+    "aboutRemaining": "Left to set aside",
+    "qutiTitle": "Quti, your savings guide",
+    "qutiIntro": "Ask about budgeting or saving. Leave out your personal amounts and account details.",
+    "qutiClose": "Close chat",
+    "qutiPrompt": "How can I start saving each month?",
+    "qutiLoading": "Getting a reply…",
+    "qutiAsk": "Ask Quti"
   },
   "chat": {
     "button": "Chat",

@@ -93,9 +93,17 @@
     "howStepFour": "Umumiy holatni ko‘ring",
     "howStepFourDescription": "Faollikni ko‘rib chiqing va keyingi rejangiz bo‘yicha yordam oling.",
     "aboutLink": "Haqida",
-    "aboutTitle": "Pulingizni qulay jamg‘aring.",
-    "aboutLead": "Xarajatlarni yozing. Maqsad qo‘ying. Pul yig‘ing. Hammasi bir joyda.",
-    "aboutInside": "IqtisodAI ichida"
+    "aboutTitle": "Pulingiz qayerga ketayotganini biling.",
+    "aboutLead": "Qancha pul kirgani, nimaga sarflangani va qancha jamg‘arish mumkinligini ko‘ring. Xarajatlar va maqsadlaringiz bir joyda.",
+    "aboutInside": "Kundalik moliyangiz uchun",
+    "aboutExample": "Oylik byudjet namunasi",
+    "aboutRemaining": "Jamg‘arish uchun qoldiq",
+    "qutiTitle": "Quti — jamg‘arma yordamchingiz",
+    "qutiIntro": "Byudjet yoki jamg‘arma haqida so‘rang. Shaxsiy summalaringiz va hisob ma’lumotlaringizni yozmang.",
+    "qutiClose": "Suhbatni yopish",
+    "qutiPrompt": "Har oy pul yig‘ishni qanday boshlayman?",
+    "qutiLoading": "Javob tayyorlanmoqda…",
+    "qutiAsk": "Qutidan so‘rang"
   },
   "chat": {
     "button": "Chat",
