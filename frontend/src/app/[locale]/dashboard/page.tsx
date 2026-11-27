@@ -79,16 +79,16 @@ function parseTips(raw: string): string[] {
 export default function DashboardPage() {
   const checked = useRequireAuth();
   const t = useTranslations('dashboard');
-  const nav = useTranslations('nav');
   const ta = useTranslations('accounts');
   const tg = useTranslations('goals');
   const tc = useTranslations('common');
   const locale = useLocale();
   const user = useAuthStore((s) => s.user);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const hasSummary = summary !== null;
+  const userId = user?.id;
   const [txns, setTxns] = useState<Txn[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [tips, setTips] = useState<string[]>([]);
   const [activeTip, setActiveTip] = useState(0);
@@ -188,9 +188,8 @@ export default function DashboardPage() {
   function loadSummary() {
     api
       .get<DashboardSummary>('/dashboard/summary')
-      .then(({ data }) => setSummary(data))
-      .catch(() => setLoadError(true))
-      .finally(() => setLoading(false));
+      .then(({ data }) => { setSummary(data); setLoadError(false); })
+      .catch(() => setLoadError(true));
   }
 
   function loadTxns() {
@@ -339,10 +338,15 @@ export default function DashboardPage() {
     loadTxns();
     loadGoals();
     loadInvites();
+  }, [checked]);
 
+  useEffect(() => {
+    if (!checked || !hasSummary || !userId) return;
+    const insightKey = `${INSIGHT_CACHE_KEY}-${userId}`;
+    const request = new AbortController();
     let cached: { locale: string; insight: string; ts: number } | null = null;
     try {
-      const raw = sessionStorage.getItem(INSIGHT_CACHE_KEY);
+      const raw = sessionStorage.getItem(insightKey);
       if (raw) cached = JSON.parse(raw);
     } catch {
       // ignore
@@ -359,21 +363,22 @@ export default function DashboardPage() {
       .post('/ai/ask', {
         question: `Respond only in ${languageName}, regardless of any other instruction. Give exactly 3 short, distinct, actionable money tips based on my actual numbers - each one specific and useful on its own. Return ONLY the 3 tips, one per line, no numbering, no bullet symbols, no preamble, no extra commentary.`,
         save_history: false,
-      })
+      }, { signal: request.signal })
       .then(({ data }) => {
         setTips(parseTips(data.answer));
         try {
           sessionStorage.setItem(
-            INSIGHT_CACHE_KEY,
+            insightKey,
             JSON.stringify({ locale, insight: data.answer, ts: Date.now() })
           );
         } catch {
           // ignore
         }
       })
-      .catch(() => setTips([]))
-      .finally(() => setInsightLoading(false));
-  }, [checked, locale]);
+      .catch(() => { if (!request.signal.aborted) setTips([]); })
+      .finally(() => { if (!request.signal.aborted) setInsightLoading(false); });
+    return () => request.abort();
+  }, [checked, hasSummary, locale, userId]);
 
   // Data can go stale the moment you leave this tab - e.g. scanning a
   // receipt navigates to /expenses to save it, then coming back here should
@@ -407,21 +412,54 @@ export default function DashboardPage() {
 
   if (!checked) return null;
 
-  if (loadError) {
-    return (
-      <AppShell>
-        <div className="glass-card p-10 text-center">
-          <p className="font-semibold text-textmain">Couldn't load your dashboard</p>
-          <p className="text-sm text-textmuted mt-1">Check your connection and try refreshing the page.</p>
-        </div>
-      </AppShell>
-    );
-  }
+  const balance = summary ? summary.total_income - summary.total_expenses : 0;
+  const balanceCard = (
+    <section className="hero-balance-card finance-balance-panel relative overflow-hidden" aria-busy={!summary && !loadError}>
+      <div className="finance-balance-panel__main">
+        <h1 className="finance-dashboard-title">
+          {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
+        </h1>
 
-  let balance = 0;
-  if (summary) {
-    balance = summary.total_income - summary.total_expenses;
-  }
+        <div className="mt-8">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-textmuted">{t('balance')}</p>
+            <button
+              type="button"
+              disabled={!summary}
+              onClick={() => setHideBalance((v) => !v)}
+              aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
+              className="finance-balance-visibility text-textmuted hover:text-textmain transition-colors"
+            >
+              {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-textmain tabular-nums sm:text-5xl">
+            {!summary ? '—' : hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
+          </p>
+          <p className="mt-2 max-w-lg text-sm leading-6 text-textmuted">
+            {summary ? (summary.recent_transactions_count > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')) : loadError ? null : tc('loading')}
+          </p>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2.5">
+          <Link href="/expenses" className="finance-balance-panel__primary">
+            <Plus size={16} />
+            {t('qaAddExpense')}
+            <ArrowRight size={15} />
+          </Link>
+          <Link href="/income" className="finance-balance-panel__secondary">
+            <Plus size={16} />
+            {t('qaAddIncome')}
+          </Link>
+        </div>
+      </div>
+
+      <div className="finance-balance-motion" aria-hidden="true">
+        <img src="/wallet-illustration.png" className="finance-wallet-art" alt="" />
+      </div>
+    </section>
+
+  );
 
   return (
     <AppShell>
@@ -513,76 +551,28 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
-      {loading || !summary ? (
-        <div className="space-y-4">
-          <div className="glass-card animate-pulse" style={{ height: 140 }} />
-          <div className="glass-card animate-pulse" style={{ height: 220 }} />
+      {!summary ? (
+        <div className="finance-workspace-grid grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
+          <div className="space-y-5 min-w-0">
+            {balanceCard}
+            {loadError ? (
+              <div role="alert" className="glass-card p-4">
+                <p className="mb-3 text-sm">{tc('couldNotLoad')}</p>
+                <button type="button" className="btn-secondary" onClick={() => { setLoadError(false); loadSummary(); }}>
+                  {tc('tryAgain')}
+                </button>
+              </div>
+            ) : (
+              <div className="glass-card h-36 motion-safe:animate-pulse" aria-hidden="true" />
+            )}
+          </div>
         </div>
       ) : (
         <div className="finance-workspace-grid grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
           {/* Main column */}
           <div className="space-y-5 min-w-0">
 
-            {/* Hero: personal greeting + balance */}
-            <section className="hero-balance-card finance-balance-panel relative overflow-hidden">
-              <div className="finance-balance-panel__main">
-                <h1 className="finance-dashboard-title">
-                  {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
-                </h1>
-
-                <div className="mt-8">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold text-textmuted">{t('balance')}</p>
-                    <button
-                      type="button"
-                      onClick={() => setHideBalance((v) => !v)}
-                      aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
-                      className="finance-balance-visibility text-textmuted hover:text-textmain transition-colors"
-                    >
-                      {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                  <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-textmain tabular-nums sm:text-5xl">
-                    {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
-                  </p>
-                  <p className="mt-2 max-w-lg text-sm leading-6 text-textmuted">
-                    {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
-                  </p>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-2.5">
-                  <Link href="/expenses" className="finance-balance-panel__primary">
-                    <Plus size={16} />
-                    {t('qaAddExpense')}
-                    <ArrowRight size={15} />
-                  </Link>
-                  <Link href="/income" className="finance-balance-panel__secondary">
-                    <Plus size={16} />
-                    {t('qaAddIncome')}
-                  </Link>
-                </div>
-              </div>
-
-              <div className="finance-balance-summary">
-                <div className="finance-balance-motion" aria-hidden="true">
-                  <img src="/wallet-illustration.png" className="finance-wallet-art" alt="" />
-                </div>
-              <dl className="finance-balance-ledger">
-                <div>
-                  <dt>{nav('income')}</dt>
-                  <dd>{hideBalance ? '••••••' : formatAmount(summary.total_income, user?.currency || 'UZS')}</dd>
-                </div>
-                <div>
-                  <dt>{nav('expenses')}</dt>
-                  <dd>{hideBalance ? '••••••' : formatAmount(summary.total_expenses, user?.currency || 'UZS')}</dd>
-                </div>
-                <div>
-                  <dt>{t('recentTransactions')}</dt>
-                  <dd><Link href="/transactions">{summary.recent_transactions_count ?? 0}<ArrowRight size={14} aria-hidden="true" /></Link></dd>
-                </div>
-              </dl>
-              </div>
-            </section>
+            {balanceCard}
 
             {/* Quick actions */}
             <div className="glass-card dashboard-quick-actions finance-action-strip p-5 sm:p-6">

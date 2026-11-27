@@ -11,6 +11,8 @@
     "search": "Search",
     "currency": "Currency",
     "loading": "Loading...",
+    "tryAgain": "Try again",
+    "couldNotLoad": "Could not load your dashboard.",
     "confirm": "Confirm",
     "back": "Back",
     "close": "Close",

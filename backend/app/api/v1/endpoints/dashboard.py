@@ -35,6 +35,15 @@ def _sum_all_time(db: Session, model, user_id, amount_col) -> float:
     return float(db.scalar(stmt) or 0)
 
 
+def _daily_totals(db: Session, model, date_col, user_id, start: date, end: date) -> dict[date, float]:
+    statement = (
+        select(date_col, func.sum(amount_in_uzs(model, model.amount)))
+        .where(model.user_id == user_id, date_col >= start, date_col < end)
+        .group_by(date_col)
+    )
+    return {day: float(total or 0) for day, total in db.execute(statement)}
+
+
 @router.get("/summary", response_model=DashboardSummary)
 def get_dashboard_summary(
     current_user: User = Depends(get_current_user),
@@ -79,16 +88,16 @@ def get_dashboard_summary(
             CategoryBreakdown(category_id=str(cat_id), category_name=cat_name, total=total_f, percent=pct)
         )
 
-    goals = db.scalars(select(Goal).where(Goal.user_id == current_user.id, Goal.is_completed.is_(False))).all()
+    all_goals = db.scalars(select(Goal).where(Goal.user_id == current_user.id)).all()
+    goals = [goal for goal in all_goals if goal.is_completed is False]
     goals_on_track = sum(1 for g in goals if g.progress_percent >= 50)
 
     # Locked totals must include COMPLETED goals too - a goal is marked
     # completed the instant current_amount reaches target_amount, but the
     # money is still genuinely locked in it until the user withdraws it.
-    all_goals_for_lock_total = db.scalars(select(Goal).where(Goal.user_id == current_user.id)).all()
     total_locked_in_goals = sum(
         float(g.current_amount) * RATES_TO_UZS.get(g.currency, 1)
-        for g in all_goals_for_lock_total
+        for g in all_goals
         if g.is_locked
     )
 
@@ -96,7 +105,7 @@ def get_dashboard_summary(
     budgets_over_limit = 0
     budget_statuses: list[BudgetStatus] = []
     for b in budgets_rows:
-        spent = _sum_in_range(db, Expense, current_user.id, month_start, next_month_start, Expense.amount)
+        spent = total_expenses
         limit = float(b.limit_amount)
         remaining = max(limit - spent, 0)
         progress = round((spent / limit * 100), 1) if limit else 0.0
@@ -118,16 +127,19 @@ def get_dashboard_summary(
             )
         )
 
-    # Last 7 days, day by day, for weekly trend charts
-    weekly_trends: list[WeeklyTrend] = []
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        day_end = day + timedelta(days=1)
-        day_income = _sum_in_range(db, Income, current_user.id, day, day_end, Income.amount)
-        day_expenses = _sum_in_range(db, Expense, current_user.id, day, day_end, Expense.amount)
-        weekly_trends.append(
-            WeeklyTrend(label=day.strftime("%a"), income=day_income, expenses=day_expenses)
+    # Fetch one row per active day for each type instead of querying each day.
+    week_start = today - timedelta(days=6)
+    week_end = today + timedelta(days=1)
+    income_by_day = _daily_totals(db, Income, Income.income_date, current_user.id, week_start, week_end)
+    expenses_by_day = _daily_totals(db, Expense, Expense.expense_date, current_user.id, week_start, week_end)
+    weekly_trends = [
+        WeeklyTrend(
+            label=day.strftime("%a"),
+            income=income_by_day.get(day, 0),
+            expenses=expenses_by_day.get(day, 0),
         )
+        for day in (week_start + timedelta(days=offset) for offset in range(7))
+    ]
 
     # Today's spending, broken down by category
     today_start = today
@@ -204,11 +216,7 @@ def get_dashboard_summary(
         )
     )
 
-    completed_goals_count = db.scalar(
-        select(func.count()).select_from(Goal).where(
-            Goal.user_id == current_user.id, Goal.is_completed.is_(True)
-        )
-    )
+    completed_goals_count = sum(goal.is_completed is True for goal in all_goals)
 
     # All-time transaction count, and a Duolingo-style day streak: how many
     # consecutive days (ending today, or yesterday if nothing's logged yet

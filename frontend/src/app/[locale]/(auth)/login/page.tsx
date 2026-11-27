@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link, useRouter } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 export default function LoginPage() {
   const t = useTranslations('auth');
   const router = useRouter();
+  useEffect(() => { router.prefetch('/dashboard'); }, [router]);
   const setTokens = useAuthStore((s) => s.setTokens);
   const setUser = useAuthStore((s) => s.setUser);
 

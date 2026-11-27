@@ -892,7 +892,7 @@ html.dark .finance-auth-page.finance-editorial {
   flex: none;
 }
 
-.finance-example dl > div, .finance-balance-ledger > div {
+.finance-example dl > div {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -903,8 +903,8 @@ html.dark .finance-auth-page.finance-editorial {
 }
 
 .finance-example dl > div { border-color: #e1ddd1; }
-.finance-example dt, .finance-balance-ledger dt { font-size: .875rem; }
-.finance-example dd, .finance-balance-ledger dd {
+.finance-example dt { font-size: .875rem; }
+.finance-example dd {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -974,19 +974,6 @@ html:not(.dark) .finance-workspace-grid .finance-balance-panel.hero-balance-card
   line-height: 1.25;
 }
 
-.finance-balance-ledger {
-  align-self: center;
-  min-width: 0;
-  padding: 4px 16px;
-  border: 1px solid rgb(var(--color-textmain) / .08);
-  border-radius: 10px;
-  background: rgb(var(--color-bgpage));
-}
-
-.finance-balance-ledger > div:first-child { border-top: 0; }
-.finance-balance-ledger dd { overflow-wrap: anywhere; }
-.finance-balance-ledger dd a { display: inline-flex; align-items: center; gap: 8px; }
-.finance-balance-ledger dd a:hover { text-decoration: underline; }
 .finance-sidebar { background: #243b2f; }
 .finance-sidebar::before { display: none; }
 
@@ -1168,17 +1155,23 @@ html.dark .finance-savings-stage { background-color: #314d39; }
   .finance-companion-panel { bottom: calc(193px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 211px - env(safe-area-inset-bottom)); }
 }
 
-.finance-balance-summary { display: grid; gap: 8px; min-width: 0; }
 .finance-balance-motion {
+  align-self: stretch;
   display: grid;
   place-items: center;
-  min-height: 114px;
-  border-radius: 12px;
-  background: #e9f0e5;
+  min-height: 185px;
+  border-radius: 15px;
+  background: radial-gradient(ellipse at center, #edf6e9, #dce9da);
 }
-html.dark .finance-balance-motion { background: #253a2c; }
+html.dark .finance-balance-motion {
+  background: radial-gradient(ellipse at center, #314c39, #203329);
+}
 .finance-balance-motion .finance-wallet-art {
-  width: 128px;
-  height: 110px;
+  width: min(80%, 220px);
+  height: 170px;
   object-fit: contain;
+}
+@media (max-width: 640px) {
+  .finance-balance-motion { min-height: 116px; }
+  .finance-balance-motion .finance-wallet-art { width: 135px; height: 114px; }
 }

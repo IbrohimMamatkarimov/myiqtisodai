@@ -11,6 +11,8 @@
     "search": "Qidirish",
     "currency": "Valyuta",
     "loading": "Yuklanmoqda...",
+    "tryAgain": "Qayta urinib ko‘ring",
+    "couldNotLoad": "Boshqaruv panelini yuklab bo‘lmadi.",
     "confirm": "Tasdiqlash",
     "back": "Orqaga",
     "close": "Yopish",
