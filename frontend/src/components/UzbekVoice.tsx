@@ -1,6 +1,36 @@
 "use client";
 import { Mic, Volume2, Pause, Play } from "lucide-react";
 import {useRef,useState,useEffect} from "react";
+async function toSpeechWav(recording: Blob) {
+  // Decode at the speech service's sample rate so recordings use the same
+  // container and codec across browsers.
+  const decoder = new OfflineAudioContext(1, 1, 16000);
+  const audio = await decoder.decodeAudioData(await recording.arrayBuffer());
+  const channels = Array.from({length: audio.numberOfChannels}, (_, index) => audio.getChannelData(index));
+  const byteLength = audio.length * 2;
+  const bytes = new DataView(new ArrayBuffer(44 + byteLength));
+  bytes.setUint32(0, 0x52494646); // RIFF
+  bytes.setUint32(4, 36 + byteLength, true);
+  bytes.setUint32(8, 0x57415645); // WAVE
+  bytes.setUint32(12, 0x666d7420); // fmt
+  bytes.setUint32(16, 16, true);
+  bytes.setUint16(20, 1, true); // PCM
+  bytes.setUint16(22, 1, true);
+  bytes.setUint32(24, audio.sampleRate, true);
+  bytes.setUint32(28, audio.sampleRate * 2, true);
+  bytes.setUint16(32, 2, true);
+  bytes.setUint16(34, 16, true);
+  bytes.setUint32(36, 0x64617461); // data
+  bytes.setUint32(40, byteLength, true);
+  for (let index = 0; index < audio.length; index++) {
+    let sample = 0;
+    for (const channel of channels) sample += channel[index];
+    sample = Math.max(-1, Math.min(1, sample / channels.length));
+    bytes.setInt16(44 + index * 2, sample * (sample < 0 ? 32768 : 32767), true);
+  }
+  return new File([bytes.buffer], "voice.wav", {type:"audio/wav"});
+}
+
 export function UzbekVoice({answer,onText,language}:{language?:string;answer:string;onText:(s:string)=>void}) {
   const [pageLanguage,setPageLanguage]=useState("en");
   useEffect(()=>{const read=()=>setPageLanguage(document.documentElement.lang);read();const observer=new MutationObserver(read);observer.observe(document.documentElement,{attributes:true,attributeFilter:["lang"]});return ()=>observer.disconnect();},[]);
@@ -80,18 +110,28 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
       recording.current=rec;
       const chunks:Blob[]=[];
       rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
-      rec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());if(!mounted.current)return;
-        if(!chunks.length){setState("idle");setError("Ovoz yozilmadi. Qayta urinib ko‘ring.");return;}
-        const type=(rec.mimeType||chunks[0].type).split(";")[0];
-        const extension=type.includes("mp4")?"m4a":type.includes("ogg")?"ogg":"webm";
-        const form=new FormData();
-        form.set("file",new Blob(chunks,{type}),"voice."+extension);
-        void send(form);};
+      rec.onstop=async()=>{
+        stream.getTracks().forEach(track=>track.stop());
+        if(!mounted.current)return;
+        setState("encoding");
+        try {
+          if(!chunks.length)throw new Error("Empty recording");
+          const file=await toSpeechWav(new Blob(chunks,{type:rec.mimeType||chunks[0].type}));
+          if(!mounted.current)return;
+          const form=new FormData();
+          form.set("file",file);
+          void send(form);
+        } catch {
+          if(!mounted.current)return;
+          setState("idle");
+          setError("Ovoz yozuvini tayyorlab bo‘lmadi. Qayta urinib ko‘ring.");
+        }
+      };
       rec.start();setState("recording");window.setTimeout(()=>{if(rec.state==="recording")rec.stop();},30000);
     }catch{setState("idle");setError(uz?"Mikrofonga ruxsat bering yoki savolni yozing.":"Allow microphone access or type your question.");}
   }
   return <aside className="flex flex-wrap items-center gap-2 p-2 text-sm" aria-label={uz?"Ovoz boshqaruvi":"Voice controls"}>
-    <button type="button" disabled={state==="busy"} onClick={mic} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 disabled:cursor-wait"><Mic size={16}/>{state==="recording"?(uz?"To‘xtatish":"Stop recording"):(uz?"Gapirish":"Dictate")}</button>
+    <button type="button" disabled={state==="busy"||state==="encoding"} onClick={mic} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 disabled:cursor-wait"><Mic size={16}/>{state==="recording"?(uz?"To‘xtatish":"Stop recording"):(uz?"Gapirish":"Dictate")}</button>
     {answer&&<button type="button" disabled={state!=="idle"} className="inline-flex items-center gap-2 rounded-lg border px-3 py-2" onClick={()=>{
       setError("");
       if(device.current){window.speechSynthesis.cancel();device.current=false;setPlaying(false);return;}
@@ -100,7 +140,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
       void send(JSON.stringify({text:answer.replace(/[*#`]/g,"").slice(0,5000)}));
     }}>{playing?<Pause size={16}/>:url?<Play size={16}/>:<Volume2 size={16}/>}{playing?(uz?"Pauza":"Pause"):url?(uz?"Ijro etish":"Play"):(uz?"Javobni tinglash":"Read aloud")}</button>}
     {state==="busy"&&<button type="button" onClick={()=>{request.current?.abort();setState("idle");}}>{uz?"Bekor qilish":"Cancel"}</button>}
-    {state==="busy"&&<small role="status">{uz?"Tayyorlanmoqda…":"Preparing audio…"}</small>}
+    {(state==="busy"||state==="encoding")&&<small role="status">{uz?"Tayyorlanmoqda…":"Preparing audio…"}</small>}
     {url&&<audio ref={player} onError={()=>setError(uz?"Audio yuklanmadi. Qayta urinib ko‘ring.":"Audio could not load. Please retry.")} controls autoPlay src={url} className="w-full" onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)} onEnded={()=>setPlaying(false)}/>}
     {error&&<p role="alert">{error}</p>}
   </aside>;

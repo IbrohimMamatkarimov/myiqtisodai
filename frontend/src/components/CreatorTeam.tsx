@@ -22,9 +22,9 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
    <div className="creator-team-cover"><span className="creator-team-orbit"/><span className="creator-team-orbit second"/><span className="creator-team-wordmark">{brand}</span><button type="button" onClick={close} aria-label={english?"Close":"Yopish"} className="creator-team-close"><X size={20}/></button></div>
    <div className="creator-team-content">
     <div className="creator-team-identity">
-     <img className="creator-team-portrait" src="/creator-portrait.webp" alt="" width={240} height={300}/>
+     <img className="creator-team-portrait" src="/creator-portrait.webp" alt="" width={320} height={400}/>
      <div>
-      <p className="creator-team-eyebrow">{english?"THE PERSON BEHIND "+brand.toUpperCase():brand.toUpperCase()+" YARATUVCHISI"}</p>
+      <p className="creator-team-eyebrow">{english?"Founder":"Asoschi"}</p>
       <h2 id="creator-team-name">Ibrohim <span>Mamatkarimov</span></h2>
      </div>
     </div>
@@ -37,6 +37,16 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
     </section>
     <a className="creator-team-contact" href="https://t.me/ibrohimmamatkarimov" target="_blank" rel="noopener noreferrer"><span><small>{english?"LET’S CONNECT":"BOG‘LANISH UCHUN"}</small><strong>@ibrohimmamatkarimov</strong></span><ArrowUpRight size={22}/></a>
    </div>
+   <section className="creator-team-cofounder" aria-labelledby="creator-cofounder-name">
+    <div className="creator-team-identity">
+     <img className="creator-team-portrait" src="/cofounder-portrait.webp" alt="" width={320} height={400}/>
+     <div>
+      <p className="creator-team-eyebrow">{english?"Co-founder":"Hammuassis"}</p>
+      <h2 id="creator-cofounder-name">Ilxomov <span>Islomber</span></h2>
+      <p className="creator-team-bio">{english?"Age 17. Finance student at Central Asian University (CAU).":"17 yoshda. Central Asian University (CAU)da moliya yo‘nalishida o‘qiydi."}</p>
+     </div>
+    </div>
+   </section>
   </dialog>
   <style>{`
 .creator-team-entry{display:flex;justify-content:flex-end;position:relative;padding:6px 20px;background:var(--surface,#fff);border-bottom:1px solid #8c92931c}
@@ -88,6 +98,10 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
 .creator-team-cover{height:74px!important;padding:25px 30px!important;background:linear-gradient(112deg,color-mix(in srgb,var(--creator-accent) 30%,#152026),var(--creator-accent))}
 .creator-team-identity{display:grid;grid-template-columns:clamp(76px,23vw,124px) minmax(0,1fr);gap:clamp(12px,4vw,26px);align-items:center}
 .creator-team-portrait{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 43%;border-radius:16px;background:#e7e5e0;border:1px solid color-mix(in srgb,var(--creator-accent) 20%,transparent);box-shadow:0 6px 18px #15202614}
+.creator-team-cofounder{margin:0 30px 30px;padding:22px 0 0;border-top:1px solid #e2e7e6}
+.creator-team-cofounder h2{font-size:clamp(22px,5.5vw,32px);line-height:1.13;font-weight:750;letter-spacing:-.035em;margin:0;color:#202b31}
+.creator-team-bio{margin:8px 0 0;color:#536168;font-size:13px;line-height:1.55}
+@media(max-width:420px){.creator-team-cofounder{margin-inline:20px}}
 .creator-team-identity h2 span{display:block;color:inherit;overflow-wrap:anywhere}
 .creator-team-identity .creator-team-eyebrow{margin-bottom:8px;font-size:10px;line-height:1.45;letter-spacing:.09em}
 @media(max-width:420px){.creator-team-identity h2{font-size:clamp(17px,5.8vw,27px)!important}.creator-team-cover{padding-inline:22px!important}}
