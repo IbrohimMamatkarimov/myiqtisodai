@@ -1,7 +1,7 @@
 'use client';
 import {CreatorTeam} from "@/components/CreatorTeam";
 
-import { type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { LanguageSwitcher } from './language-switcher';
 import { SavingsBox } from './savings-box';
@@ -29,7 +29,19 @@ export function AuthHeader() {
   return <header className="finance-auth-header"><Link href="/" onClick={() => router.refresh()} className="finance-auth-brand select-none" aria-label="IqtisodAI">Iqtisod<span>AI</span></Link><div className="finance-auth-controls"><CreatorTeam brand="IqtisodAI" accent="#21734f"/><button onClick={toggleTheme} className="finance-auth-utility" aria-label={theme === 'dark' ? settingsT('lightMode') : settingsT('darkMode')}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}</button><LanguageSwitcher /></div></header>;
 }
 
+let warmup: Promise<void> | undefined;
+
 export function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode; }) {
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl || warmup) return;
+    // Start waking Render while the user fills in the auth form.
+    const health = new URL('/api/health', apiUrl);
+    warmup = fetch(health, { cache: 'no-store', signal: AbortSignal.timeout(70000) })
+      .then(response => { if (!response.ok) warmup = undefined; })
+      .catch(() => { warmup = undefined; });
+  }, []);
+
   const t = useTranslations('auth');
   const common = useTranslations('common');
   return <div className="finance-auth-page min-h-screen"><AuthHeader /><main className="finance-auth-layout"><section className="finance-auth-story" onPointerMove={trackPointer}><div className="finance-auth-story__copy"><p className="finance-auth-eyebrow"><span />{t('boxEyebrow')}</p><h2>{t('boxHeading')}</h2><p className="finance-auth-story__description">{t('boxDescription')}</p></div><div className="finance-auth-visual" aria-hidden="true"><SavingsBox className="finance-auth-illustration" /></div><p className="finance-auth-story__footnote">{t('boxFootnote')}</p></section><section className="finance-auth-form"><div className="finance-auth-form__heading"><h1>{title}</h1><p>{subtitle}</p></div><div className="finance-auth-form__card">{children}</div><p className="finance-auth-credit">{common('createdBy')}</p></section></main><HowItWorks /></div>;
