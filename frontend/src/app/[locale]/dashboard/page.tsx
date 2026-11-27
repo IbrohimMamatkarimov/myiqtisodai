@@ -426,7 +426,7 @@ export default function DashboardPage() {
           {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
         </h1>
 
-        <div className="mt-8">
+        <div className="finance-dashboard-balance-block">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-textmuted">{t('balance')}</p>
             <button
@@ -442,12 +442,10 @@ export default function DashboardPage() {
           <p className="finance-dashboard-balance">
             {!summary ? '—' : hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
           </p>
-          <p className="mt-2 max-w-lg text-sm leading-6 text-textmuted">
-            {summary ? (summary.recent_transactions_count > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')) : loadError ? null : tc('loading')}
-          </p>
+          {!summary && !loadError && <p className="finance-dashboard-loading" role="status">{tc('loading')}</p>}
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2.5">
+        <div className="finance-dashboard-actions">
           <Link href="/expenses" className="finance-balance-panel__primary">
             <Plus size={16} />
             {t('qaAddExpense')}
@@ -968,7 +966,7 @@ export default function DashboardPage() {
                     <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       <Target size={15} />
                     </span>
-                    <span className="text-xs font-medium text-textmain">{tg('addNewGoal')}</span>
+                    <span className="text-sm font-medium text-textmain">{tg('addNewGoal')}</span>
                   </Link>
                 </div>
               </div>

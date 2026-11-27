@@ -55,35 +55,36 @@ html.dark .finance-workspace {
 .finance-workspace-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.7fr) minmax(270px, 1fr);
-  gap: clamp(15px, 2vw, 24px);
+  gap: 16px;
   align-items: start;
 }
 .finance-workspace-grid > .finance-balance-panel {
   grid-column: 1 / -1;
 }
 html .finance-workspace .finance-workspace-grid .finance-balance-panel.hero-balance-card {
-  grid-template-columns: minmax(0, 1fr) minmax(220px, .75fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 220px);
+  gap: 16px;
   align-items: center;
-  min-height: 254px;
-  padding: clamp(24px, 4vw, 45px);
+  min-height: 194px;
+  padding: 20px 26px;
   background: var(--balance-surface);
   border: 1px solid var(--balance-border);
-  border-radius: 22px;
+  border-radius: 16px;
   color: var(--balance-ink);
   box-shadow: none;
 }
 .finance-workspace .finance-dashboard-title {
   color: var(--balance-ink);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(1.85rem, 3.5vw, 3rem);
-  font-weight: 400;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 .finance-workspace .finance-dashboard-balance {
   margin-top: 3px;
   color: var(--balance-ink);
-  font: 700 clamp(2.25rem, 5vw, 4.1rem)/1.08 var(--font-display);
+  font: 700 clamp(1.8rem, 3.3vw, 2.35rem)/1.12 var(--font-display);
   font-variant-numeric: tabular-nums;
   letter-spacing: -.055em;
   overflow-wrap: anywhere;
@@ -114,12 +115,12 @@ html .finance-workspace .finance-balance-panel__secondary {
 }
 html .finance-workspace .finance-balance-panel__secondary:hover { background: var(--workspace-hover); }
 html .finance-workspace .finance-balance-motion {
-  min-height: 190px;
+  min-height: 138px;
   background: none;
 }
 .finance-workspace .finance-balance-motion .finance-wallet-art {
-  width: min(88%, 315px);
-  height: 235px;
+  width: min(90%, 174px);
+  height: 154px;
   filter: drop-shadow(0 14px 15px #18372436);
 }
 
@@ -131,12 +132,12 @@ html .finance-workspace .finance-balance-motion {
 }
 .finance-workspace .finance-dashboard-card {
   min-width: 0;
-  padding: clamp(17px, 2vw, 24px);
+  padding: 16px 18px;
   border-radius: 16px;
 }
 .finance-dashboard-card h2 {
   color: var(--workspace-ink);
-  font-size: 1.1rem;
+  font-size: 16px;
   font-weight: 750;
   line-height: 1.3;
 }
@@ -206,13 +207,57 @@ html .finance-workspace .finance-balance-motion {
 @media (max-width: 640px) {
   html .finance-workspace .finance-workspace-grid .finance-balance-panel.hero-balance-card {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    padding: 20px;
+    gap: 0;
+    min-height: 178px;
+    padding: 16px;
   }
-  html .finance-workspace .finance-balance-motion { min-height: 104px; }
-  .finance-workspace .finance-balance-motion .finance-wallet-art { height: 127px; }
+  html .finance-workspace .finance-balance-motion {
+    position: absolute;
+    inset: 29px 10px auto auto;
+    width: 82px;
+    min-height: 78px;
+    pointer-events: none;
+  }
+  .finance-workspace .finance-balance-motion .finance-wallet-art { height: 80px; }
+  .finance-workspace .finance-dashboard-title { font-size: 21px; }
+  .finance-dashboard-balance-block { margin-inline-end: 76px; }
+  .finance-dashboard-card > :first-child { flex-wrap: wrap; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .finance-workspace .finance-balance-motion .finance-wallet-art { animation: none; }
+}
+
+
+.finance-workspace-content:has(.finance-workspace-grid) {
+  max-width: 1216px;
+  padding-top: 22px;
+}
+.finance-dashboard-balance-block { margin-top: 10px; }
+.finance-dashboard-loading { color: var(--balance-muted); font-size: 13px; }
+.finance-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 13px;
+}
+.finance-dashboard-actions :is(.finance-balance-panel__primary, .finance-balance-panel__secondary) {
+  min-height: 40px;
+  padding-inline: 12px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .finance-workspace-content {
+    animation: finance-section-enter 230ms cubic-bezier(.2,.7,.3,1) backwards;
+  }
+  .finance-workspace .finance-sidebar nav a {
+    transition: color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+  .finance-workspace .finance-sidebar nav a:hover { transform: none; }
+}
+@keyframes finance-section-enter {
+  from { opacity: .82; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
 }
