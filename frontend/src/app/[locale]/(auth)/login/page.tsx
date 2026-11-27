@@ -23,11 +23,13 @@ export default function LoginPage() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [resendError, setResendError] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setNeedsVerification(false);
+    setResendError(false);
     setResent(false);
     setLoading(true);
     try {
@@ -51,9 +53,12 @@ export default function LoginPage() {
 
   async function handleResend() {
     setResending(true);
+    setResendError(false);
     try {
       await api.post('/auth/resend-verification', { email });
       setResent(true);
+    } catch {
+      setResendError(true);
     } finally {
       setResending(false);
     }
@@ -88,6 +93,7 @@ export default function LoginPage() {
         {error && (
           <div>
             <p className="text-sm text-red-500">{error}</p>
+            {resendError && <p role="alert" className="mt-2 text-sm text-danger">{t('verifyDeliveryError')}</p>}
             {needsVerification && (
               <button
                 type="button"

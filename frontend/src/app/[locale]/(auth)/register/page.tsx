@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
       setSent(true);
     } catch (err: any) {
-      setError(getErrorMessage(err, 'Please check your information and try again.'));
+      setError(err?.response?.data?.detail?.code === 'verification_delivery_failed' ? t('verifyDeliveryError') : getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -51,9 +51,12 @@ export default function RegisterPage() {
 
   async function handleResend() {
     setResending(true);
+    setError(null);
     try {
       await api.post('/auth/resend-verification', { email });
       setResent(true);
+    } catch {
+      setError(t('verifyDeliveryError'));
     } finally {
       setResending(false);
     }
@@ -61,14 +64,12 @@ export default function RegisterPage() {
 
   if (sent) {
     return (
-      <AuthShell title={t('createAccountTitle')} subtitle="One more step.">
+      <AuthShell title={t('createAccountTitle')} subtitle={t('verifyInboxTitle')}>
         <div className="flex flex-col items-center gap-3 py-6 text-center">
           <MailCheck className="text-emerald-500" size={40} />
-          <p className="font-medium text-textmain">Check your email to verify your account.</p>
-          <p className="text-sm text-textmuted">
-            We sent a verification link to <span className="font-medium text-textmain">{email}</span>.
-            Click it, then sign in below.
-          </p>
+          <p className="font-medium text-textmain">{email}</p>
+          <p className="text-sm text-textmuted">{t('verifyInboxInstructions')}</p>
+          {error && <p role="alert" className="text-sm text-danger">{error}</p>}
 
           <button
             type="button"
@@ -76,7 +77,7 @@ export default function RegisterPage() {
             disabled={resending || resent}
             className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline mt-1"
           >
-            {resending ? 'Sending...' : resent ? 'Verification email sent - check your inbox' : "Didn't get it? Resend"}
+            {resending ? t('resendingVerification') : resent ? t('verificationSent') : t('resendVerification')}
           </button>
 
           <Link href="/login" className="btn-primary mt-4">

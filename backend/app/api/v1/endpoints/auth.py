@@ -3,11 +3,13 @@ import logging
 import secrets
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from google.auth.exceptions import TransportError
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import get_current_user
 from app.core.security import (
@@ -38,74 +40,58 @@ from app.services.email import (
     send_password_reset_email,
     send_verification_email,
 )
-from app.utils.seed_categories import seed_default_categories
+from app.utils.seed_categories import add_default_categories
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger("myiqtisod.auth")
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    existing = db.scalar(select(User).where(User.email == payload.email))
-
-    if existing:
-        if existing.onboarding_completed:
-            raise HTTPException(
-                status_code=400,
-                detail="Email already registered",
-            )
-        # They registered before but abandoned onboarding partway through (closed
-        # the tab, tried a different email, etc). Rather than permanently blocking
-        # this email, let them claim the same account and start fresh - update the
-        # password in case they've forgotten what they used the first time, and
-        # send a fresh verification link rather than logging them straight in.
-        existing.hashed_password = hash_password(payload.password)
-        existing.language = payload.language
-        existing.is_email_verified = False
-        db.commit()
-        db.refresh(existing)
-
-        verify_token = create_email_token(
-            str(existing.id),
-            purpose="verify_email",
+def _deliver_verification(email: str, user_id: str) -> None:
+    token = create_email_token(user_id, purpose="verify_email")
+    if not send_verification_email(email, token):
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "verification_delivery_failed", "message": "Could not send the verification email. Please try again."},
         )
-        background_tasks.add_task(send_verification_email, existing.email, verify_token)
 
-        return {
-            "message": "Please check your email to verify your account before logging in.",
-            "email": existing.email,
-        }
 
-    user = User(
-        email=payload.email,
-        hashed_password=hash_password(payload.password),
-        # Real name is collected on Onboarding Screen 1 (complete-onboarding);
-        # this is just a NOT-NULL placeholder until then.
-        full_name=payload.email.split("@")[0],
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    responses={503: {"description": "Verification email delivery failed. Registration can be retried."}},
+)
+def register(payload: UserCreate, db: Session = Depends(get_db)):
+    email = str(payload.email)
+    user = db.scalar(select(User).where(User.email == email))
 
-        language=payload.language,
-    )
+    if user:
+        if user.is_email_verified or not user.is_active:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        user_id = str(user.id)
+    else:
+        user = User(
+            email=email,
+            hashed_password=hash_password(payload.password),
+            full_name=email.split("@")[0],
+            language=payload.language,
+        )
+        db.add(user)
 
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+        try:
+            db.flush()
+            add_default_categories(db, user.id)
+            user_id = str(user.id)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if db.scalar(select(User.id).where(User.email == email)):
+                raise HTTPException(status_code=409, detail="Registration is already in progress. Please try again.")
+            raise
 
-    seed_default_categories(user.id)
-
-    verify_token = create_email_token(
-        str(user.id),
-        purpose="verify_email",
-    )
-
-    background_tasks.add_task(send_verification_email, user.email, verify_token)
-
-    # No tokens issued here anymore - the account can't be used until the
-    # verification link is clicked and the user logs in through /login,
-    # which enforces is_email_verified. Issuing tokens here would let
-    # anyone skip verification entirely by just registering.
+    _deliver_verification(email, user_id)
     return {
         "message": "Please check your email to verify your account before logging in.",
-        "email": user.email,
+        "email": email,
     }
 
 
@@ -161,6 +147,8 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
         idinfo = google_id_token.verify_oauth2_token(
             payload.credential, google_requests.Request(), settings.GOOGLE_CLIENT_ID
         )
+    except TransportError:
+        raise HTTPException(status_code=503, detail="Google sign-in is temporarily unavailable. Please try again.")
     except ValueError:
         raise HTTPException(status_code=401, detail="Invalid Google sign-in token")
 
@@ -182,9 +170,8 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
             is_email_verified=True,
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
-        seed_default_categories(user.id)
+        db.flush()
+        add_default_categories(db, user.id)
     elif not user.is_active:
         raise HTTPException(status_code=403, detail="Account is disabled")
 
@@ -244,18 +231,18 @@ def verify_email(payload: VerifyEmail, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/resend-verification", status_code=status.HTTP_200_OK)
+@router.post(
+    "/resend-verification",
+    status_code=status.HTTP_200_OK,
+    responses={503: {"description": "Verification email delivery failed."}},
+)
 def resend_verification(payload: ForgotPassword, db: Session = Depends(get_db)):
     # Reuses ForgotPassword's shape (just an email field) - same generic
     # response either way so this can't be used to check which emails exist.
     user = db.scalar(select(User).where(User.email == payload.email))
 
     if user and not user.is_email_verified:
-        verify_token = create_email_token(
-            str(user.id),
-            purpose="verify_email",
-        )
-        send_verification_email(user.email, verify_token)
+        _deliver_verification(user.email, str(user.id))
 
     return {
         "message": "If that email exists and isn't verified yet, a new verification link has been sent.",

@@ -1,17 +1,11 @@
-def _auth_headers(client, unique_email):
-    client.post(
-        "/api/v1/auth/register",
-        json={"email": unique_email, "password": "SecurePass123", "full_name": "Test User"},
-    )
-    login_res = client.post(
-        "/api/v1/auth/login", json={"email": unique_email, "password": "SecurePass123"}
-    )
+def _auth_headers(client, verified_account):
+    login_res = client.post("/api/v1/auth/login", json=verified_account)
     token = login_res.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_and_list_expense(client, unique_email):
-    headers = _auth_headers(client, unique_email)
+def test_create_and_list_expense(client, verified_account):
+    headers = _auth_headers(client, verified_account)
 
     create_res = client.post(
         "/api/v1/expenses",
@@ -27,8 +21,8 @@ def test_create_and_list_expense(client, unique_email):
     assert list_res.json()["items"][0]["id"] == expense_id
 
 
-def test_update_and_delete_expense(client, unique_email):
-    headers = _auth_headers(client, unique_email)
+def test_update_and_delete_expense(client, verified_account):
+    headers = _auth_headers(client, verified_account)
 
     create_res = client.post(
         "/api/v1/expenses",
@@ -55,8 +49,8 @@ def test_expense_requires_auth(client):
     assert res.status_code == 401
 
 
-def test_expense_invalid_amount_rejected(client, unique_email):
-    headers = _auth_headers(client, unique_email)
+def test_expense_invalid_amount_rejected(client, verified_account):
+    headers = _auth_headers(client, verified_account)
     res = client.post(
         "/api/v1/expenses",
         json={"amount": -10, "expense_date": "2026-07-20"},

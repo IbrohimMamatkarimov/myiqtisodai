@@ -90,36 +90,20 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
         or "your-app-password" in settings.SMTP_PASSWORD
     )
     if looks_like_placeholder:
-        logger.info(
-            "No email provider configured (no BREVO_API_KEY, and SMTP is unset "
-            "or still has placeholder .env values). Would send email to %s: %s\n%s",
-            to_email,
-            subject,
-            html_body,
-        )
+        logger.warning("Email delivery is unavailable because no provider is configured")
         return False
 
     return _send_via_smtp(to_email, subject, html_body)
 
 
-def send_verification_email(to_email: str, token: str) -> str | None:
-    """Sends the verification email. Returns the link ONLY when the real send
-    failed (so callers can surface a dev-mode fallback) - returns None on a
-    genuine successful send, so the dev link never leaks into API responses
-    for emails that actually went out."""
-    link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-    sent = send_email(
+def send_verification_email(to_email: str, token: str) -> bool:
+    link = f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?token={token}"
+    return send_email(
         to_email,
-        "Verify your MyIqtisod account",
-        f"<p>Welcome to MyIqtisod! Please verify your email by clicking "
-        f"<a href='{link}'>this link</a>. It expires in 24 hours.</p>",
+        "Verify your IqtisodAI account",
+        f"<p>Welcome to IqtisodAI! <a href='{link}'>Verify your email address</a>. "
+        "This link expires in 24 hours.</p>",
     )
-    if sent:
-        return None
-    if settings.DEBUG:
-        logger.info("\n%s\nDEV MODE - verification link for %s:\n%s\n%s", "=" * 60, to_email, link, "=" * 60)
-        return link
-    return None
 
 
 def send_password_reset_email(to_email: str, token: str) -> str | None:

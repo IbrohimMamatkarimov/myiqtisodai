@@ -4,6 +4,8 @@ Seeds a sensible set of default categories for a newly registered user.
 import sys
 import uuid
 
+from sqlalchemy.orm import Session
+
 from app.db.session import SessionLocal
 from app.models.category import Category, CategoryType
 
@@ -27,17 +29,17 @@ DEFAULT_INCOME_CATEGORIES = [
 ]
 
 
+def add_default_categories(db: Session, user_id: uuid.UUID) -> None:
+    for name, icon, color in DEFAULT_EXPENSE_CATEGORIES:
+        db.add(Category(user_id=user_id, name=name, icon=icon, color=color, type=CategoryType.expense, is_default=True))
+    for name, icon, color in DEFAULT_INCOME_CATEGORIES:
+        db.add(Category(user_id=user_id, name=name, icon=icon, color=color, type=CategoryType.income, is_default=True))
+
+
 def seed_default_categories(user_id: uuid.UUID) -> None:
-    db = SessionLocal()
-    try:
-        for name, icon, color in DEFAULT_EXPENSE_CATEGORIES:
-            db.add(Category(user_id=user_id, name=name, icon=icon, color=color, type=CategoryType.expense, is_default=True))
-        for name, icon, color in DEFAULT_INCOME_CATEGORIES:
-            db.add(Category(user_id=user_id, name=name, icon=icon, color=color, type=CategoryType.income, is_default=True))
+    with SessionLocal() as db:
+        add_default_categories(db, user_id)
         db.commit()
-        print(f"Seeded default categories for user {user_id}")
-    finally:
-        db.close()
 
 
 if __name__ == "__main__":

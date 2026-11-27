@@ -51,3 +51,26 @@ def client(db_session):
 @pytest.fixture
 def unique_email() -> str:
     return f"test-{uuid.uuid4().hex[:8]}@example.com"
+
+
+@pytest.fixture
+def verification_mailbox(monkeypatch):
+    from app.api.v1.endpoints import auth
+
+    mailbox = {}
+    def send(email, token):
+        mailbox[email] = token
+        return True
+
+    monkeypatch.setattr(auth, "send_verification_email", send)
+    return mailbox
+
+
+@pytest.fixture
+def verified_account(client, unique_email, verification_mailbox):
+    password = "SecurePass123"
+    result = client.post("/api/v1/auth/register", json={"email": unique_email, "password": password})
+    assert result.status_code == 201
+    verified = client.post("/api/v1/auth/verify-email", json={"token": verification_mailbox[unique_email]})
+    assert verified.status_code == 200
+    return {"email": unique_email, "password": password}
