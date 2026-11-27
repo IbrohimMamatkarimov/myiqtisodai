@@ -36,6 +36,11 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong. 
 }
 
 api.interceptors.request.use((config) => {
+  // Auth submissions may have to wait for the Render service to wake.
+  if (config.url === '/auth/login' || config.url === '/auth/register' || config.url === '/auth/resend-verification') {
+    config.timeout = Math.max(config.timeout ?? 0, 75000);
+  }
+
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
