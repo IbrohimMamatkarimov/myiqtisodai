@@ -34,7 +34,7 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
       <img className="creator-team-portrait" src="/cofounder-portrait.webp" alt="" width={320} height={400}/>
       <div>
        <p className="creator-team-eyebrow">Cofounder</p>
-       <h2 id="creator-cofounder-name">{english?"Ilxomov Islomber":"Islomber Ilxomov"}</h2>
+       <h2 id="creator-cofounder-name">{english?"Ilxomov Islombek":"Islombek Ilxomov"}</h2>
        <p className="creator-team-bio">{english?"I study finance at Central Asian University (CAU).":"Central Asian University (CAU)da moliya yo‘nalishida o‘qiyman."}</p>
       </div>
      </article>
