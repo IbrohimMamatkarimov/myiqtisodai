@@ -418,52 +418,21 @@ export default function DashboardPage() {
 
   if (!checked) return null;
 
-  const balance = summary ? summary.total_income - summary.total_expenses : 0;
-  const balanceCard = (
-    <section className="hero-balance-card finance-balance-panel relative overflow-hidden" aria-busy={!summary && !loadError}>
-      <div className="finance-balance-panel__main">
-        <h1 className="finance-dashboard-title">
-          {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
-        </h1>
-
-        <div className="finance-dashboard-balance-block">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-textmuted">{t('balance')}</p>
-            <button
-              type="button"
-              disabled={!summary}
-              onClick={() => setHideBalance((v) => !v)}
-              aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
-              className="finance-balance-visibility"
-            >
-              {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-          <p className="finance-dashboard-balance">
-            {!summary ? '—' : hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
-          </p>
-          {!summary && !loadError && <p className="finance-dashboard-loading" role="status">{tc('loading')}</p>}
+  if (loadError) {
+    return (
+      <AppShell>
+        <div className="glass-card p-10 text-center">
+          <p className="font-semibold text-textmain">Couldn't load your dashboard</p>
+          <p className="text-sm text-textmuted mt-1">Check your connection and try refreshing the page.</p>
         </div>
+      </AppShell>
+    );
+  }
 
-        <div className="finance-dashboard-actions">
-          <Link href="/expenses" className="finance-balance-panel__primary">
-            <Plus size={16} />
-            {t('qaAddExpense')}
-            <ArrowRight size={15} />
-          </Link>
-          <Link href="/income" className="finance-balance-panel__secondary">
-            <Plus size={16} />
-            {t('qaAddIncome')}
-          </Link>
-        </div>
-      </div>
-
-      <div className="finance-balance-motion" aria-hidden="true">
-        <img src="/wallet-illustration.png" className="finance-wallet-art" alt="" />
-      </div>
-    </section>
-
-  );
+  let balance = 0;
+  if (summary) {
+    balance = summary.total_income - summary.total_expenses;
+  }
 
   return (
     <AppShell>
@@ -556,28 +525,108 @@ export default function DashboardPage() {
         </div>
       )}
       {!summary ? (
-        <div className="finance-workspace-grid">
-          {balanceCard}
-          <div className="finance-dashboard-main">
-            {loadError ? (
-              <div role="alert" className="glass-card p-4">
-                <p className="mb-3 text-sm">{tc('couldNotLoad')}</p>
-                <button type="button" className="btn-secondary" onClick={() => { setLoadError(false); loadSummary(); }}>
-                  {tc('tryAgain')}
-                </button>
-              </div>
-            ) : (
-              <div className="glass-card h-36 motion-safe:animate-pulse" aria-hidden="true" />
-            )}
-          </div>
+        <div className="space-y-4">
+          <div className="glass-card animate-pulse" style={{ height: 140 }} />
+          <div className="glass-card animate-pulse" style={{ height: 220 }} />
         </div>
       ) : (
-        <div className="finance-workspace-grid">
-          {balanceCard}
-          <div className="finance-dashboard-main">
+        <div className="finance-workspace-grid grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
+          {/* Main column */}
+          <div className="space-y-5 min-w-0">
+
+            {/* Hero: personal greeting + balance */}
+            <section className="hero-balance-card finance-balance-panel relative overflow-hidden">
+              <div className="finance-balance-panel__main">
+                <div className="flex items-center gap-3">
+                  <div className="h-11 w-11 rounded-2xl overflow-hidden shrink-0 bg-white/15 ring-1 ring-white/20">
+                    <img src="/iqtisodaiphoto.png" alt="" className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-display font-bold text-white truncate">
+                      {t('greeting', { name: user?.full_name?.split(' ')[0] || '' })}
+                    </p>
+                    <p className="text-xs text-white/65">{t('heroSubtitle')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-white/70">{t('balance')}</p>
+                    <button
+                      type="button"
+                      onClick={() => setHideBalance((v) => !v)}
+                      aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
+                      className="finance-balance-visibility text-white/60 hover:text-white transition-colors"
+                    >
+                      {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                  <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-white tabular-nums sm:text-5xl">
+                    {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
+                  </p>
+                  <p className="mt-2 max-w-lg text-sm leading-6 text-white/70">
+                    {(summary?.recent_transactions_count ?? 0) > 0 ? t('heroNudgeActive') : t('heroNudgeEmpty')}
+                  </p>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-2.5">
+                  <Link href="/expenses" className="finance-balance-panel__primary">
+                    <Plus size={16} />
+                    {t('qaAddExpense')}
+                    <ArrowRight size={15} />
+                  </Link>
+                  <Link href="/income" className="finance-balance-panel__secondary">
+                    <Plus size={16} />
+                    {t('qaAddIncome')}
+                  </Link>
+                </div>
+              </div>
+
+              <div className="finance-balance-panel__art">
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--one" />
+                <div className="finance-balance-panel__orbit finance-balance-panel__orbit--two" />
+                <img src="/wallet-illustration.png" alt="" className="finance-wallet-art" />
+                <div className="finance-activity-card">
+                  <span className="finance-activity-card__icon"><ReceiptIcon size={16} /></span>
+                  <span className="min-w-0 flex-1">
+                    <small>{t('recentTransactions')}</small>
+                    <strong>{summary?.recent_transactions_count ?? 0}</strong>
+                  </span>
+                  <ArrowRight size={15} className="text-primary" />
+                </div>
+              </div>
+            </section>
+
+            {/* Quick actions */}
+            <div className="glass-card dashboard-quick-actions finance-action-strip p-5 sm:p-6">
+              <h2 className="mb-4 font-display text-lg font-bold text-textmain">{t('quickActionsTitle')}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Link href="/expenses" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                    <Plus size={17} />
+                  </span>
+                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAddExpense')}</span>
+                  <ArrowRight size={14} className="text-textmuted" />
+                </Link>
+                <Link href="/income" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="h-9 w-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                    <Wallet size={17} />
+                  </span>
+                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAddIncome')}</span>
+                  <ArrowRight size={14} className="text-textmuted" />
+                </Link>
+                <Link href="/assistant" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                    <Sparkles size={17} />
+                  </span>
+                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAskAI')}</span>
+                  <ArrowRight size={14} className="text-textmuted" />
+                </Link>
+              </div>
+            </div>
 
             {/* Recent transactions */}
-            <div className="glass-card finance-dashboard-card">
+            <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-display font-semibold text-textmain">{t('recentTransactions')}</h2>
                 <Link href="/transactions" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
@@ -587,10 +636,7 @@ export default function DashboardPage() {
               </div>
 
               {txns.length === 0 ? (
-                <div className="finance-dashboard-empty">
-                  <span className="finance-dashboard-empty__icon"><ReceiptIcon size={20} aria-hidden="true" /></span>
-                  <p>{t('emptyTodaySubtitle')}</p>
-                </div>
+                <p className="text-sm text-textmuted py-6 text-center">{t('emptyTodaySubtitle')}</p>
               ) : (
                 <div className="divide-y divide-textmain/[0.06]">
                   {txns.map((txn, i) => {
@@ -626,72 +672,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Goals - cover images match the Goals page */}
-            {/* AI Coach - 3 rotating tips instead of one static paragraph */}
-            <div className="glass-card finance-dashboard-card">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={16} className="text-primary" />
-                <h2 className="font-display font-semibold text-textmain">{t('aiCoachBadge')}</h2>
-              </div>
-              <p key={activeTip} className="text-sm text-textmuted min-h-[2.5rem] animate-fade-up">
-                {insightLoading ? t('aiCoachLoading') : tips[activeTip] || t('aiCoachEmpty')}
-              </p>
-              {tips.length > 1 && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  {tips.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveTip(i)}
-                      aria-label={`Tip ${i + 1}`}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === activeTip ? 'w-4 bg-primary' : 'w-1.5 bg-textmain/15'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-              <Link href="/assistant" className="inline-flex items-center gap-1 text-sm font-medium text-primary mt-3 hover:underline">
-                {t('aiCoachChat')}
-                <ArrowRight size={13} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Right column */}
-          <aside className="finance-dashboard-side">
-            {/* Hisoblarim - account balances derived from real summary data */}
-            <div className="glass-card finance-dashboard-card finance-dashboard-accounts">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display font-semibold text-textmain">{ta('title')}</h2>
-                <Link href="/accounts" className="text-xs text-secondary font-medium hover:underline">
-                  {t('seeAll')}
-                </Link>
-              </div>
-              <div className="space-y-1">
-                <Link href="/transactions" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="flex items-center gap-2.5 text-sm text-textmain">
-                    <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                      <Wallet size={15} />
-                    </span>
-                    {ta('mainAccount')}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-textmain">
-                    {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
-                  </span>
-                </Link>
-                <Link href="/goals" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="flex items-center gap-2.5 text-sm text-textmain">
-                    <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
-                      <Lock size={15} />
-                    </span>
-                    {ta('lockedInGoals')}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-textmain">
-                    {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
-                  </span>
-                </Link>
-              </div>
-            </div>
-            <div className="glass-card finance-dashboard-card finance-dashboard-goals">
+            <div className="glass-card p-6">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-display font-semibold text-textmain">{t('myGoalsTitle')}</h2>
                 <Link href="/goals" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
@@ -961,17 +942,82 @@ export default function DashboardPage() {
                   })}
                   <Link
                     href="/goals"
-                    className="finance-dashboard-new-goal"
+                    className="rounded-2xl border-2 border-dashed border-textmain/15 hover:border-primary/50 hover:bg-primary/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 text-center p-3 min-h-[112px]"
                   >
                     <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       <Target size={15} />
                     </span>
-                    <span className="text-sm font-medium text-textmain">{tg('addNewGoal')}</span>
+                    <span className="text-xs font-medium text-textmain">{tg('addNewGoal')}</span>
                   </Link>
                 </div>
               </div>
 
-          </aside>
+            {/* AI Coach - 3 rotating tips instead of one static paragraph */}
+            <div className="glass-card p-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={16} className="text-primary" />
+                <h2 className="font-display font-semibold text-textmain">{t('aiCoachBadge')}</h2>
+              </div>
+              <p key={activeTip} className="text-sm text-textmuted min-h-[2.5rem] animate-fade-up">
+                {insightLoading ? t('aiCoachLoading') : tips[activeTip] || t('aiCoachEmpty')}
+              </p>
+              {tips.length > 1 && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  {tips.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveTip(i)}
+                      aria-label={`Tip ${i + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === activeTip ? 'w-4 bg-primary' : 'w-1.5 bg-textmain/15'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              <Link href="/assistant" className="inline-flex items-center gap-1 text-sm font-medium text-primary mt-3 hover:underline">
+                {t('aiCoachChat')}
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Right column */}
+          <div className="space-y-5 min-w-0">
+            {/* Hisoblarim - account balances derived from real summary data */}
+            <div className="glass-card p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display font-semibold text-textmain">{ta('title')}</h2>
+                <Link href="/accounts" className="text-xs text-secondary font-medium hover:underline">
+                  {t('seeAll')}
+                </Link>
+              </div>
+              <div className="space-y-1">
+                <Link href="/transactions" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="flex items-center gap-2.5 text-sm text-textmain">
+                    <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                      <Wallet size={15} />
+                    </span>
+                    {ta('mainAccount')}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-textmain">
+                    {formatAmount(balance, user?.currency || 'UZS')}
+                  </span>
+                </Link>
+                <Link href="/goals" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="flex items-center gap-2.5 text-sm text-textmain">
+                    <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
+                      <Lock size={15} />
+                    </span>
+                    {ta('lockedInGoals')}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-textmain">
+                    {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

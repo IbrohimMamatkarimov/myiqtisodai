@@ -955,28 +955,6 @@ html.dark .finance-editorial .finance-about__inside li > svg { color: #93bda2; }
   .finance-editorial-intro h1 { max-width: 18ch; }
 }
 
-/* Signed-in overview. */
-.finance-workspace-grid .finance-balance-panel.hero-balance-card,
-html:not(.dark) .finance-workspace-grid .finance-balance-panel.hero-balance-card {
-  border: 1px solid rgb(var(--color-textmain) / .11);
-  background: rgb(var(--color-surface));
-  box-shadow: none;
-  color: rgb(var(--color-textmain));
-}
-
-.finance-workspace-grid .finance-balance-panel::before,
-.finance-workspace-grid .finance-balance-panel::after { display: none; }
-
-.finance-dashboard-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.35rem, 2.8vw, 1.9rem);
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.finance-sidebar { background: #243b2f; }
-.finance-sidebar::before { display: none; }
-
 .quti-companion-root {
   position: fixed;
   z-index: 50;
@@ -1153,25 +1131,4 @@ html.dark .finance-savings-stage { background-color: #314d39; }
 .finance-companion-panel { bottom: 140px; max-height: calc(100dvh - 158px); }
 @media (max-width: 767px) {
   .finance-companion-panel { bottom: calc(193px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 211px - env(safe-area-inset-bottom)); }
-}
-
-.finance-balance-motion {
-  align-self: stretch;
-  display: grid;
-  place-items: center;
-  min-height: 185px;
-  border-radius: 15px;
-  background: radial-gradient(ellipse at center, #edf6e9, #dce9da);
-}
-html.dark .finance-balance-motion {
-  background: radial-gradient(ellipse at center, #314c39, #203329);
-}
-.finance-balance-motion .finance-wallet-art {
-  width: min(80%, 220px);
-  height: 170px;
-  object-fit: contain;
-}
-@media (max-width: 640px) {
-  .finance-balance-motion { min-height: 116px; }
-  .finance-balance-motion .finance-wallet-art { width: 135px; height: 114px; }
 }

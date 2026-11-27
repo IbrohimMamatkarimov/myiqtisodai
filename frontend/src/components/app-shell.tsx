@@ -80,9 +80,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     .toUpperCase();
 
   return (
-    <div className="finance-workspace min-h-screen">
+    <div className="min-h-screen">
       <div className="flex">
-        <aside className="finance-sidebar hidden md:flex md:flex-col w-[14rem] shrink-0 min-h-screen h-screen sticky top-0 p-4 overflow-y-auto">
+        <aside className="finance-sidebar hidden md:flex md:flex-col w-[17rem] shrink-0 min-h-screen h-screen sticky top-0 p-5 relative overflow-hidden">
           <Link
             href={user?.is_superuser ? '/admin' : '/dashboard'}
             onClick={() => router.refresh()}
@@ -137,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="min-w-0 flex-1 min-h-screen pb-16 md:pb-0">
-          <header className="finance-workspace-header sticky top-0 z-20 flex items-center justify-between gap-3 px-4 md:px-8 py-4 border-b border-textmain/[0.06] bg-surface/80 backdrop-blur-xl">
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 md:px-8 py-4 border-b border-textmain/[0.06] bg-surface/80 backdrop-blur-xl">
             <div className="min-w-0 flex-1">
               <GlobalSearch />
             </div>
@@ -163,7 +163,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             </div>
           </header>
-          <div className="finance-workspace-content p-4 md:p-8">{children}</div>
+          <div className="p-4 md:p-8">{children}</div>
         </main>
       </div>
 

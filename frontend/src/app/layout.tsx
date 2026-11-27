@@ -1,5 +1,4 @@
 import './globals.css';
-import './workspace.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter, Manrope } from 'next/font/google';
 
