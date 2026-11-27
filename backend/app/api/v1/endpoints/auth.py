@@ -3,7 +3,7 @@ import logging
 import secrets
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token as google_id_token
 from sqlalchemy import select
@@ -22,6 +22,7 @@ from app.db.session import get_db
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import (
+    AuthSession,
     ChangePassword,
     ForgotPassword,
     GoogleAuthRequest,
@@ -44,7 +45,7 @@ logger = logging.getLogger("myiqtisod.auth")
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
+def register(payload: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     existing = db.scalar(select(User).where(User.email == payload.email))
 
     if existing:
@@ -68,7 +69,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
             str(existing.id),
             purpose="verify_email",
         )
-        send_verification_email(existing.email, verify_token)
+        background_tasks.add_task(send_verification_email, existing.email, verify_token)
 
         return {
             "message": "Please check your email to verify your account before logging in.",
@@ -96,7 +97,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         purpose="verify_email",
     )
 
-    send_verification_email(user.email, verify_token)
+    background_tasks.add_task(send_verification_email, user.email, verify_token)
 
     # No tokens issued here anymore - the account can't be used until the
     # verification link is clicked and the user logs in through /login,
@@ -108,7 +109,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=AuthSession)
 def login(payload: UserLogin, db: Session = Depends(get_db)):
     user = db.scalar(select(User).where(User.email == payload.email))
 
@@ -136,13 +137,14 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     user.last_login_at = datetime.utcnow()
     db.commit()
 
-    return Token(
+    return AuthSession(
+        user=UserOut.model_validate(user),
         access_token=create_access_token(str(user.id)),
         refresh_token=create_refresh_token(str(user.id)),
     )
 
 
-@router.post("/google", response_model=Token)
+@router.post("/google", response_model=AuthSession)
 def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     """Sign in (or auto-register) with Google. Verifies the ID token Google's
     Sign-In button handed the frontend, then either logs into an existing
@@ -187,7 +189,8 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     user.last_login_at = datetime.utcnow()
     db.commit()
 
-    return Token(
+    return AuthSession(
+        user=UserOut.model_validate(user),
         access_token=create_access_token(str(user.id)),
         refresh_token=create_refresh_token(str(user.id)),
     )

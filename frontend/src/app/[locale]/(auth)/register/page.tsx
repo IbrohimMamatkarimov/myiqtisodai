@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
@@ -10,9 +10,17 @@ import { Loader2, MailCheck } from 'lucide-react';
 
 export default function RegisterPage() {
   const t = useTranslations('auth');
+  const language = useLocale();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  useEffect(() => {
+    try {
+      const previous = sessionStorage.getItem('iqtisod-registration-email');
+      if (previous) setEmail(current => current || previous);
+      sessionStorage.removeItem('iqtisod-registration-email');
+    } catch {}
+  }, []);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +38,7 @@ export default function RegisterPage() {
       await api.post('/auth/register', {
         email,
         password,
+        language,
       });
 
       setSent(true);

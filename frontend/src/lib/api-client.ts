@@ -47,7 +47,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isCredentialRequest = /^\/auth\/(login|google|register)$/.test(originalRequest?.url ?? '');
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isCredentialRequest) {
       originalRequest._retry = true;
       const refreshToken = useAuthStore.getState().refreshToken;
       if (refreshToken) {

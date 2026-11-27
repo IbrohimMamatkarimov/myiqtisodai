@@ -1167,3 +1167,18 @@ html.dark .finance-savings-stage { background-color: #314d39; }
 @media (max-width: 767px) {
   .finance-companion-panel { bottom: calc(193px + env(safe-area-inset-bottom)); max-height: calc(100dvh - 211px - env(safe-area-inset-bottom)); }
 }
+
+.finance-balance-summary { display: grid; gap: 8px; min-width: 0; }
+.finance-balance-motion {
+  display: grid;
+  place-items: center;
+  min-height: 114px;
+  border-radius: 12px;
+  background: #e9f0e5;
+}
+html.dark .finance-balance-motion { background: #253a2c; }
+.finance-balance-motion .finance-wallet-art {
+  width: 128px;
+  height: 110px;
+  object-fit: contain;
+}

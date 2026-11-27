@@ -31,20 +31,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      setTokens(data.access_token, data.refresh_token);
-
-      const me = await api.get('/auth/me', {
+      const user = data.user ?? (await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      setUser(me.data);
-
-      router.push(
-        me.data.is_superuser
-          ? '/admin'
-          : me.data.onboarding_completed
-            ? '/dashboard'
-            : '/onboarding'
-      );
+      })).data;
+      setTokens(data.access_token, data.refresh_token);
+      setUser(user);
+      router.replace(user.is_superuser ? '/admin' : user.onboarding_completed ? '/dashboard' : '/onboarding');
     } catch (err: any) {
       const detail = getErrorMessage(err);
       setError(detail);
@@ -125,7 +117,9 @@ export default function LoginPage() {
           </Link>
           <span className="text-textmuted">
             {t('noAccount')}{' '}
-            <Link   href="/register"
+            <Link href="/register" onClick={() => {
+              try { sessionStorage.setItem('iqtisod-registration-email', email.trim()); } catch {}
+            }}
               className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
               >
               {t('signUp')}

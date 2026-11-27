@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import { api } from '@/lib/api-client';
+import { useTranslations } from 'next-intl';
+import { api, getErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from '@/navigation';
 
@@ -18,28 +19,33 @@ declare global {
  * full sign-in flow itself: verifies with the backend, stores tokens, and
  * redirects exactly like the normal email/password login does. */
 export function GoogleSignInButton() {
+  const t = useTranslations('common');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const inFlight = useRef(false);
   const buttonRef = useRef<HTMLDivElement>(null);
   const setTokens = useAuthStore((s) => s.setTokens);
   const setUser = useAuthStore((s) => s.setUser);
   const router = useRouter();
 
   async function handleCredentialResponse(response: { credential: string }) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setLoading(true);
+    setError('');
     try {
       const { data } = await api.post('/auth/google', { credential: response.credential });
-      setTokens(data.access_token, data.refresh_token);
-
-      const me = await api.get('/auth/me', {
+      const user = data.user ?? (await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${data.access_token}` },
-      });
-      setUser(me.data);
-
-      router.push(
-        me.data.is_superuser ? '/admin' : me.data.onboarding_completed ? '/dashboard' : '/onboarding'
-      );
-    } catch {
-      // Silent on purpose - the Google button has no error UI slot of its
-      // own. A failure here is rare (expired token, network blip); the
-      // person just clicks the button again.
+      })).data;
+      setTokens(data.access_token, data.refresh_token);
+      setUser(user);
+      router.replace(user.is_superuser ? '/admin' : user.onboarding_completed ? '/dashboard' : '/onboarding');
+    } catch (cause) {
+      setError(getErrorMessage(cause));
+    } finally {
+      inFlight.current = false;
+      setLoading(false);
     }
   }
 
@@ -70,6 +76,8 @@ export function GoogleSignInButton() {
     <>
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onLoad={renderButton} />
       <div className="flex justify-center" ref={buttonRef} />
+      {loading && <p role="status" className="text-center text-sm text-textmuted">{t('loading')}</p>}
+      {error && <p role="alert" className="text-center text-sm text-danger">{error}</p>}
     </>
   );
 }

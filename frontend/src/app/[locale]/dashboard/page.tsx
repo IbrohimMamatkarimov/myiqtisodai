@@ -563,6 +563,10 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              <div className="finance-balance-summary">
+                <div className="finance-balance-motion" aria-hidden="true">
+                  <img src="/wallet-illustration.png" className="finance-wallet-art" alt="" />
+                </div>
               <dl className="finance-balance-ledger">
                 <div>
                   <dt>{nav('income')}</dt>
@@ -577,6 +581,7 @@ export default function DashboardPage() {
                   <dd><Link href="/transactions">{summary.recent_transactions_count ?? 0}<ArrowRight size={14} aria-hidden="true" /></Link></dd>
                 </div>
               </dl>
+              </div>
             </section>
 
             {/* Quick actions */}
