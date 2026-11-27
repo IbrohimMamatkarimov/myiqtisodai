@@ -21,8 +21,7 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
   function deviceSpeak(text:string){
     if(!("speechSynthesis" in window))return false;
     const voices=window.speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith(lang));
-    const voice=voices.find(v=>/\b(Lola|Sevinch|Shoira|Madina|Jenny|Aria|Samantha|Susan|Victoria|Zira|Sonia)\b/i.test(v.name));
-    if(!voice)return false;
+    const voice=voices.find(v=>/Lola|Sevinch|Madina|Jenny|Aria|Samantha|Susan|Victoria|Zira|Sonia/i.test(v.name))??voices[0];
     if(!voice)return false;
     const utterance=new SpeechSynthesisUtterance(text);
     utterance.voice=voice;utterance.lang=voice.lang;
@@ -73,12 +72,21 @@ export function UzbekVoice({answer,onText,language}:{language?:string;answer:str
       const stream=await navigator.mediaDevices.getUserMedia({audio:true});
       if(!mounted.current){stream.getTracks().forEach(t=>t.stop());return;}
       let rec:MediaRecorder;
-      try{rec=new MediaRecorder(stream);}catch(e){stream.getTracks().forEach(t=>t.stop());throw e;}
+      try{
+        const mimeType=["audio/webm;codecs=opus","audio/ogg;codecs=opus","audio/mp4"]
+          .find(type=>MediaRecorder.isTypeSupported(type));
+        rec=new MediaRecorder(stream,mimeType?{mimeType}:undefined);
+      }catch(e){stream.getTracks().forEach(t=>t.stop());throw e;}
       recording.current=rec;
       const chunks:Blob[]=[];
-      rec.ondataavailable=e=>chunks.push(e.data);
+      rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
       rec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());if(!mounted.current)return;
-        const form=new FormData();form.set("file",new Blob(chunks,{type:rec.mimeType}),rec.mimeType.includes("mp4")?"voice.mp4":"voice.webm");void send(form);};
+        if(!chunks.length){setState("idle");setError("Ovoz yozilmadi. Qayta urinib ko‘ring.");return;}
+        const type=(rec.mimeType||chunks[0].type).split(";")[0];
+        const extension=type.includes("mp4")?"m4a":type.includes("ogg")?"ogg":"webm";
+        const form=new FormData();
+        form.set("file",new Blob(chunks,{type}),"voice."+extension);
+        void send(form);};
       rec.start();setState("recording");window.setTimeout(()=>{if(rec.state==="recording")rec.stop();},30000);
     }catch{setState("idle");setError(uz?"Mikrofonga ruxsat bering yoki savolni yozing.":"Allow microphone access or type your question.");}
   }

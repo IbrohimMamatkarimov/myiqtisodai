@@ -1,4 +1,6 @@
 'use client';
+
+import { UzbekVoice } from '@/components/UzbekVoice';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { RobotMascot } from './robot-mascot';
@@ -49,6 +51,7 @@ export function FinanceCompanion() {
         {error && <p role="alert" className="mt-3 text-danger">{error}</p>}
         <Link href="/assistant" className="finance-companion-full">{c.full}<ArrowUpRight size={14}/></Link>
       </div>
+      <UzbekVoice language={locale} answer={answer} onText={setQuestion}/>
       <form onSubmit={(event) => {event.preventDefault();void ask();}}><textarea ref={input} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={c.placeholder} aria-label={c.placeholder} maxLength={2000}/><button type="submit" disabled={!question.trim() || loading} aria-label={c.send}><Send size={17}/></button></form>
     </section>}
   </>;
