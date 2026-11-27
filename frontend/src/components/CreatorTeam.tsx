@@ -27,7 +27,7 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
       <div>
        <p className="creator-team-eyebrow">Founder</p>
        <h2 id="creator-team-name">Ibrohim Mamatkarimov</h2>
-       <p className="creator-team-bio">{english?"I study artificial intelligence and build web projects as I work toward becoming an AI engineer.":"Sun’iy intellekt muhandisi bo‘lish uchun AI texnologiyalarini o‘rganaman va veb loyihalar yarataman."}</p>
+       <p className="creator-team-bio">{english?"I study Computer Science at Central Asian University (CAU).":"Central Asian University (CAU)da Computer Science yo‘nalishida o‘qiyman."}</p>
       </div>
      </article>
      <article className="creator-team-identity" aria-labelledby="creator-cofounder-name">
