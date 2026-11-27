@@ -135,12 +135,14 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
         )
 
     user.last_login_at = datetime.utcnow()
+    profile = UserOut.model_validate(user)
+    user_id = str(user.id)
     db.commit()
 
     return AuthSession(
-        user=UserOut.model_validate(user),
-        access_token=create_access_token(str(user.id)),
-        refresh_token=create_refresh_token(str(user.id)),
+        user=profile,
+        access_token=create_access_token(user_id),
+        refresh_token=create_refresh_token(user_id),
     )
 
 
@@ -187,12 +189,14 @@ def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Account is disabled")
 
     user.last_login_at = datetime.utcnow()
+    profile = UserOut.model_validate(user)
+    user_id = str(user.id)
     db.commit()
 
     return AuthSession(
-        user=UserOut.model_validate(user),
-        access_token=create_access_token(str(user.id)),
-        refresh_token=create_refresh_token(str(user.id)),
+        user=profile,
+        access_token=create_access_token(user_id),
+        refresh_token=create_refresh_token(user_id),
     )
 
 

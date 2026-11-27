@@ -5,6 +5,12 @@
   --workspace-ink: #20372b;
   --workspace-muted: #586b5d;
   --workspace-hover: #edf1e6;
+  --balance-surface: #f8f7ed;
+  --balance-ink: #1b402e;
+  --balance-muted: #476350;
+  --balance-border: #d7dfd1;
+  --balance-action: #24563d;
+  --balance-action-hover: #17422c;
   background: var(--workspace-paper);
 }
 
@@ -15,6 +21,12 @@ html.dark .finance-workspace {
   --workspace-ink: #eaf3e8;
   --workspace-muted: #b4c4b3;
   --workspace-hover: #263a2d;
+  --balance-surface: #1e3026;
+  --balance-ink: #eff4e3;
+  --balance-muted: #c0d1bb;
+  --balance-border: #435a49;
+  --balance-action: #3d6d50;
+  --balance-action-hover: #4a7f5e;
 }
 
 .finance-workspace .finance-sidebar {
@@ -53,16 +65,16 @@ html .finance-workspace .finance-workspace-grid .finance-balance-panel.hero-bala
   grid-template-columns: minmax(0, 1fr) minmax(220px, .75fr);
   gap: 22px;
   align-items: center;
-  min-height: 300px;
+  min-height: 254px;
   padding: clamp(24px, 4vw, 45px);
-  background: #214433;
-  border: 1px solid #315840;
+  background: var(--balance-surface);
+  border: 1px solid var(--balance-border);
   border-radius: 22px;
-  color: #fcf9ed;
-  box-shadow: 0 12px 26px #152c241a;
+  color: var(--balance-ink);
+  box-shadow: none;
 }
 .finance-workspace .finance-dashboard-title {
-  color: #fcf9ed;
+  color: var(--balance-ink);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(1.85rem, 3.5vw, 3rem);
   font-weight: 400;
@@ -70,14 +82,14 @@ html .finance-workspace .finance-workspace-grid .finance-balance-panel.hero-bala
 }
 .finance-workspace .finance-dashboard-balance {
   margin-top: 3px;
-  color: #f6efcf;
+  color: var(--balance-ink);
   font: 700 clamp(2.25rem, 5vw, 4.1rem)/1.08 var(--font-display);
   font-variant-numeric: tabular-nums;
   letter-spacing: -.055em;
   overflow-wrap: anywhere;
 }
 .finance-workspace .finance-balance-panel__main .text-textmuted,
-.finance-workspace .finance-balance-visibility { color: #d2e2ce; }
+.finance-workspace .finance-balance-visibility { color: var(--balance-muted); }
 .finance-workspace .finance-balance-visibility {
   display: grid;
   place-items: center;
@@ -85,31 +97,30 @@ html .finance-workspace .finance-workspace-grid .finance-balance-panel.hero-bala
   min-height: 32px;
   border-radius: 50%;
 }
-.finance-workspace .finance-balance-visibility:hover { background: #ffffff24; }
+.finance-workspace .finance-balance-visibility:hover { background: var(--workspace-hover); }
 html .finance-workspace .finance-balance-panel__primary {
-  background: #e5eccf;
-  color: #203b2b;
+  background: var(--balance-action);
+  color: #fffdf5;
   box-shadow: none;
 }
 html .finance-workspace .finance-balance-panel__primary:hover {
-  background: #f0f2dc;
+  background: var(--balance-action-hover);
   box-shadow: none;
 }
 html .finance-workspace .finance-balance-panel__secondary {
   background: transparent;
-  border-color: #96a999;
-  color: #fcf9ed;
+  border-color: var(--balance-border);
+  color: var(--balance-ink);
 }
-html .finance-workspace .finance-balance-panel__secondary:hover { background: #ffffff12; }
+html .finance-workspace .finance-balance-panel__secondary:hover { background: var(--workspace-hover); }
 html .finance-workspace .finance-balance-motion {
-  min-height: 240px;
-  border-radius: 16px;
-  background: radial-gradient(circle at 50% 45%, #75996d 0, #466945 37%, #274c35 75%);
+  min-height: 190px;
+  background: none;
 }
 .finance-workspace .finance-balance-motion .finance-wallet-art {
-  width: min(84%, 270px);
-  height: 219px;
-  filter: drop-shadow(0 16px 18px #132b20a0);
+  width: min(88%, 315px);
+  height: 235px;
+  filter: drop-shadow(0 14px 15px #18372436);
 }
 
 .finance-dashboard-main,
@@ -198,8 +209,8 @@ html .finance-workspace .finance-balance-motion {
     gap: 14px;
     padding: 20px;
   }
-  html .finance-workspace .finance-balance-motion { min-height: 124px; }
-  .finance-workspace .finance-balance-motion .finance-wallet-art { height: 118px; }
+  html .finance-workspace .finance-balance-motion { min-height: 104px; }
+  .finance-workspace .finance-balance-motion .finance-wallet-art { height: 127px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

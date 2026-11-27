@@ -335,10 +335,14 @@ export default function DashboardPage() {
     if (!checked) return;
 
     loadSummary();
+  }, [checked]);
+
+  useEffect(() => {
+    if (!checked || !hasSummary) return;
     loadTxns();
     loadGoals();
     loadInvites();
-  }, [checked]);
+  }, [checked, hasSummary]);
 
   useEffect(() => {
     if (!checked || !hasSummary || !userId) return;
@@ -389,8 +393,10 @@ export default function DashboardPage() {
     function refresh() {
       if (document.visibilityState === 'visible') {
         loadSummary();
-        loadTxns();
-        loadGoals();
+        if (hasSummary) {
+          loadTxns();
+          loadGoals();
+        }
       }
     }
     window.addEventListener('focus', refresh);
@@ -399,7 +405,7 @@ export default function DashboardPage() {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [checked]);
+  }, [checked, hasSummary]);
 
   // Auto-rotate through the tips every 6s
   useEffect(() => {
