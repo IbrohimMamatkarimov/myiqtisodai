@@ -42,7 +42,7 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
 .creator-team-entry{display:flex;justify-content:flex-end;position:relative;padding:6px 20px;background:var(--surface,#fff);border-bottom:1px solid #8c92931c}
 
 
-.creator-team-dialog{padding:0;border:1px solid #ffffff44;border-radius:28px;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow-y:auto;background:#fff;color:#202b31;margin:auto;box-shadow:0 30px 100px #102a3255;font-family:inherit}
+.creator-team-dialog{padding:0;border:1px solid #ffffff44;border-radius:28px;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 28px);overflow-y:auto;overflow-x:hidden;background:#fff;color:#202b31;margin:auto;box-shadow:0 30px 100px #102a3255;font-family:inherit}
 .creator-team-dialog::backdrop{background:#0b192b99;backdrop-filter:blur(7px)}
 .creator-team-dialog[open]{animation:creator-team-in .28s cubic-bezier(.2,.8,.2,1) both}
 .creator-team-cover{position:relative;isolation:isolate;overflow:hidden;height:160px;background:linear-gradient(125deg,#102b31,var(--creator-accent));padding:22px 26px}
@@ -88,9 +88,9 @@ export function CreatorTeam({brand,accent}:{brand:string;accent:string}){
 .creator-team-cover{height:74px!important;padding:25px 30px!important;background:linear-gradient(112deg,color-mix(in srgb,var(--creator-accent) 30%,#152026),var(--creator-accent))}
 .creator-team-identity{display:grid;grid-template-columns:clamp(76px,23vw,124px) minmax(0,1fr);gap:clamp(12px,4vw,26px);align-items:center}
 .creator-team-portrait{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:center 43%;border-radius:16px;background:#e7e5e0;border:1px solid color-mix(in srgb,var(--creator-accent) 20%,transparent);box-shadow:0 6px 18px #15202614}
-.creator-team-identity h2 span{display:block;color:inherit}
+.creator-team-identity h2 span{display:block;color:inherit;overflow-wrap:anywhere}
 .creator-team-identity .creator-team-eyebrow{margin-bottom:8px;font-size:10px;line-height:1.45;letter-spacing:.09em}
-@media(max-width:420px){.creator-team-identity h2{font-size:clamp(19px,6.2vw,27px)!important}.creator-team-cover{padding-inline:22px!important}}
+@media(max-width:420px){.creator-team-identity h2{font-size:clamp(17px,5.8vw,27px)!important}.creator-team-cover{padding-inline:22px!important}}
 .creator-team-content{padding-top:26px!important}
 .creator-team-content h2{font-size:clamp(30px,6vw,38px)!important;letter-spacing:-.035em!important;line-height:1.13!important}
 .creator-about{margin:24px 0 26px;border-top:1px solid #e2e7e6;padding-top:22px;animation:creator-team-in .4s ease-out both}
