@@ -428,12 +428,12 @@ export default function DashboardPage() {
               disabled={!summary}
               onClick={() => setHideBalance((v) => !v)}
               aria-label={hideBalance ? 'Show balance' : 'Hide balance'}
-              className="finance-balance-visibility text-textmuted hover:text-textmain transition-colors"
+              className="finance-balance-visibility"
             >
               {hideBalance ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
-          <p className="mt-1 font-display text-4xl font-extrabold tracking-[-0.05em] text-textmain tabular-nums sm:text-5xl">
+          <p className="finance-dashboard-balance">
             {!summary ? '—' : hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
           </p>
           <p className="mt-2 max-w-lg text-sm leading-6 text-textmuted">
@@ -552,9 +552,9 @@ export default function DashboardPage() {
         </div>
       )}
       {!summary ? (
-        <div className="finance-workspace-grid grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
-          <div className="space-y-5 min-w-0">
-            {balanceCard}
+        <div className="finance-workspace-grid">
+          {balanceCard}
+          <div className="finance-dashboard-main">
             {loadError ? (
               <div role="alert" className="glass-card p-4">
                 <p className="mb-3 text-sm">{tc('couldNotLoad')}</p>
@@ -568,42 +568,12 @@ export default function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="finance-workspace-grid grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-5 items-start">
-          {/* Main column */}
-          <div className="space-y-5 min-w-0">
-
-            {balanceCard}
-
-            {/* Quick actions */}
-            <div className="glass-card dashboard-quick-actions finance-action-strip p-5 sm:p-6">
-              <h2 className="mb-4 font-display text-lg font-bold text-textmain">{t('quickActionsTitle')}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Link href="/expenses" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                    <Plus size={17} />
-                  </span>
-                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAddExpense')}</span>
-                  <ArrowRight size={14} className="text-textmuted" />
-                </Link>
-                <Link href="/income" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="h-9 w-9 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
-                    <Wallet size={17} />
-                  </span>
-                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAddIncome')}</span>
-                  <ArrowRight size={14} className="text-textmuted" />
-                </Link>
-                <Link href="/assistant" className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="h-9 w-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-                    <Sparkles size={17} />
-                  </span>
-                  <span className="text-sm font-medium text-textmain flex-1">{t('qaAskAI')}</span>
-                  <ArrowRight size={14} className="text-textmuted" />
-                </Link>
-              </div>
-            </div>
+        <div className="finance-workspace-grid">
+          {balanceCard}
+          <div className="finance-dashboard-main">
 
             {/* Recent transactions */}
-            <div className="glass-card p-6">
+            <div className="glass-card finance-dashboard-card">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-display font-semibold text-textmain">{t('recentTransactions')}</h2>
                 <Link href="/transactions" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
@@ -613,7 +583,10 @@ export default function DashboardPage() {
               </div>
 
               {txns.length === 0 ? (
-                <p className="text-sm text-textmuted py-6 text-center">{t('emptyTodaySubtitle')}</p>
+                <div className="finance-dashboard-empty">
+                  <span className="finance-dashboard-empty__icon"><ReceiptIcon size={20} aria-hidden="true" /></span>
+                  <p>{t('emptyTodaySubtitle')}</p>
+                </div>
               ) : (
                 <div className="divide-y divide-textmain/[0.06]">
                   {txns.map((txn, i) => {
@@ -649,7 +622,72 @@ export default function DashboardPage() {
             </div>
 
             {/* Goals - cover images match the Goals page */}
-            <div className="glass-card p-6">
+            {/* AI Coach - 3 rotating tips instead of one static paragraph */}
+            <div className="glass-card finance-dashboard-card">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles size={16} className="text-primary" />
+                <h2 className="font-display font-semibold text-textmain">{t('aiCoachBadge')}</h2>
+              </div>
+              <p key={activeTip} className="text-sm text-textmuted min-h-[2.5rem] animate-fade-up">
+                {insightLoading ? t('aiCoachLoading') : tips[activeTip] || t('aiCoachEmpty')}
+              </p>
+              {tips.length > 1 && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  {tips.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveTip(i)}
+                      aria-label={`Tip ${i + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === activeTip ? 'w-4 bg-primary' : 'w-1.5 bg-textmain/15'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              <Link href="/assistant" className="inline-flex items-center gap-1 text-sm font-medium text-primary mt-3 hover:underline">
+                {t('aiCoachChat')}
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Right column */}
+          <aside className="finance-dashboard-side">
+            {/* Hisoblarim - account balances derived from real summary data */}
+            <div className="glass-card finance-dashboard-card finance-dashboard-accounts">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-display font-semibold text-textmain">{ta('title')}</h2>
+                <Link href="/accounts" className="text-xs text-secondary font-medium hover:underline">
+                  {t('seeAll')}
+                </Link>
+              </div>
+              <div className="space-y-1">
+                <Link href="/transactions" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="flex items-center gap-2.5 text-sm text-textmain">
+                    <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
+                      <Wallet size={15} />
+                    </span>
+                    {ta('mainAccount')}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-textmain">
+                    {hideBalance ? '••••••' : formatAmount(balance, user?.currency || 'UZS')}
+                  </span>
+                </Link>
+                <Link href="/goals" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
+                  <span className="flex items-center gap-2.5 text-sm text-textmain">
+                    <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
+                      <Lock size={15} />
+                    </span>
+                    {ta('lockedInGoals')}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-textmain">
+                    {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
+                  </span>
+                </Link>
+              </div>
+            </div>
+            <div className="glass-card finance-dashboard-card finance-dashboard-goals">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-display font-semibold text-textmain">{t('myGoalsTitle')}</h2>
                 <Link href="/goals" className="text-sm text-secondary font-medium hover:underline flex items-center gap-1">
@@ -919,7 +957,7 @@ export default function DashboardPage() {
                   })}
                   <Link
                     href="/goals"
-                    className="rounded-2xl border-2 border-dashed border-textmain/15 hover:border-primary/50 hover:bg-primary/[0.03] transition-all flex flex-col items-center justify-center gap-1.5 text-center p-3 min-h-[112px]"
+                    className="finance-dashboard-new-goal"
                   >
                     <span className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                       <Target size={15} />
@@ -929,72 +967,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-            {/* AI Coach - 3 rotating tips instead of one static paragraph */}
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles size={16} className="text-primary" />
-                <h2 className="font-display font-semibold text-textmain">{t('aiCoachBadge')}</h2>
-              </div>
-              <p key={activeTip} className="text-sm text-textmuted min-h-[2.5rem] animate-fade-up">
-                {insightLoading ? t('aiCoachLoading') : tips[activeTip] || t('aiCoachEmpty')}
-              </p>
-              {tips.length > 1 && (
-                <div className="flex items-center gap-1.5 mt-2">
-                  {tips.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveTip(i)}
-                      aria-label={`Tip ${i + 1}`}
-                      className={`h-1.5 rounded-full transition-all ${
-                        i === activeTip ? 'w-4 bg-primary' : 'w-1.5 bg-textmain/15'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-              <Link href="/assistant" className="inline-flex items-center gap-1 text-sm font-medium text-primary mt-3 hover:underline">
-                {t('aiCoachChat')}
-                <ArrowRight size={13} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Right column */}
-          <div className="space-y-5 min-w-0">
-            {/* Hisoblarim - account balances derived from real summary data */}
-            <div className="glass-card p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-display font-semibold text-textmain">{ta('title')}</h2>
-                <Link href="/accounts" className="text-xs text-secondary font-medium hover:underline">
-                  {t('seeAll')}
-                </Link>
-              </div>
-              <div className="space-y-1">
-                <Link href="/transactions" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="flex items-center gap-2.5 text-sm text-textmain">
-                    <span className="h-8 w-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center">
-                      <Wallet size={15} />
-                    </span>
-                    {ta('mainAccount')}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-textmain">
-                    {formatAmount(balance, user?.currency || 'UZS')}
-                  </span>
-                </Link>
-                <Link href="/goals" className="flex items-center justify-between rounded-xl px-3 py-2.5 hover:bg-textmain/[0.04] transition-colors">
-                  <span className="flex items-center gap-2.5 text-sm text-textmain">
-                    <span className="h-8 w-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center">
-                      <Lock size={15} />
-                    </span>
-                    {ta('lockedInGoals')}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-textmain">
-                    {formatAmount(summary.total_locked_in_goals, user?.currency || 'UZS')}
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </div>
+          </aside>
         </div>
       )}
 
