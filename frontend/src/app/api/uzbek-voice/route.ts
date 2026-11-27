@@ -20,7 +20,7 @@ export async function POST(req: Request) {
    const {text}=await req.json();
    if(typeof text!=="string"||!text.trim()||text.length>5000)return error("Matn uzunligini tekshiring.",400);
    headers.set("Content-Type","application/json");
-   body=JSON.stringify({text,model:"sevinch",blocking:true});
+   body=JSON.stringify({text,model:"sevinch",blocking:"true"});
   }
   const signal=AbortSignal.timeout(95000);
   const response=await fetch("https://uzbekvoice.ai/api/v1/"+(stt?"stt":"tts"),{
@@ -37,7 +37,19 @@ export async function POST(req: Request) {
   if(!stt&&contentType?.startsWith("audio/")){
    return new Response(response.body,{headers:{"Content-Type":contentType,"Cache-Control":"no-store"}});
   }
-  const data=await response.json();
+  let data=await response.json();
+  const taskId=typeof data.id==="string"?data.id:null;
+  // Status requests read the original job and never submit a second one.
+  for(let checks=0;taskId&&!data.result&&checks<12;checks++){
+   const state=String(data.state??data.status).toUpperCase();
+   if(["SUCCESS","COMPLETED","FAILURE","FAILED","REVOKED","CANCELED"].includes(state))break;
+   await new Promise(resolve=>setTimeout(resolve,1500));
+   const status=await fetch("https://uzbekvoice.ai/api/v1/tasks?id="+encodeURIComponent(taskId),{
+    headers:{Authorization:key},signal,cache:"no-store",redirect:"error",
+   });
+   if(!status.ok)break;
+   data=await status.json();
+  }
   if(stt&&typeof data.result?.text==="string"){
    const transcript=data.result.text.trim();
    return transcript?Response.json({text:transcript}):error("Nutq aniqlanmadi. Mikrofonga yaqinroq gapiring.",422);
@@ -45,7 +57,10 @@ export async function POST(req: Request) {
   if(!stt&&typeof data.result?.url==="string"&&data.result.url.startsWith("https://")){
    return Response.json({url:data.result.url});
   }
-  console.warn("MohirAI returned no completed voice result", {operation:stt?"stt":"tts"});
+  console.warn("MohirAI returned no completed voice result",{
+   operation:stt?"stt":"tts",hasTask:!!taskId,hasResult:!!data.result,
+   hasAudioUrl:typeof data.result?.url==="string",
+  });
   return error("Ovoz xizmati natija qaytarmadi.");
  }catch{
   return error("Ovozga ishlov berilmadi. Qayta urinib ko‘ring.");
